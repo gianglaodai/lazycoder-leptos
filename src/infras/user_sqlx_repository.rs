@@ -1,9 +1,9 @@
 #![cfg(feature = "ssr")]
 
+use crate::business::error::CoreError;
 use crate::business::user_service::{User, UserRepository};
 use crate::define_orm_with_common_fields;
-use sqlx::{Error, PgPool};
-use crate::business::error::CoreError;
+use sqlx::PgPool;
 
 #[derive(Clone)]
 pub struct UserSqlxRepository {
@@ -63,7 +63,7 @@ impl UserRepository for UserSqlxRepository {
         let user = sqlx::query_as::<_, UserOrm>(
             "INSERT INTO users (uid, username, email, password, created_at, updated_at) 
              VALUES ($1, $2, $3, $4, $5, $6) 
-             RETURNING *"
+             RETURNING *",
         )
         .bind(uid)
         .bind(&user.username)
@@ -78,14 +78,16 @@ impl UserRepository for UserSqlxRepository {
     }
 
     async fn update(&self, user: &User) -> Result<User, CoreError> {
-        let id = user.id.ok_or_else(|| CoreError::ValidationError("User ID is required for update".to_string()))?;
+        let id = user.id.ok_or_else(|| {
+            CoreError::ValidationError("User ID is required for update".to_string())
+        })?;
         let now = time::OffsetDateTime::now_utc();
 
         let user = sqlx::query_as::<_, UserOrm>(
             "UPDATE users 
              SET username = $1, email = $2, password = $3, updated_at = $4
              WHERE id = $5
-             RETURNING *"
+             RETURNING *",
         )
         .bind(&user.username)
         .bind(&user.email)
@@ -125,4 +127,3 @@ impl UserRepository for UserSqlxRepository {
         Ok(user.map(User::from))
     }
 }
-
