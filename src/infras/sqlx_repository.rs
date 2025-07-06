@@ -1,0 +1,105 @@
+#![cfg(feature = "ssr")]
+
+use crate::business::error::CoreError;
+use crate::business::repository::{Repository, SortCriterion};
+use sqlx::postgres::PgRow;
+use sqlx::{FromRow, PgPool, QueryBuilder};
+use uuid::Uuid;
+
+pub trait SqlxRepository: Repository<Self::Entity> {
+    type Entity;
+    type Orm: for<'r> FromRow<'r, PgRow> + Send + Unpin;
+
+    fn get_table_name(&self) -> &str;
+    fn get_pool(&self) -> &PgPool;
+
+    fn from_orm(orm: Self::Orm) -> Self::Entity;
+
+    async fn find_all(&self) -> Result<Vec<Self::Entity>, CoreError> {
+        <Self as Repository<Self::Entity>>::find_many(self, vec![], None, None).await
+    }
+
+    async fn find_many(
+        &self,
+        sort_criteria: Vec<SortCriterion>,
+        first_result: Option<i32>,
+        max_results: Option<i32>,
+    ) -> Result<Vec<Self::Entity>, CoreError> {
+        let mut query_builder =
+            QueryBuilder::new(format!("SELECT * FROM {}", self.get_table_name()));
+        if !sort_criteria.is_empty() {
+            query_builder.push(" ORDER BY ");
+            for (i, criterion) in sort_criteria.iter().enumerate() {
+                if i > 0 {
+                    query_builder.push(", ");
+                }
+                query_builder.push(format!(
+                    "{} {}",
+                    criterion.field,
+                    if criterion.ascending { "ASC" } else { "DESC" }
+                ));
+            }
+        }
+
+        query_builder.push(format!(" OFFSET {}", first_result.unwrap_or(0)));
+        match max_results {
+            Some(limit) => query_builder.push(format!(" LIMIT {}", limit)),
+            None => query_builder.push(" LIMIT ALL"),
+        };
+
+        let result = query_builder
+            .build_query_as::<Self::Orm>()
+            .fetch_all(self.get_pool())
+            .await?;
+
+        Ok(result.into_iter().map(|orm| Self::from_orm(orm)).collect())
+    }
+
+    async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
+        let result = sqlx::query(&format!(
+            "DELETE FROM {} WHERE id = $1",
+            self.get_table_name()
+        ))
+        .bind(id)
+        .execute(self.get_pool())
+        .await?;
+
+        Ok(result.rows_affected())
+    }
+
+    async fn delete_by_uid(&self, uid: Uuid) -> Result<u64, CoreError> {
+        let result = sqlx::query(&format!(
+            "DELETE FROM {} WHERE uid = $1",
+            self.get_table_name()
+        ))
+        .bind(uid)
+        .execute(self.get_pool())
+        .await?;
+
+        Ok(result.rows_affected())
+    }
+
+    async fn find_by_id(&self, id: i32) -> Result<Option<Self::Entity>, CoreError> {
+        let result = sqlx::query_as::<_, Self::Orm>(&format!(
+            "SELECT * FROM {} WHERE id=$1",
+            self.get_table_name()
+        ))
+        .bind(id)
+        .fetch_optional(self.get_pool())
+        .await?;
+
+        Ok(result.map(|orm| Self::from_orm(orm)))
+    }
+
+    async fn find_by_uid(&self, uid: Uuid) -> Result<Option<Self::Entity>, CoreError> {
+        let result = sqlx::query_as::<_, Self::Orm>(&format!(
+            "SELECT * FROM {} WHERE uid=$1",
+            self.get_table_name()
+        ))
+        .bind(uid)
+        .fetch_optional(self.get_pool())
+        .await?;
+
+        Ok(result.map(|orm| Self::from_orm(orm)))
+    }
+}

@@ -1,5 +1,6 @@
 #![cfg(feature = "ssr")]
 
+use actix_web::middleware::NormalizePath;
 use sqlx::PgPool;
 
 pub async fn run(pool: PgPool) -> std::io::Result<()> {
@@ -36,9 +37,11 @@ pub async fn run(pool: PgPool) -> std::io::Result<()> {
             .app_data(state.clone())
             .wrap(Logger::default())
             .wrap(SessionMiddleware::new(CookieSessionStore::default(), secret_key.clone()))
+            .wrap(NormalizePath::trim())
             .service(Files::new("/pkg", format!("{site_root}/pkg")))
             .service(Files::new("/assets", &site_root))
             .service(favicon)
+            .configure(crate::routes::config)
             .leptos_routes(routes, {
                 let leptos_options = leptos_options.clone();
                 move || {
@@ -59,7 +62,6 @@ pub async fn run(pool: PgPool) -> std::io::Result<()> {
                     }
                 }
             })
-            // .configure(routes::config)
         .app_data(actix_web::web::Data::new(leptos_options.to_owned()))
         //.wrap(middleware::Compress::default())
     })

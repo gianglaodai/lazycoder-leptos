@@ -1,9 +1,12 @@
 #![cfg(feature = "ssr")]
 
 use crate::business::error::CoreError;
+use crate::business::repository::{Repository, SortCriterion};
 use crate::business::user_service::{User, UserRepository};
 use crate::define_orm_with_common_fields;
+use crate::infras::sqlx_repository::SqlxRepository;
 use sqlx::PgPool;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct UserSqlxRepository {
@@ -35,42 +38,51 @@ impl UserSqlxRepository {
         Self { pool }
     }
 }
-impl UserRepository for UserSqlxRepository {
-    async fn find_many(&self) -> Result<Vec<User>, CoreError> {
-        let users = sqlx::query_as::<_, UserOrm>("SELECT * FROM users")
-            .fetch_all(&self.pool)
-            .await?;
 
-        Ok(users.into_iter().map(User::from).collect())
+impl Repository<User> for UserSqlxRepository {
+    async fn find_all(&self) -> Result<Vec<User>, CoreError> {
+        SqlxRepository::find_all(self).await
+    }
+
+    async fn find_many(
+        &self,
+        sort_criteria: Vec<SortCriterion>,
+        first_result: Option<i32>,
+        max_results: Option<i32>,
+    ) -> Result<Vec<User>, CoreError> {
+        SqlxRepository::find_many(self, sort_criteria, first_result, max_results).await
     }
 
     async fn find_by_id(&self, id: i32) -> Result<Option<User>, CoreError> {
-        let user = sqlx::query_as::<_, UserOrm>("SELECT * FROM users WHERE id = $1")
-            .bind(id)
-            .fetch_optional(&self.pool)
-            .await?;
+        SqlxRepository::find_by_id(self, id).await
+    }
 
-        Ok(user.map(User::from))
+    async fn find_by_uid(&self, uid: Uuid) -> Result<Option<User>, CoreError> {
+        SqlxRepository::find_by_uid(self, uid).await
+    }
+
+    async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
+        SqlxRepository::delete_by_id(self, id).await
+    }
+
+    async fn delete_by_uid(&self, uid: Uuid) -> Result<u64, CoreError> {
+        SqlxRepository::delete_by_uid(self, uid).await
     }
 
     async fn create(&self, user: &User) -> Result<User, CoreError> {
         let now = time::OffsetDateTime::now_utc();
-        let uid = user.uid.unwrap_or_else(|| {
-            // Using Uuid::now_v7() for timestamp-based UUID generation
-            uuid::Uuid::now_v7()
-        });
 
         let user = sqlx::query_as::<_, UserOrm>(
-            "INSERT INTO users (uid, username, email, password, created_at, updated_at) 
-             VALUES ($1, $2, $3, $4, $5, $6) 
+            "INSERT INTO users (uid, username, email, password, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, $6)
              RETURNING *",
         )
-        .bind(uid)
+        .bind(Uuid::now_v7())
         .bind(&user.username)
         .bind(&user.email)
         .bind(&user.password)
-        .bind(user.created_at.unwrap_or(now))
-        .bind(user.updated_at.unwrap_or(now))
+        .bind(&now)
+        .bind(&now)
         .fetch_one(&self.pool)
         .await?;
 
@@ -84,7 +96,7 @@ impl UserRepository for UserSqlxRepository {
         let now = time::OffsetDateTime::now_utc();
 
         let user = sqlx::query_as::<_, UserOrm>(
-            "UPDATE users 
+            "UPDATE users
              SET username = $1, email = $2, password = $3, updated_at = $4
              WHERE id = $5
              RETURNING *",
@@ -92,38 +104,46 @@ impl UserRepository for UserSqlxRepository {
         .bind(&user.username)
         .bind(&user.email)
         .bind(&user.password)
-        .bind(user.updated_at.unwrap_or(now))
+        .bind(&now)
         .bind(id)
         .fetch_one(&self.pool)
         .await?;
 
         Ok(User::from(user))
     }
+}
 
-    async fn delete(&self, id: i32) -> Result<u64, CoreError> {
-        let result = sqlx::query("DELETE FROM users WHERE id = $1")
-            .bind(id)
-            .execute(&self.pool)
-            .await?;
+impl SqlxRepository for UserSqlxRepository {
+    type Entity = User;
+    type Orm = UserOrm;
 
-        Ok(result.rows_affected())
+    fn get_table_name(&self) -> &str {
+        "users"
     }
 
-    async fn find_by_username(&self, name: &str) -> Result<Option<User>, CoreError> {
-        let user = sqlx::query_as::<_, UserOrm>("SELECT * FROM users WHERE username = $1")
-            .bind(name)
-            .fetch_optional(&self.pool)
-            .await?;
+    fn get_pool(&self) -> &PgPool {
+        &self.pool
+    }
 
-        Ok(user.map(User::from))
+    fn from_orm(orm: Self::Orm) -> Self::Entity {
+        User::from(orm)
+    }
+}
+
+impl UserRepository for UserSqlxRepository {
+    async fn find_by_username(&self, name: &str) -> Result<Option<User>, CoreError> {
+        let result = sqlx::query_as::<_, UserOrm>("SELECT * FROM users WHERE username = $1")
+            .bind(name)
+            .fetch_optional(self.get_pool())
+            .await?;
+        Ok(result.map(Self::from_orm))
     }
 
     async fn find_by_email(&self, email: &str) -> Result<Option<User>, CoreError> {
-        let user = sqlx::query_as::<_, UserOrm>("SELECT * FROM users WHERE email = $1")
+        let result = sqlx::query_as::<_, UserOrm>("SELECT * FROM users WHERE email = $1")
             .bind(email)
-            .fetch_optional(&self.pool)
+            .fetch_optional(self.get_pool())
             .await?;
-
-        Ok(user.map(User::from))
+        Ok(result.map(Self::from_orm))
     }
 }

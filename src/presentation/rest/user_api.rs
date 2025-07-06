@@ -42,9 +42,10 @@ impl From<User> for UserTO {
     }
 }
 
-#[get("/")]
-pub async fn get_many(state: Data<AppState>) -> impl Responder {
-    respond_results(state.user_service.get_many().await, UserTO::from)
+#[get("")]
+pub async fn get_all(state: Data<AppState>) -> impl Responder {
+    println!("GET /");
+    respond_results(state.user_service.get_all().await, UserTO::from)
 }
 
 #[get("/{id}")]
@@ -54,12 +55,11 @@ pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
             .user_service
             .get_by_id(id.into_inner())
             .await
-            .map(|user| user.unwrap())
-            .map(UserTO::from),
+            .map(|user| user.map(UserTO::from))
     )
 }
 
-#[post("/")]
+#[post("")]
 pub async fn create(state: Data<AppState>, user: Json<UserTO>) -> impl Responder {
     respond_result(
         state
@@ -88,8 +88,8 @@ pub async fn delete_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responde
 
 pub fn routes(cfg: &mut ServiceConfig) {
     cfg.service(
-        scope("/api/users")
-            .service(get_many)
+        scope("/users")
+            .service(get_all)
             .service(get_by_id)
             .service(create)
             .service(update)

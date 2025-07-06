@@ -1,3 +1,5 @@
+#![cfg(feature = "ssr")]
+
 use crate::business::error::CoreError;
 
 impl From<sqlx::Error> for CoreError {

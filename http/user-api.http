@@ -1,0 +1,193 @@
+### User API Tests
+
+# Variables
+@baseUrl = http://localhost:3000
+@contentType = application/json
+
+### Get all users
+GET {{baseUrl}}/api/users/
+Accept: {{contentType}}
+
+###
+
+### Get user by ID
+GET {{baseUrl}}/api/users/1
+Accept: {{contentType}}
+
+###
+
+### Get user by ID (non-existent)
+GET {{baseUrl}}/api/users/999
+Accept: {{contentType}}
+
+###
+
+### Create a new user
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+
+{
+  "username": "testuser",
+  "email": "testuser@example.com",
+  "password": "securepassword123"
+}
+
+###
+
+### Create another user for testing
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+
+{
+  "username": "johndoe",
+  "email": "john.doe@example.com",
+  "password": "password456"
+}
+
+###
+
+### Create user with missing fields (should fail)
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+
+{
+  "username": "incompleteuser"
+}
+
+###
+
+### Create user with invalid email (should fail)
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+
+{
+  "username": "invaliduser",
+  "email": "invalid-email",
+  "password": "password123"
+}
+
+###
+
+### Update user
+PUT {{baseUrl}}/api/users/1
+Content-Type: {{contentType}}
+
+{
+  "id": 1,
+  "username": "updateduser",
+  "email": "updated@example.com",
+  "password": "newpassword123"
+}
+
+###
+
+### Update user with partial data
+PUT {{baseUrl}}/api/users/1
+Content-Type: {{contentType}}
+
+{
+  "id": 1,
+  "username": "partialupdate",
+  "email": "partial@example.com",
+  "password": ""
+}
+
+###
+
+### Update non-existent user (should fail)
+PUT {{baseUrl}}/api/users/999
+Content-Type: {{contentType}}
+
+{
+  "id": 999,
+  "username": "nonexistent",
+  "email": "nonexistent@example.com",
+  "password": "password123"
+}
+
+###
+
+### Delete user by ID
+DELETE {{baseUrl}}/api/users/2
+Accept: {{contentType}}
+
+###
+
+### Delete non-existent user (should fail)
+DELETE {{baseUrl}}/api/users/999
+Accept: {{contentType}}
+
+###
+
+### Verify user was deleted - should return 404 or empty
+GET {{baseUrl}}/api/users/2
+Accept: {{contentType}}
+
+###
+
+### Test with different content types
+
+### Create user with XML content type (should fail)
+POST {{baseUrl}}/api/users
+Content-Type: application/xml
+
+<user>
+  <username>xmluser</username>
+  <email>xml@example.com</email>
+  <password>xmlpassword</password>
+</user>
+
+###
+
+### Test edge cases
+
+### Create user with very long username
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+
+{
+  "username": "verylongusernamethatmightexceedthedatabaselimitandcauseanerror",
+  "email": "longusername@example.com",
+  "password": "password123"
+}
+
+###
+
+### Create user with special characters
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+
+{
+  "username": "user@#$%",
+  "email": "special@example.com",
+  "password": "p@ssw0rd!@#"
+}
+
+###
+
+### Create user with empty strings
+POST {{baseUrl}}/api/users
+Content-Type: {{contentType}}
+
+{
+  "username": "",
+  "email": "",
+  "password": ""
+}
+
+###
+
+### Test authentication/authorization (if implemented)
+
+### Access without proper headers
+GET {{baseUrl}}/api/users
+
+###
+
+### Bulk operations test
+
+### Get all users after operations
+GET {{baseUrl}}/api/users
+Accept: {{contentType}}
+
+###
