@@ -7,6 +7,7 @@ use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::SqlxRepository;
 use sqlx::PgPool;
 use uuid::Uuid;
+use crate::business::filter::Filter;
 
 #[derive(Clone)]
 pub struct UserSqlxRepository {
@@ -40,17 +41,14 @@ impl UserSqlxRepository {
 }
 
 impl Repository<User> for UserSqlxRepository {
-    async fn find_all(&self) -> Result<Vec<User>, CoreError> {
-        SqlxRepository::find_all(self).await
-    }
-
     async fn find_many(
         &self,
         sort_criteria: Vec<SortCriterion>,
         first_result: Option<i32>,
         max_results: Option<i32>,
+        filters: Vec<Filter>,
     ) -> Result<Vec<User>, CoreError> {
-        SqlxRepository::find_many(self, sort_criteria, first_result, max_results).await
+        SqlxRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
     }
 
     async fn find_by_id(&self, id: i32) -> Result<Option<User>, CoreError> {

@@ -1,9 +1,10 @@
 use crate::business::error::CoreError;
-use crate::business::repository::Repository;
+use crate::business::repository::{Repository, SortCriterion};
 use crate::define_struct_with_common_fields;
 use std::future::Future;
 use std::sync::Arc;
 use uuid::Uuid;
+use crate::business::filter::Filter;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(i32)]
@@ -69,6 +70,7 @@ define_struct_with_common_fields!(Post {
 
 pub trait PostRepository: Repository<Post> + Send + Sync {
     fn find_by_slug(&self, slug: &str) -> impl Future<Output = Result<Option<Post>, CoreError>>;
+    fn find_by_author(&self, author_id: i32) -> impl Future<Output = Result<Vec<Post>, CoreError>>;
 }
 #[derive(Clone)]
 pub struct PostService<R: PostRepository> {
@@ -80,10 +82,12 @@ impl<R: PostRepository> PostService<R> {
         Self { post_repository }
     }
 
-    pub async fn get_all(&self) -> Result<Vec<Post>, CoreError> {
-        self.post_repository.find_all().await
+    pub async fn get_all(&self, filters: Vec<Filter>) -> Result<Vec<Post>, CoreError> {
+        self.post_repository.find_all(filters).await
     }
-
+    pub async fn get_many(&self, sort_criteria: Vec<SortCriterion>, first_result: Option<i32>, max_results: Option<i32>, filters: Vec<Filter>) -> Result<Vec<Post>, CoreError> {
+        self.post_repository.find_many(sort_criteria, first_result, max_results, filters).await
+    }
     pub async fn get_by_id(&self, id: i32) -> Result<Option<Post>, CoreError> {
         self.post_repository.find_by_id(id).await
     }
@@ -96,8 +100,11 @@ impl<R: PostRepository> PostService<R> {
     pub async fn update(&self, post: &Post) -> Result<Post, CoreError> {
         self.post_repository.update(post).await
     }
-    pub async fn delete(&self, id: i32) -> Result<u64, CoreError> {
+    pub async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
         self.post_repository.delete_by_id(id).await
+    }
+    pub async fn delete_by_uid(&self, uid: Uuid) -> Result<u64, CoreError> {
+        self.post_repository.delete_by_uid(uid).await
     }
     pub async fn get_by_slug(&self, slug: &str) -> Result<Option<Post>, CoreError> {
         self.post_repository.find_by_slug(slug).await

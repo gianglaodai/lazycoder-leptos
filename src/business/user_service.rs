@@ -1,8 +1,9 @@
 use crate::business::error::CoreError;
-use crate::business::repository::Repository;
+use crate::business::repository::{Repository, SortCriterion};
 use crate::define_struct_with_common_fields;
 use std::sync::Arc;
 use uuid::Uuid;
+use crate::business::filter::Filter;
 
 pub trait UserRepository: Repository<User> + Send + Sync {
     fn find_by_username(
@@ -31,34 +32,33 @@ impl<R: UserRepository> UserService<R> {
         Self { user_repository }
     }
 
-    pub async fn get_all(&self) -> Result<Vec<User>, CoreError> {
-        self.user_repository.find_all().await
+    pub async fn get_all(&self, filters: Vec<Filter>) -> Result<Vec<User>, CoreError> {
+        self.user_repository.find_all(filters).await
     }
-
+    pub async fn get_many(&self, sort_criteria: Vec<SortCriterion>, first_result: Option<i32>, max_results: Option<i32>, filters: Vec<Filter>) -> Result<Vec<User>, CoreError> {
+        self.user_repository.find_many(sort_criteria, first_result, max_results, filters).await
+    }
     pub async fn get_by_id(&self, id: i32) -> Result<Option<User>, CoreError> {
         self.user_repository.find_by_id(id).await
     }
-
     pub async fn get_by_uid(&self, uid: Uuid) -> Result<Option<User>, CoreError> {
         self.user_repository.find_by_uid(uid).await
     }
-
     pub async fn create(&self, user: &User) -> Result<User, CoreError> {
         self.user_repository.create(user).await
     }
-
     pub async fn update(&self, user: &User) -> Result<User, CoreError> {
         self.user_repository.update(user).await
     }
-
-    pub async fn delete(&self, id: i32) -> Result<u64, CoreError> {
+    pub async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
         self.user_repository.delete_by_id(id).await
     }
-
+    pub async fn delete_by_uid(&self, uid: Uuid) -> Result<u64, CoreError> {
+        self.user_repository.delete_by_uid(uid).await
+    }
     pub async fn get_by_email(&self, email: &str) -> Result<Option<User>, CoreError> {
         self.user_repository.find_by_email(email).await
     }
-
     pub async fn get_by_username(&self, username: &str) -> Result<Option<User>, CoreError> {
         self.user_repository.find_by_username(username).await
     }

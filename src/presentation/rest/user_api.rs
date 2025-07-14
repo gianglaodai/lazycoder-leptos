@@ -1,11 +1,13 @@
 #![cfg(feature = "ssr")]
 
-use actix_web::{delete, get, post, put, Responder};
-use actix_web::web::{scope, Data, Json, Path, ServiceConfig};
 use crate::business::user_service::User;
 use crate::define_to_with_common_fields;
+use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
 use crate::state::AppState;
+use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
+use actix_web::{delete, get, post, put, Responder};
+use uuid::Uuid;
 
 define_to_with_common_fields!(UserTO {
     pub username: String,
@@ -43,9 +45,19 @@ impl From<User> for UserTO {
 }
 
 #[get("")]
-pub async fn get_all(state: Data<AppState>) -> impl Responder {
-    println!("GET /");
-    respond_results(state.user_service.get_all().await, UserTO::from)
+pub async fn get_many(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
+    respond_results(
+        state
+            .user_service
+            .get_many(
+                query.to_sort_criteria(),
+                query.first_result,
+                query.max_results,
+                query.to_filters(),
+            )
+            .await,
+        UserTO::from,
+    )
 }
 
 #[get("/{id}")]
@@ -55,7 +67,7 @@ pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
             .user_service
             .get_by_id(id.into_inner())
             .await
-            .map(|user| user.map(UserTO::from))
+            .map(|user| user.map(UserTO::from)),
     )
 }
 
@@ -83,16 +95,22 @@ pub async fn update(state: Data<AppState>, user: Json<UserTO>) -> impl Responder
 
 #[delete("/{id}")]
 pub async fn delete_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
-    respond_result(state.user_service.delete(id.into_inner()).await)
+    respond_result(state.user_service.delete_by_id(id.into_inner()).await)
+}
+
+#[delete("/uid/{uid}")]
+pub async fn delete_by_uid(state: Data<AppState>, uid: Path<Uuid>) -> impl Responder {
+    respond_result(state.user_service.delete_by_uid(uid.into_inner()).await)
 }
 
 pub fn routes(cfg: &mut ServiceConfig) {
     cfg.service(
         scope("/users")
-            .service(get_all)
+            .service(get_many)
             .service(get_by_id)
             .service(create)
             .service(update)
-            .service(delete_by_id),
+            .service(delete_by_id)
+            .service(delete_by_uid),
     );
 }

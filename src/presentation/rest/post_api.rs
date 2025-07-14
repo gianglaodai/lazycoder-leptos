@@ -2,9 +2,11 @@ use crate::business::post_service::{Post, PostStatus};
 use crate::define_to_with_common_fields;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
 use crate::state::AppState;
-use actix_web::web::{scope, Data, Json, Path, ServiceConfig};
+use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
 use std::str::FromStr;
+use uuid::Uuid;
+use crate::presentation::query_options::QueryOptions;
 
 define_to_with_common_fields!(PostTO {
     pub slug: String,
@@ -47,9 +49,18 @@ impl From<Post> for PostTO {
     }
 }
 
-#[get("/")]
-pub async fn get_all(state: Data<AppState>) -> impl Responder {
-    respond_results(state.post_service.get_all().await, PostTO::from)
+#[get("")]
+pub async fn get_many(
+    state: Data<AppState>,
+    query: Query<QueryOptions>,
+) -> impl Responder {
+    respond_results(
+        state
+            .post_service
+            .get_many(query.to_sort_criteria(), query.first_result, query.max_results, query.to_filters())
+            .await,
+        PostTO::from,
+    )
 }
 
 #[get("/{id}")]
@@ -64,7 +75,7 @@ pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
     )
 }
 
-#[post("/")]
+#[post("")]
 pub async fn create(state: Data<AppState>, post: Json<PostTO>) -> impl Responder {
     respond_result(
         state
@@ -93,16 +104,22 @@ pub async fn update(
 
 #[delete("/{id}")]
 pub async fn delete_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
-    respond_result(state.post_service.delete(id.into_inner()).await)
+    respond_result(state.post_service.delete_by_id(id.into_inner()).await)
+}
+
+#[delete("/uid/{uid}")]
+pub async fn delete_by_uid(state: Data<AppState>, uid: Path<Uuid>) -> impl Responder {
+    respond_result(state.post_service.delete_by_uid(uid.into_inner()).await)
 }
 
 pub fn routes(cfg: &mut ServiceConfig) {
     cfg.service(
         scope("/api/posts")
-            .service(get_all)
+            .service(get_many)
             .service(get_by_id)
             .service(create)
             .service(update)
-            .service(delete_by_id),
+            .service(delete_by_id)
+            .service(delete_by_uid),
     );
 }

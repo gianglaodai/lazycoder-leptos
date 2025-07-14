@@ -1,3 +1,4 @@
+#[cfg(feature = "ssr")]
 use lazycoder_leptos::{app, config, db};
 
 #[cfg(feature = "ssr")]

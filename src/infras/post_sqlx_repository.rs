@@ -7,6 +7,7 @@ use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::SqlxRepository;
 use sqlx::PgPool;
 use uuid::Uuid;
+use crate::business::filter::Filter;
 
 #[derive(Clone)]
 pub struct PostSqlxRepository {
@@ -46,17 +47,14 @@ impl PostSqlxRepository {
 }
 
 impl Repository<Post> for PostSqlxRepository {
-    async fn find_all(&self) -> Result<Vec<Post>, CoreError> {
-        SqlxRepository::find_all(self).await
-    }
-
     async fn find_many(
         &self,
         sort_criteria: Vec<SortCriterion>,
         first_result: Option<i32>,
         max_results: Option<i32>,
+        filters: Vec<Filter>,
     ) -> Result<Vec<Post>, CoreError> {
-        SqlxRepository::find_many(self, sort_criteria, first_result, max_results).await
+        SqlxRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
     }
 
     async fn find_by_id(&self, id: i32) -> Result<Option<Post>, CoreError> {
@@ -139,5 +137,14 @@ impl PostRepository for PostSqlxRepository {
             .await?;
 
         Ok(result.map(Self::from_orm))
+    }
+
+    async fn find_by_author(&self, author_id: i32) -> Result<Vec<Post>, CoreError> {
+        let result = sqlx::query_as::<_, PostOrm>("SELECT * FROM posts WHERE author_id=$1")
+            .bind(author_id)
+            .fetch_all(self.get_pool())
+            .await?;
+
+        Ok(result.into_iter().map(Self::from_orm).collect())
     }
 }
