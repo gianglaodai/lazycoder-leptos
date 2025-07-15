@@ -69,7 +69,7 @@ pub enum Filter {
         value: FilterValue,
     },
     Attribute {
-        attribute_name: String,
+        attr_name: String,
         operator: FilterOperator,
         value: FilterValue,
     },

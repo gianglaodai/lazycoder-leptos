@@ -90,7 +90,7 @@ impl QueryOptions {
             }
         } else {
             Filter::Attribute {
-                attribute_name: key,
+                attr_name: key,
                 operator,
                 value,
             }

@@ -1,13 +1,42 @@
 #![cfg(feature = "ssr")]
 
-use leptos::ev::close;
-use leptos::tachys::html::property::Property;
 use crate::business::error::CoreError;
+use crate::business::filter::{Filter, FilterOperator, FilterValue};
 use crate::business::repository::{Repository, SortCriterion};
+use crate::define_orm_with_common_fields;
 use sqlx::postgres::PgRow;
 use sqlx::{FromRow, PgPool, QueryBuilder};
 use uuid::Uuid;
-use crate::business::filter::{Filter, FilterOperator, FilterValue};
+
+#[derive(Debug, sqlx::Type)]
+#[sqlx(type_name = "attribute_datatype", rename_all = "lowercase")]
+enum AttributeDataType {
+    Int,
+    Double,
+    String,
+    Boolean,
+    Date,
+    DateTime,
+    Time,
+}
+
+define_orm_with_common_fields!(AttributeOrm {
+    pub name: String,
+    pub data_type: AttributeDataType,
+});
+
+define_orm_with_common_fields!(AttributeValueOrm {
+    pub int_value: Option<i32>,
+    pub double_value: Option<f64>,
+    pub string_value: Option<String>,
+    pub boolean_value: Option<bool>,
+    pub date_value: Option<time::Date>,
+    pub datetime_value: Option<time::OffsetDateTime>,
+    pub time_value: Option<time::Time>,
+    pub attribute_id: i32,
+    pub entity_id: i32,
+    pub entity_type: String,
+});
 
 enum BindValue {
     Int(i32),
@@ -37,6 +66,46 @@ pub trait SqlxRepository: Repository<Self::Entity> {
     ) -> Result<Vec<Self::Entity>, CoreError> {
         let mut query_builder =
             QueryBuilder::new(format!("SELECT * FROM {}", self.get_table_name()));
+        let (property_filters, attribute_filters): (Vec<_>, Vec<_>) =
+            filters.into_iter().partition(|f| matches!(f, Filter::Property {..}));
+
+        let mut has_where = false;
+
+        for filter in property_filters {
+            if !has_where {
+                query_builder.push(" WHERE ");
+                has_where = true;
+            } else {
+                query_builder.push(" AND ");
+            }
+
+            if let Filter::Property { property_name, operator, value } = filter {
+                self.build_property_filter(&mut query_builder, &property_name, operator, value);
+            }
+        }
+
+        for filter in attribute_filters {
+            if !has_where {
+                query_builder.push(" WHERE ");
+                has_where = true;
+            } else {
+                query_builder.push(" AND ");
+            }
+
+            query_builder.push("EXISTS (SELECT 1 FROM attribute_values av ");
+            query_builder.push("JOIN attributes a ON a.id = av.attribute_id ");
+            query_builder.push("WHERE av.entity_id = ");
+            query_builder.push(format!("{}.id", self.get_table_name()));
+            query_builder.push(" AND av.entity_type = ");
+            query_builder.push_bind(self.get_table_name());
+
+            if let Filter::Attribute { attr_name, operator, value } = filter {
+                self.build_attribute_filter(&mut query_builder, attr_name, operator, value);
+            }
+
+            query_builder.push(")");
+        }
+
         if !sort_criteria.is_empty() {
             query_builder.push(" ORDER BY ");
             for (i, criterion) in sort_criteria.iter().enumerate() {
@@ -70,9 +139,9 @@ pub trait SqlxRepository: Repository<Self::Entity> {
             "DELETE FROM {} WHERE id = $1",
             self.get_table_name()
         ))
-            .bind(id)
-            .execute(self.get_pool())
-            .await?;
+        .bind(id)
+        .execute(self.get_pool())
+        .await?;
 
         Ok(result.rows_affected())
     }
@@ -82,9 +151,9 @@ pub trait SqlxRepository: Repository<Self::Entity> {
             "DELETE FROM {} WHERE uid = $1",
             self.get_table_name()
         ))
-            .bind(uid)
-            .execute(self.get_pool())
-            .await?;
+        .bind(uid)
+        .execute(self.get_pool())
+        .await?;
 
         Ok(result.rows_affected())
     }
@@ -94,9 +163,9 @@ pub trait SqlxRepository: Repository<Self::Entity> {
             "SELECT * FROM {} WHERE id=$1",
             self.get_table_name()
         ))
-            .bind(id)
-            .fetch_optional(self.get_pool())
-            .await?;
+        .bind(id)
+        .fetch_optional(self.get_pool())
+        .await?;
 
         Ok(result.map(|orm| Self::from_orm(orm)))
     }
@@ -106,55 +175,140 @@ pub trait SqlxRepository: Repository<Self::Entity> {
             "SELECT * FROM {} WHERE uid=$1",
             self.get_table_name()
         ))
-            .bind(uid)
-            .fetch_optional(self.get_pool())
-            .await?;
+        .bind(uid)
+        .fetch_optional(self.get_pool())
+        .await?;
 
         Ok(result.map(|orm| Self::from_orm(orm)))
     }
 
-    fn build_order_by(sort_criteria: Vec<SortCriterion>) -> Option<String> {
-        if sort_criteria.is_empty() {
-            return None;
-        }
-        let parts: Vec<String> = sort_criteria
-            .iter()
-            .map(|criterion| format!(
-                "{} {}",
-                criterion.field,
-                if criterion.ascending { "ASC" } else { "DESC" }
-            ))
-            .collect();
-        Some(format!("ORDER BY {}", parts.join(", ")))
-    }
-    fn build_property_filter(filter: &Filter) -> Result<(String, Vec<BindValue>), CoreError> {
-        match filter {
-            Filter::Property { property_name, operator, value } => {
-                let column = property_name.clone();
-                let mut binds = vec![];
-                let clause = match operator {
-                    FilterOperator::Equal => {
-                        match value {
-                            FilterValue::String(v) => {
-                                binds.push(BindValue::String(v.clone()));
-                                format!("{} = '{}'", column, binds.len())
-                            }
-                            FilterValue::Int(v) => {
-                                binds.push(BindValue::Int(v.clone()));
-                                format!("{} = {}", column, binds.len())
-                            }
-                            FilterValue::Float(v) => {
-                                binds.push(BindValue::Float(v.clone()));
-                                format!("{} = {}", column, binds.len())
-                            }
-                            _ => unimplemented!()
-                        }
-                    }
-                    _ => unimplemented!(),
-                };
-                Ok((clause, binds))
+    fn build_property_filter(
+        &self,
+        builder: &mut QueryBuilder<'_, sqlx::Postgres>,
+        field: &str,
+        operator: FilterOperator,
+        value: FilterValue,
+    ) {
+        builder.push(format!("{} ", field));
+        match operator {
+            FilterOperator::Equal => builder.push("= "),
+            FilterOperator::NotEqual => builder.push("!= "),
+            FilterOperator::GreaterThan => builder.push("> "),
+            FilterOperator::GreaterThanOrEqual => builder.push(">= "),
+            FilterOperator::LessThan => builder.push("< "),
+            FilterOperator::LessThanOrEqual => builder.push("<= "),
+            FilterOperator::Like => builder.push("LIKE "),
+            FilterOperator::NotLike => builder.push("NOT LIKE "),
+            FilterOperator::Is => builder.push("= "),
+            FilterOperator::In => builder.push("IN "),
+            FilterOperator::NotIn => builder.push("NOT IN "),
+            FilterOperator::IsNull => {
+                builder.push("IS NULL");
+                return;
             }
-            _ => Err(CoreError::ValidationError("Invalid filter".to_string())),
-        }
+            FilterOperator::NotNull => {
+                builder.push("IS NOT NULL");
+                return;
+            }
+            FilterOperator::Between => builder.push("BETWEEN "),
+            FilterOperator::NotBetween => builder.push("NOT BETWEEN "),
+            _ => unimplemented!("Unsupported operator for property filter"),
+        };
+
+        match value {
+            FilterValue::Int(v) => builder.push_bind(v),
+            FilterValue::String(v) => builder.push_bind(v),
+            FilterValue::Bool(v) => builder.push_bind(v),
+            FilterValue::Float(v) => builder.push_bind(v),
+            FilterValue::Date(v) => builder.push_bind(v),
+            FilterValue::DateTime(v) => builder.push_bind(v),
+            FilterValue::Time(v) => builder.push_bind(v),
+            FilterValue::ListInt(vs) => builder.push_tuples(vs, |mut b, v| {
+                b.push_bind(v);
+            }),
+            FilterValue::ListString(vs) => builder.push_tuples(vs, |mut b, v| {
+                b.push_bind(v);
+            }),
+            FilterValue::ListFloat(vs) => builder.push_tuples(vs, |mut b, v| {
+                b.push_bind(v);
+            }),
+            FilterValue::IntRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+            FilterValue::FloatRange(from, to) => {
+                builder.push_bind(from).push(" AND ").push_bind(to)
+            }
+            FilterValue::DateRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+            FilterValue::DateTimeRange(from, to) => {
+                builder.push_bind(from).push(" AND ").push_bind(to)
+            }
+            FilterValue::TimeRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+        };
+    }
+
+    fn build_attribute_filter(
+        &self,
+        builder: &mut QueryBuilder<'_, sqlx::Postgres>,
+        attr_name: String,
+        operator: FilterOperator,
+        value: FilterValue,
+    ) {
+        builder.push(" AND a.name = ");
+        builder.push_bind(attr_name);
+
+        let value_column = match value {
+            FilterValue::Int(_) | FilterValue::IntRange(_, _) | FilterValue::ListInt(_) => "int_value",
+            FilterValue::Float(_) | FilterValue::FloatRange(_, _) | FilterValue::ListFloat(_) => "double_value",
+            FilterValue::String(_) | FilterValue::ListString(_) => "string_value",
+            FilterValue::Bool(_) => "boolean_value",
+            FilterValue::Date(_) | FilterValue::DateRange(_, _) => "date_value",
+            FilterValue::DateTime(_) | FilterValue::DateTimeRange(_, _) => "datetime_value",
+            FilterValue::Time(_) | FilterValue::TimeRange(_, _) => "time_value",
+        };
+
+        builder.push(format!(" AND av.{} ", value_column));
+        match operator {
+            FilterOperator::Equal => builder.push("= "),
+            FilterOperator::NotEqual => builder.push("!= "),
+            FilterOperator::GreaterThan => builder.push("> "),
+            FilterOperator::GreaterThanOrEqual => builder.push(">= "),
+            FilterOperator::LessThan => builder.push("< "),
+            FilterOperator::LessThanOrEqual => builder.push("<= "),
+            FilterOperator::Like => builder.push("LIKE "),
+            FilterOperator::NotLike => builder.push("NOT LIKE "),
+            FilterOperator::IsNull => {
+                builder.push("IS NULL");
+                return;
+            }
+            FilterOperator::NotNull => {
+                builder.push("IS NOT NULL");
+                return;
+            }
+            FilterOperator::Between => builder.push("BETWEEN "),
+            FilterOperator::NotBetween => builder.push("NOT BETWEEN "),
+            _ => unimplemented!("Unsupported attribute operator"),
+        };
+
+        match value {
+            FilterValue::Int(v) => builder.push_bind(v),
+            FilterValue::String(v) => builder.push_bind(v),
+            FilterValue::Bool(v) => builder.push_bind(v),
+            FilterValue::Float(v) => builder.push_bind(v),
+            FilterValue::Date(v) => builder.push_bind(v),
+            FilterValue::DateTime(v) => builder.push_bind(v),
+            FilterValue::Time(v) => builder.push_bind(v),
+            FilterValue::ListInt(vs) => builder.push_tuples(vs, |mut b, v| {
+                b.push_bind(v);
+            }),
+            FilterValue::ListString(vs) => builder.push_tuples(vs, |mut b, v| {
+                b.push_bind(v);
+            }),
+            FilterValue::ListFloat(vs) => builder.push_tuples(vs, |mut b, v| {
+                b.push_bind(v);
+            }),
+            FilterValue::IntRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+            FilterValue::FloatRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+            FilterValue::DateRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+            FilterValue::DateTimeRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+            FilterValue::TimeRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+        };
     }
 }
