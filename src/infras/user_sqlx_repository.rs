@@ -1,5 +1,6 @@
 #![cfg(feature = "ssr")]
 
+use std::collections::HashMap;
 use crate::business::error::CoreError;
 use crate::business::repository::{Repository, SortCriterion};
 use crate::business::user_service::{User, UserRepository};
@@ -89,7 +90,7 @@ impl Repository<User> for UserSqlxRepository {
 
     async fn update(&self, user: &User) -> Result<User, CoreError> {
         let id = user.id.ok_or_else(|| {
-            CoreError::ValidationError("User ID is required for update".to_string())
+            CoreError::UnprocessableEntity("id_is_required".into(), HashMap::new())
         })?;
         let now = time::OffsetDateTime::now_utc();
 

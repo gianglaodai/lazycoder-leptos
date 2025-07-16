@@ -1,5 +1,6 @@
 #![cfg(feature = "ssr")]
 
+use std::collections::HashMap;
 use crate::business::error::CoreError;
 use crate::business::post_service::{Post, PostRepository, PostStatus};
 use crate::business::repository::{Repository, SortCriterion};
@@ -92,7 +93,7 @@ impl Repository<Post> for PostSqlxRepository {
 
     async fn update(&self, post: &Post) -> Result<Post, CoreError> {
         let id = post.id.ok_or_else(|| {
-            CoreError::ValidationError("Post ID is required for update".to_string())
+            CoreError::UnprocessableEntity("id_is_required".into(), HashMap::new())
         })?;
         let now = time::OffsetDateTime::now_utc();
         let post = sqlx::query_as::<_, PostOrm>(

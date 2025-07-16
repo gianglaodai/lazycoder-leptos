@@ -5,7 +5,7 @@ use crate::business::filter::{Filter, FilterOperator, FilterValue};
 use crate::business::repository::{Repository, SortCriterion};
 use crate::define_orm_with_common_fields;
 use sqlx::postgres::PgRow;
-use sqlx::{FromRow, PgPool, QueryBuilder};
+use sqlx::{FromRow, PgPool, Postgres, QueryBuilder};
 use uuid::Uuid;
 
 #[derive(Debug, sqlx::Type)]
@@ -190,58 +190,8 @@ pub trait SqlxRepository: Repository<Self::Entity> {
         value: FilterValue,
     ) {
         builder.push(format!("{} ", field));
-        match operator {
-            FilterOperator::Equal => builder.push("= "),
-            FilterOperator::NotEqual => builder.push("!= "),
-            FilterOperator::GreaterThan => builder.push("> "),
-            FilterOperator::GreaterThanOrEqual => builder.push(">= "),
-            FilterOperator::LessThan => builder.push("< "),
-            FilterOperator::LessThanOrEqual => builder.push("<= "),
-            FilterOperator::Like => builder.push("LIKE "),
-            FilterOperator::NotLike => builder.push("NOT LIKE "),
-            FilterOperator::Is => builder.push("= "),
-            FilterOperator::In => builder.push("IN "),
-            FilterOperator::NotIn => builder.push("NOT IN "),
-            FilterOperator::IsNull => {
-                builder.push("IS NULL");
-                return;
-            }
-            FilterOperator::NotNull => {
-                builder.push("IS NOT NULL");
-                return;
-            }
-            FilterOperator::Between => builder.push("BETWEEN "),
-            FilterOperator::NotBetween => builder.push("NOT BETWEEN "),
-            _ => unimplemented!("Unsupported operator for property filter"),
-        };
 
-        match value {
-            FilterValue::Int(v) => builder.push_bind(v),
-            FilterValue::String(v) => builder.push_bind(v),
-            FilterValue::Bool(v) => builder.push_bind(v),
-            FilterValue::Float(v) => builder.push_bind(v),
-            FilterValue::Date(v) => builder.push_bind(v),
-            FilterValue::DateTime(v) => builder.push_bind(v),
-            FilterValue::Time(v) => builder.push_bind(v),
-            FilterValue::ListInt(vs) => builder.push_tuples(vs, |mut b, v| {
-                b.push_bind(v);
-            }),
-            FilterValue::ListString(vs) => builder.push_tuples(vs, |mut b, v| {
-                b.push_bind(v);
-            }),
-            FilterValue::ListFloat(vs) => builder.push_tuples(vs, |mut b, v| {
-                b.push_bind(v);
-            }),
-            FilterValue::IntRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
-            FilterValue::FloatRange(from, to) => {
-                builder.push_bind(from).push(" AND ").push_bind(to)
-            }
-            FilterValue::DateRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
-            FilterValue::DateTimeRange(from, to) => {
-                builder.push_bind(from).push(" AND ").push_bind(to)
-            }
-            FilterValue::TimeRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
-        };
+        Self::handle_operator(builder, operator, value);
     }
 
     fn build_attribute_filter(
@@ -265,50 +215,155 @@ pub trait SqlxRepository: Repository<Self::Entity> {
         };
 
         builder.push(format!(" AND av.{} ", value_column));
-        match operator {
-            FilterOperator::Equal => builder.push("= "),
-            FilterOperator::NotEqual => builder.push("!= "),
-            FilterOperator::GreaterThan => builder.push("> "),
-            FilterOperator::GreaterThanOrEqual => builder.push(">= "),
-            FilterOperator::LessThan => builder.push("< "),
-            FilterOperator::LessThanOrEqual => builder.push("<= "),
-            FilterOperator::Like => builder.push("LIKE "),
-            FilterOperator::NotLike => builder.push("NOT LIKE "),
-            FilterOperator::IsNull => {
-                builder.push("IS NULL");
-                return;
-            }
-            FilterOperator::NotNull => {
-                builder.push("IS NOT NULL");
-                return;
-            }
-            FilterOperator::Between => builder.push("BETWEEN "),
-            FilterOperator::NotBetween => builder.push("NOT BETWEEN "),
-            _ => unimplemented!("Unsupported attribute operator"),
-        };
+        Self::handle_operator(builder, operator, value);
+    }
 
-        match value {
-            FilterValue::Int(v) => builder.push_bind(v),
-            FilterValue::String(v) => builder.push_bind(v),
-            FilterValue::Bool(v) => builder.push_bind(v),
-            FilterValue::Float(v) => builder.push_bind(v),
-            FilterValue::Date(v) => builder.push_bind(v),
-            FilterValue::DateTime(v) => builder.push_bind(v),
-            FilterValue::Time(v) => builder.push_bind(v),
-            FilterValue::ListInt(vs) => builder.push_tuples(vs, |mut b, v| {
-                b.push_bind(v);
-            }),
-            FilterValue::ListString(vs) => builder.push_tuples(vs, |mut b, v| {
-                b.push_bind(v);
-            }),
-            FilterValue::ListFloat(vs) => builder.push_tuples(vs, |mut b, v| {
-                b.push_bind(v);
-            }),
-            FilterValue::IntRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
-            FilterValue::FloatRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
-            FilterValue::DateRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
-            FilterValue::DateTimeRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
-            FilterValue::TimeRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+    fn handle_operator(builder: &mut QueryBuilder<Postgres>, operator: FilterOperator, value: FilterValue) {
+        match operator {
+            FilterOperator::Equal => {
+                builder.push("= ");
+                match value {
+                    FilterValue::Int(v) => builder.push_bind(v),
+                    FilterValue::String(v) => builder.push_bind(v),
+                    FilterValue::Bool(v) => builder.push_bind(v),
+                    FilterValue::Float(v) => builder.push_bind(v),
+                    FilterValue::Date(v) => builder.push_bind(v),
+                    FilterValue::DateTime(v) => builder.push_bind(v),
+                    FilterValue::Time(v) => builder.push_bind(v),
+                    _ => unimplemented!("Equal not supported for this value type"),
+                }
+            },
+
+            FilterOperator::NotEqual => {
+                builder.push("!= ");
+                match value {
+                    FilterValue::Int(v) => builder.push_bind(v),
+                    FilterValue::String(v) => builder.push_bind(v),
+                    FilterValue::Bool(v) => builder.push_bind(v),
+                    FilterValue::Float(v) => builder.push_bind(v),
+                    FilterValue::Date(v) => builder.push_bind(v),
+                    FilterValue::DateTime(v) => builder.push_bind(v),
+                    FilterValue::Time(v) => builder.push_bind(v),
+                    _ => unimplemented!("NotEqual not supported for this value type"),
+                }
+            },
+
+            FilterOperator::Like => match value {
+                FilterValue::String(v) => builder.push("LIKE ").push_bind(v),
+                _ => unimplemented!("LIKE only supports string"),
+            },
+
+            FilterOperator::NotLike => match value {
+                FilterValue::String(v) => builder.push("NOT LIKE ").push_bind(v),
+                _ => unimplemented!("NOT LIKE only supports string"),
+            },
+
+            FilterOperator::GreaterThan => {
+                builder.push("> ");
+                match value {
+                    FilterValue::Int(v) => builder.push_bind(v),
+                    FilterValue::Float(v) => builder.push_bind(v),
+                    FilterValue::Date(v) => builder.push_bind(v),
+                    FilterValue::DateTime(v) => builder.push_bind(v),
+                    FilterValue::Time(v) => builder.push_bind(v),
+                    _ => unimplemented!("GreaterThan not supported for this value type"),
+                }
+            },
+
+            FilterOperator::GreaterThanOrEqual => {
+                builder.push(">= ");
+                match value {
+                    FilterValue::Int(v) => builder.push_bind(v),
+                    FilterValue::Float(v) => builder.push_bind(v),
+                    FilterValue::Date(v) => builder.push_bind(v),
+                    FilterValue::DateTime(v) => builder.push_bind(v),
+                    FilterValue::Time(v) => builder.push_bind(v),
+                    _ => unimplemented!("GreaterThan not supported for this value type"),
+                }
+            },
+
+            FilterOperator::LessThan => {
+                builder.push("< ");
+                match value {
+                    FilterValue::Int(v) => builder.push_bind(v),
+                    FilterValue::Float(v) => builder.push_bind(v),
+                    FilterValue::Date(v) => builder.push_bind(v),
+                    FilterValue::DateTime(v) => builder.push_bind(v),
+                    FilterValue::Time(v) => builder.push_bind(v),
+                    _ => unimplemented!("LessThan not supported for this value type"),
+                }
+            },
+
+            FilterOperator::LessThanOrEqual => {
+                builder.push("<= ");
+                match value {
+                    FilterValue::Int(v) => builder.push_bind(v),
+                    FilterValue::Float(v) => builder.push_bind(v),
+                    FilterValue::Date(v) => builder.push_bind(v),
+                    FilterValue::DateTime(v) => builder.push_bind(v),
+                    FilterValue::Time(v) => builder.push_bind(v),
+                    _ => unimplemented!("LessThan not supported for this value type"),
+                }
+            },
+            
+            FilterOperator::Is => match value {
+                FilterValue::Bool(v) => builder.push("= ").push_bind(v),
+                _ => unimplemented!("Is not supported for this value type"),
+            },
+
+            FilterOperator::In => match value {
+                FilterValue::ListInt(vs) => builder.push("IN ").push_tuples(vs, |mut b, v| {
+                    b.push_bind(v);
+                }),
+                FilterValue::ListFloat(vs) => builder.push("IN ").push_tuples(vs, |mut b, v| {
+                    b.push_bind(v);
+                }),
+                FilterValue::ListString(vs) => builder.push("IN ").push_tuples(vs, |mut b, v| {
+                    b.push_bind(v);
+                }),
+                _ => unimplemented!("In only supports list values"),
+            },
+
+            FilterOperator::NotIn => match value {
+                FilterValue::ListInt(vs) => builder.push("NOT IN ").push_tuples(vs, |mut b, v| {
+                    b.push_bind(v);
+                }),
+                FilterValue::ListFloat(vs) => builder.push("NOT IN ").push_tuples(vs, |mut b, v| {
+                    b.push_bind(v);
+                }),
+                FilterValue::ListString(vs) => builder.push("NOT IN ").push_tuples(vs, |mut b, v| {
+                    b.push_bind(v);
+                }),
+                _ => unimplemented!("NotIn only supports list values"),
+            },
+
+            FilterOperator::IsNull => builder.push("IS NULL"),
+
+            FilterOperator::NotNull => builder.push("IS NOT NULL"),
+
+            FilterOperator::Between => {
+                builder.push("BETWEEN ");
+                match value {
+                    FilterValue::IntRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+                    FilterValue::FloatRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+                    FilterValue::DateRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+                    FilterValue::DateTimeRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+                    FilterValue::TimeRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+                    _ => unimplemented!("Between only supports range types"),
+                }
+            },
+
+            FilterOperator::NotBetween => {
+                builder.push("NOT BETWEEN ");
+                match value {
+                    FilterValue::IntRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+                    FilterValue::FloatRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+                    FilterValue::DateRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+                    FilterValue::DateTimeRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+                    FilterValue::TimeRange(from, to) => builder.push_bind(from).push(" AND ").push_bind(to),
+                    _ => unimplemented!("NotBetween only supports range types"),
+                }
+            },
         };
     }
 }
