@@ -52,6 +52,10 @@ impl Repository<User> for UserSqlxRepository {
         SqlxRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
     }
 
+    async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
+        SqlxRepository::count(self, filters).await
+    }
+
     async fn find_by_id(&self, id: i32) -> Result<Option<User>, CoreError> {
         SqlxRepository::find_by_id(self, id).await
     }

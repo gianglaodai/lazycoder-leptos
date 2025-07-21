@@ -1,14 +1,14 @@
 #![cfg(feature = "ssr")]
 
-use std::collections::HashMap;
 use crate::business::error::CoreError;
+use crate::business::filter::Filter;
 use crate::business::post_service::{Post, PostRepository, PostStatus};
 use crate::business::repository::{Repository, SortCriterion};
 use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::SqlxRepository;
 use sqlx::PgPool;
+use std::collections::HashMap;
 use uuid::Uuid;
-use crate::business::filter::Filter;
 
 #[derive(Clone)]
 pub struct PostSqlxRepository {
@@ -56,6 +56,10 @@ impl Repository<Post> for PostSqlxRepository {
         filters: Vec<Filter>,
     ) -> Result<Vec<Post>, CoreError> {
         SqlxRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
+    }
+
+    async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
+        SqlxRepository::count(self, filters).await
     }
 
     async fn find_by_id(&self, id: i32) -> Result<Option<Post>, CoreError> {
@@ -153,9 +157,9 @@ impl PostRepository for PostSqlxRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sqlx::{postgres::PgPoolOptions, PgPool};
     use crate::business::filter::{Filter, FilterOperator, FilterValue};
     use crate::business::repository::SortCriterion;
+    use sqlx::{postgres::PgPoolOptions, PgPool};
 
     #[tokio::test]
     async fn test_build_find_many_query() {
@@ -182,14 +186,14 @@ mod tests {
             Filter::Attribute {
                 attr_name: "status".into(),
                 operator: FilterOperator::In,
-                value: FilterValue::ListInt(vec![2,3]),
+                value: FilterValue::ListInt(vec![2, 3]),
             },
         ];
         let sorts = vec![SortCriterion {
             field: "title".into(),
             ascending: true,
         }];
-        let query = repo.build_find_many_query( sorts, None, None, filters);
+        let query = repo.build_find_many_query(sorts, None, None, filters, false);
         assert_eq!(query.sql(), "SELECT * FROM posts WHERE title = $1 AND slug = $2 AND EXISTS (SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = posts.id AND av.entity_type = $3 AND a.name = $4 AND av.int_value = $5) AND EXISTS (SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = posts.id AND av.entity_type = $6 AND a.name = $7 AND av.int_value IN  (($8), ($9)) ) ORDER BY title ASC OFFSET 0 LIMIT ALL");
     }
 }

@@ -55,13 +55,22 @@ pub trait SqlxRepository: Repository<Self::Entity> {
         filters: Vec<Filter>,
     ) -> Result<Vec<Self::Entity>, CoreError> {
         let mut query_builder =
-            self.build_find_many_query(sort_criteria, first_result, max_results, filters);
+            self.build_find_many_query(sort_criteria, first_result, max_results, filters, false);
         let result = query_builder
             .build_query_as::<Self::Orm>()
             .fetch_all(self.get_pool())
             .await?;
 
         Ok(result.into_iter().map(|orm| Self::from_orm(orm)).collect())
+    }
+
+    async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
+        let mut query_builder = self.build_find_many_query(vec![], None, None, filters, true);
+        let result = query_builder
+            .build_query_scalar()
+            .fetch_one(self.get_pool())
+            .await?;
+        Ok(result)
     }
 
     async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
@@ -117,9 +126,13 @@ pub trait SqlxRepository: Repository<Self::Entity> {
         first_result: Option<i32>,
         max_results: Option<i32>,
         filters: Vec<Filter>,
+        count: bool,
     ) -> QueryBuilder<'_, Postgres> {
-        let mut query_builder =
-            QueryBuilder::new(format!("SELECT * FROM {}", self.get_table_name()));
+        let mut query_builder = QueryBuilder::new(format!(
+            "SELECT {} FROM {}",
+            if (count) { "COUNT(*)" } else { "*" },
+            self.get_table_name()
+        ));
 
         let (property_filters, attribute_filters): (Vec<_>, Vec<_>) = filters
             .into_iter()
@@ -186,11 +199,13 @@ pub trait SqlxRepository: Repository<Self::Entity> {
             }
         }
 
-        query_builder.push(format!(" OFFSET {}", first_result.unwrap_or(0)));
-        match max_results {
-            Some(limit) => query_builder.push(format!(" LIMIT {}", limit)),
-            None => query_builder.push(" LIMIT ALL"),
-        };
+        if !count {
+            query_builder.push(format!(" OFFSET {}", first_result.unwrap_or(0)));
+            match max_results {
+                Some(limit) => query_builder.push(format!(" LIMIT {}", limit)),
+                None => query_builder.push(" LIMIT ALL"),
+            };
+        }
 
         query_builder
     }
@@ -409,75 +424,5 @@ pub trait SqlxRepository: Repository<Self::Entity> {
                 }
             }
         };
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use sqlx::PgPool;
-    use sqlx::postgres::PgPoolOptions;
-    use super::*;
-    use crate::business::filter::{Filter, FilterOperator, FilterValue};
-    use time::macros::{datetime, time};
-
-    #[derive(Clone)]
-    pub struct PostSqlxRepository {
-        pool: PgPool,
-    }
-    impl PostSqlxRepository {
-        pub fn new(pool: PgPool) -> Self {
-            Self { pool }
-        }
-    }
-    impl SqlxRepository for PostSqlxRepository {
-        type Entity = String;
-        type Orm = String;
-
-        fn get_table_name(&self) -> &str {
-            "tests"
-        }
-        fn get_pool(&self) -> &PgPool {
-            self.pool
-        }
-
-        fn from_orm(orm: Self::Orm) -> Self::Entity{
-            unimplemented!()
-        }
-    }
-
-    #[tokio::test]
-    async fn test_build_find_many_query() {
-        let pool: PgPool = PgPoolOptions::new()
-            .connect_lazy("postgres://user:pass@localhost:5432/test")
-            .unwrap();
-        let repo = PostSqlxRepository::new(pool);
-        let filters = vec![
-            Filter::Property {
-                property_name: "title".into(),
-                operator: FilterOperator::Equal,
-                value: FilterValue::String("test".into()),
-            },
-            Filter::Property {
-                property_name: "slug".into(),
-                operator: FilterOperator::Equal,
-                value: FilterValue::String("test".into()),
-            },
-            Filter::Attribute {
-                attr_name: "status".into(),
-                operator: FilterOperator::Equal,
-                value: FilterValue::Int(1),
-            },
-            Filter::Attribute {
-                attr_name: "status".into(),
-                operator: FilterOperator::In,
-                value: FilterValue::ListInt(vec![2,3]),
-            },
-        ];
-        let sorts = vec![crate::business::repository::SortCriterion {
-            field: "title".into(),
-            ascending: true,
-        }];
-        let query = repo.build_find_many_query( sorts, None, None, filters);
-        assert_eq!(query.sql(), "SELECT * FROM tests WHERE title = $1 AND slug = $2 AND EXISTS (SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = posts.id AND av.entity_type = $3 AND a.name = $4 AND av.int_value = $5) AND EXISTS (SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = posts.id AND av.entity_type = $6 AND a.name = $7 AND av.int_value IN  (($8), ($9)) ) ORDER BY title ASC OFFSET 0 LIMIT ALL");
     }
 }

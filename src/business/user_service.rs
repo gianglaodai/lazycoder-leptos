@@ -35,6 +35,9 @@ impl<R: UserRepository> UserService<R> {
     pub async fn get_all(&self, filters: Vec<Filter>) -> Result<Vec<User>, CoreError> {
         self.user_repository.find_all(filters).await
     }
+    pub async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
+        self.user_repository.count(filters).await
+    }
     pub async fn get_many(&self, sort_criteria: Vec<SortCriterion>, first_result: Option<i32>, max_results: Option<i32>, filters: Vec<Filter>) -> Result<Vec<User>, CoreError> {
         self.user_repository.find_many(sort_criteria, first_result, max_results, filters).await
     }

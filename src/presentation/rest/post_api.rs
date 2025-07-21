@@ -1,12 +1,12 @@
 use crate::business::post_service::{Post, PostStatus};
 use crate::define_to_with_common_fields;
+use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
 use crate::state::AppState;
 use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
 use std::str::FromStr;
 use uuid::Uuid;
-use crate::presentation::query_options::QueryOptions;
 
 define_to_with_common_fields!(PostTO {
     pub slug: String,
@@ -50,17 +50,24 @@ impl From<Post> for PostTO {
 }
 
 #[get("")]
-pub async fn get_many(
-    state: Data<AppState>,
-    query: Query<QueryOptions>,
-) -> impl Responder {
+pub async fn get_many(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
     respond_results(
         state
             .post_service
-            .get_many(query.to_sort_criteria(), query.first_result, query.max_results, query.to_filters())
+            .get_many(
+                query.to_sort_criteria(),
+                query.first_result,
+                query.max_results,
+                query.to_filters(),
+            )
             .await,
         PostTO::from,
     )
+}
+
+#[get("/count")]
+pub async fn count(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
+    respond_result(state.post_service.count(query.to_filters()).await)
 }
 
 #[get("/{id}")]
@@ -116,6 +123,7 @@ pub fn routes(cfg: &mut ServiceConfig) {
     cfg.service(
         scope("/api/posts")
             .service(get_many)
+            .service(count)
             .service(get_by_id)
             .service(create)
             .service(update)

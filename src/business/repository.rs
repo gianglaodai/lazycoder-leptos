@@ -33,6 +33,11 @@ pub trait Repository<T> {
     fn find_all(&self, filters: Vec<Filter>) -> impl Future<Output = Result<Vec<T>, CoreError>> {
         self.find_many(vec![], None, None, filters)
     }
+
+    fn count(
+        &self,
+        filters: Vec<Filter>,
+    ) -> impl Future<Output = Result<i64, CoreError>>;
     fn find_many(
         &self,
         sort_criteria: Vec<SortCriterion>,

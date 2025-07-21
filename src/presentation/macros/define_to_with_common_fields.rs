@@ -1,7 +1,7 @@
 #[macro_export]
 macro_rules! define_to_with_common_fields {
     ($name:ident { $($field:tt)* }) => {
-        #[derive(serde::Deserialize, serde::Serialize, Debug)]
+        #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
         pub struct $name {
             #[serde(default)]
             pub id: Option<i32>,
