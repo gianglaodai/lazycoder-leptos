@@ -149,3 +149,47 @@ impl PostRepository for PostSqlxRepository {
         Ok(result.into_iter().map(Self::from_orm).collect())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::{postgres::PgPoolOptions, PgPool};
+    use crate::business::filter::{Filter, FilterOperator, FilterValue};
+    use crate::business::repository::SortCriterion;
+
+    #[tokio::test]
+    async fn test_build_find_many_query() {
+        let pool: PgPool = PgPoolOptions::new()
+            .connect_lazy("postgres://user:pass@localhost:5432/test")
+            .unwrap();
+        let repo = PostSqlxRepository::new(pool);
+        let filters = vec![
+            Filter::Property {
+                property_name: "title".into(),
+                operator: FilterOperator::Equal,
+                value: FilterValue::String("test".into()),
+            },
+            Filter::Property {
+                property_name: "slug".into(),
+                operator: FilterOperator::Equal,
+                value: FilterValue::String("test".into()),
+            },
+            Filter::Attribute {
+                attr_name: "status".into(),
+                operator: FilterOperator::Equal,
+                value: FilterValue::Int(1),
+            },
+            Filter::Attribute {
+                attr_name: "status".into(),
+                operator: FilterOperator::In,
+                value: FilterValue::ListInt(vec![2,3]),
+            },
+        ];
+        let sorts = vec![SortCriterion {
+            field: "title".into(),
+            ascending: true,
+        }];
+        let query = repo.build_find_many_query( sorts, None, None, filters);
+        assert_eq!(query.sql(), "SELECT * FROM posts WHERE title = $1 AND slug = $2 AND EXISTS (SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = posts.id AND av.entity_type = $3 AND a.name = $4 AND av.int_value = $5) AND EXISTS (SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = posts.id AND av.entity_type = $6 AND a.name = $7 AND av.int_value IN  (($8), ($9)) ) ORDER BY title ASC OFFSET 0 LIMIT ALL");
+    }
+}

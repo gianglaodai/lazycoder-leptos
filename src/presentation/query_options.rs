@@ -94,7 +94,7 @@ impl QueryOptions {
                 let value_str = value_str_opt.unwrap();
                 match Self::parse_value(value_str, &operator) {
                     Ok(v) => v,
-                    Err(e) => {
+                    Err(_e) => {
                         return Err(CoreError::UnprocessableEntity(
                             "invalid_filter_value".into(),
                             HashMap::from([

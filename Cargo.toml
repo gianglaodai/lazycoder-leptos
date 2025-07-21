@@ -54,6 +54,9 @@ lto = true
 codegen-units = 1
 panic = "abort"
 
+[dev-dependencies]
+tokio = { version = "1.46.1", features = ["macros", "rt-multi-thread"] }
+
 [package.metadata.leptos]
 # The name used by wasm-bindgen/cargo-leptos for the JS/WASM bundle. Defaults to the crate name
 output-name = "lazycoder-leptos"
