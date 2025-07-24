@@ -1,14 +1,15 @@
 #![cfg(feature = "ssr")]
 
-use std::collections::HashMap;
 use crate::business::error::CoreError;
-use crate::business::repository::{Repository, SortCriterion};
+use crate::business::filter::Filter;
+use crate::business::repository::Repository;
+use crate::business::sort::SortCriterion;
 use crate::business::user_service::{User, UserRepository};
 use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::SqlxRepository;
 use sqlx::PgPool;
+use std::collections::HashMap;
 use uuid::Uuid;
-use crate::business::filter::Filter;
 
 #[derive(Clone)]
 pub struct UserSqlxRepository {
@@ -25,7 +26,7 @@ impl From<UserOrm> for User {
     fn from(user: UserOrm) -> Self {
         Self {
             id: user.id,
-            uid: user.uid,
+            uid: user.uid.map(|uid| uid.to_string()),
             created_at: user.created_at,
             updated_at: user.updated_at,
             username: user.username,
@@ -60,16 +61,16 @@ impl Repository<User> for UserSqlxRepository {
         SqlxRepository::find_by_id(self, id).await
     }
 
-    async fn find_by_uid(&self, uid: Uuid) -> Result<Option<User>, CoreError> {
-        SqlxRepository::find_by_uid(self, uid).await
+    async fn find_by_uid(&self, uid: String) -> Result<Option<User>, CoreError> {
+        SqlxRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
 
     async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
         SqlxRepository::delete_by_id(self, id).await
     }
 
-    async fn delete_by_uid(&self, uid: Uuid) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_uid(self, uid).await
+    async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
+        SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
 
     async fn create(&self, user: &User) -> Result<User, CoreError> {

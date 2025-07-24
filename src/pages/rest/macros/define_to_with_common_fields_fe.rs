@@ -1,5 +1,5 @@
 #[macro_export]
-macro_rules! define_to_with_common_fields_be {
+macro_rules! define_to_with_common_fields_fe {
     ($name:ident { $($field:tt)* }) => {
         #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
         pub struct $name {

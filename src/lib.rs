@@ -11,7 +11,6 @@ pub mod state;
 pub mod presentation;
 #[cfg(feature = "ssr")]
 pub mod infras;
-#[cfg(feature = "ssr")]
 pub mod business;
 #[cfg(feature = "ssr")]
 pub mod db;

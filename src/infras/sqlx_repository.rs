@@ -2,11 +2,12 @@
 
 use crate::business::error::CoreError;
 use crate::business::filter::{Filter, FilterOperator, FilterValue};
-use crate::business::repository::{Repository, SortCriterion};
+use crate::business::repository::{Repository};
 use crate::define_orm_with_common_fields;
 use sqlx::postgres::PgRow;
 use sqlx::{FromRow, PgPool, Postgres, QueryBuilder};
 use uuid::Uuid;
+use crate::business::sort::SortCriterion;
 
 #[derive(Debug, sqlx::Type)]
 #[sqlx(type_name = "attribute_datatype", rename_all = "lowercase")]
@@ -130,7 +131,7 @@ pub trait SqlxRepository: Repository<Self::Entity> {
     ) -> QueryBuilder<'_, Postgres> {
         let mut query_builder = QueryBuilder::new(format!(
             "SELECT {} FROM {}",
-            if (count) { "COUNT(*)" } else { "*" },
+            if count { "COUNT(*)" } else { "*" },
             self.get_table_name()
         ));
 

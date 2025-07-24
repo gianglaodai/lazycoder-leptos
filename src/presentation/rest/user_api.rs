@@ -1,15 +1,14 @@
 #![cfg(feature = "ssr")]
 
 use crate::business::user_service::User;
-use crate::define_to_with_common_fields;
+use crate::define_to_with_common_fields_be;
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
 use crate::state::AppState;
 use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
-use uuid::Uuid;
 
-define_to_with_common_fields!(UserTO {
+define_to_with_common_fields_be!(UserTO {
     pub username: String,
     pub email: String,
     #[serde(skip_serializing, default)]
@@ -99,7 +98,7 @@ pub async fn delete_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responde
 }
 
 #[delete("/uid/{uid}")]
-pub async fn delete_by_uid(state: Data<AppState>, uid: Path<Uuid>) -> impl Responder {
+pub async fn delete_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
     respond_result(state.user_service.delete_by_uid(uid.into_inner()).await)
 }
 

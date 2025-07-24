@@ -4,7 +4,7 @@ macro_rules! define_struct_with_common_fields {
         #[derive(Debug, Clone)]
         pub struct $name {
             pub id: Option<i32>,
-            pub uid: Option<uuid::Uuid>,
+            pub uid: Option<String>,
             pub created_at: Option<time::OffsetDateTime>,
             pub updated_at: Option<time::OffsetDateTime>,
             $($field)*

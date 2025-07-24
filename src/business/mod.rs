@@ -6,3 +6,4 @@ pub mod error;
 pub mod post_service;
 pub(crate) mod repository;
 pub mod filter;
+pub mod sort;

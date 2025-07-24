@@ -1,6 +1,7 @@
 #![cfg(feature = "ssr")]
 
 use actix_web::middleware::NormalizePath;
+use leptos_actix::handle_server_fns;
 use sqlx::PgPool;
 
 pub async fn run(pool: PgPool) -> std::io::Result<()> {
@@ -41,6 +42,7 @@ pub async fn run(pool: PgPool) -> std::io::Result<()> {
             .service(Files::new("/pkg", format!("{site_root}/pkg")))
             .service(Files::new("/assets", &site_root))
             .service(favicon)
+            .route("/api/{tail:.*}", handle_server_fns())
             .configure(crate::routes::config)
             .leptos_routes(routes, {
                 let leptos_options = leptos_options.clone();

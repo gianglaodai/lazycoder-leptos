@@ -1,12 +1,12 @@
 use crate::business::error::CoreError;
 use crate::business::filter::{Filter, FilterOperator, FilterValue};
-use crate::business::repository::SortCriterion;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::str::FromStr;
 use time::format_description::well_known::Rfc3339;
 use time::macros::format_description;
 use time::{Date, OffsetDateTime, Time};
+use crate::business::sort::SortCriterion;
 
 #[derive(Debug, Deserialize)]
 pub struct QueryOptions {
