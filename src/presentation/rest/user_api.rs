@@ -59,12 +59,28 @@ pub async fn get_many(state: Data<AppState>, query: Query<QueryOptions>) -> impl
     )
 }
 
+#[get("/count")]
+pub async fn count(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
+    respond_result(state.user_service.count(query.to_filters()).await)
+}
+
 #[get("/{id}")]
 pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
     respond_result(
         state
             .user_service
             .get_by_id(id.into_inner())
+            .await
+            .map(|user| user.map(UserTO::from)),
+    )
+}
+
+#[get("/uid/{uid}")]
+pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
+    respond_result(
+        state
+            .user_service
+            .get_by_uid(uid.into_inner())
             .await
             .map(|user| user.map(UserTO::from)),
     )
@@ -107,6 +123,7 @@ pub fn routes(cfg: &mut ServiceConfig) {
         scope("/users")
             .service(get_many)
             .service(get_by_id)
+            .service(get_by_uid)
             .service(create)
             .service(update)
             .service(delete_by_id)

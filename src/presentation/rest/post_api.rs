@@ -6,6 +6,7 @@ use crate::state::AppState;
 use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
 use std::str::FromStr;
+use leptos::prelude::RenderHtml;
 
 define_to_with_common_fields_be!(PostTO {
     pub slug: String,
@@ -81,6 +82,18 @@ pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
     )
 }
 
+#[get("/uid/{uid}")]
+pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
+    respond_result(
+        state
+            .post_service
+            .get_by_uid(uid.into_inner())
+            .await
+            .map(|post| post.unwrap())
+            .map(PostTO::from),
+    )
+}
+
 #[post("")]
 pub async fn create(state: Data<AppState>, post: Json<PostTO>) -> impl Responder {
     respond_result(
@@ -124,6 +137,7 @@ pub fn routes(cfg: &mut ServiceConfig) {
             .service(get_many)
             .service(count)
             .service(get_by_id)
+            .service(get_by_uid)
             .service(create)
             .service(update)
             .service(delete_by_id)
