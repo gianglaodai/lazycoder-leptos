@@ -29,6 +29,9 @@ pub enum Filter {
         operator: FilterOperator,
         value: FilterValue,
     },
+    Search {
+        value: String,
+    }
 }
 
 #[derive(Debug)]

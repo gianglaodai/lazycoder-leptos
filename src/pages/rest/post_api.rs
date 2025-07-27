@@ -45,7 +45,7 @@ impl From<Post> for PostTO {
         }
     }
 }
-#[server]
+#[server(name=LoadPosts,prefix="/load", endpoint="/posts")]
 pub async fn load_posts(first_result: i64, max_results: i32) -> Result<Vec<PostTO>, ServerFnError> {
     use crate::state::AppState;
     use leptos_actix::extract;
@@ -69,7 +69,7 @@ pub async fn load_posts(first_result: i64, max_results: i32) -> Result<Vec<PostT
     result
 }
 
-#[server]
+#[server(name=CountPosts,prefix="/load", endpoint="/posts/count")]
 pub async fn count_posts() -> Result<i64, ServerFnError> {
     use crate::state::AppState;
     use leptos_actix::extract;

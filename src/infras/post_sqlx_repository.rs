@@ -25,6 +25,12 @@ define_orm_with_common_fields!(PostOrm {
     pub author_id: Option<i32>,
 });
 
+impl PostOrm {
+    pub fn searchable_columns() -> Vec<&'static str> {
+        vec!["slug", "title", "summary", "content"]
+    }
+}
+
 impl From<PostOrm> for Post {
     fn from(post: PostOrm) -> Self {
         Self {
@@ -126,6 +132,14 @@ impl SqlxRepository for PostSqlxRepository {
         "posts"
     }
 
+    fn get_columns(&self) -> Vec<&str> {
+        PostOrm::columns()
+    }
+
+    fn get_searchable_columns(&self) -> Vec<&str> {
+        PostOrm::searchable_columns()
+    }
+
     fn get_pool(&self) -> &PgPool {
         &self.pool
     }
@@ -133,6 +147,8 @@ impl SqlxRepository for PostSqlxRepository {
     fn from_orm(orm: Self::Orm) -> Self::Entity {
         Post::from(orm)
     }
+    
+    
 }
 
 impl PostRepository for PostSqlxRepository {
@@ -189,12 +205,15 @@ mod tests {
                 operator: FilterOperator::In,
                 value: FilterValue::ListInt(vec![2, 3]),
             },
+            Filter::Search {
+                value: "abc xyz".to_owned(),
+            },
         ];
         let sorts = vec![SortCriterion {
             field: "title".into(),
             ascending: true,
         }];
         let query = repo.build_find_many_query(sorts, None, None, filters, false);
-        assert_eq!(query.sql(), "SELECT * FROM posts WHERE title = $1 AND slug = $2 AND EXISTS (SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = posts.id AND av.entity_type = $3 AND a.name = $4 AND av.int_value = $5) AND EXISTS (SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = posts.id AND av.entity_type = $6 AND a.name = $7 AND av.int_value IN  (($8), ($9)) ) ORDER BY title ASC OFFSET 0 LIMIT ALL");
+        assert_eq!(query.sql(), "SELECT * FROM posts WHERE title = $1 AND slug = $2 AND EXISTS (SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = posts.id AND av.entity_type = $3 AND a.name = $4 AND av.int_value = $5) AND EXISTS (SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = posts.id AND av.entity_type = $6 AND a.name = $7 AND av.int_value IN  (($8), ($9)) ) AND ((to_tsvector('simple', unaccent(coalesce(slug, '') || ' ' || coalesce(title, '') || ' ' || coalesce(summary, '') || ' ' || coalesce(content, ''))) @@ plainto_tsquery('simple', unaccent($10))) OR  (EXISTS ( SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = posts.id AND av.entity_type = $11 AND to_tsvector('simple', unaccent(coalesce(av.string_value, ''))) @@ plainto_tsquery('simple', unaccent($12))))) ORDER BY title ASC OFFSET 0 LIMIT ALL");
     }
 }

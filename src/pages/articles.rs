@@ -1,9 +1,9 @@
 use crate::pages::components::Pagination;
+use crate::pages::rest::post_api::{count_posts, load_posts, PostTO};
 use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_router::hooks::use_query_map;
 use time::format_description;
-use crate::pages::rest::post_api::{count_posts, load_posts, PostTO};
 
 #[component]
 pub fn ArticlesPage() -> impl IntoView {
@@ -15,12 +15,23 @@ pub fn ArticlesPage() -> impl IntoView {
                 .unwrap_or(1)
         })
     };
+    let max_results = move || {
+        query.with(|q| {
+            q.get("max_results")
+                .and_then(|p| p.parse::<i32>().ok())
+                .unwrap_or(5)
+        })
+    };
 
-    let posts_resource = Resource::new(first_result, |first_result| async move {
-        load_posts(first_result, 5).await
-    });
+    let posts_resource = Resource::new(
+        move || (first_result(), max_results()),
+        |(first_result, max_results)| async move { load_posts(first_result, max_results).await },
+    );
 
-    let total_posts_resource = Resource::new(|| (), |_| async { count_posts().await });
+    let total_posts_resource = Resource::new(
+        move || (first_result(), max_results()),
+        |(_, _)| async { count_posts().await },
+    );
 
     view! {
         <div class="max-w-4xl mx-auto px-4 py-8">
@@ -82,9 +93,15 @@ fn Article(post: PostTO) -> impl IntoView {
 
     view! {
         <article class="mb-8 p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-            <h2 class="text-2xl font-bold text-gray-800 mb-2 hover:text-blue-600 transition-colors">
-                {post.title}
-            </h2>
+            <div class="flex justify-between items-center">
+                <h2 class="text-2xl font-bold text-gray-800 mb-2 hover:text-blue-600 transition-colors">
+                    {post.title}
+                </h2>
+                <div class="flex gap-2">
+                    <button class="inline-block font-medium bg-[#255b98] text-white border-0 rounded-full shadow-[0_0.125em_0.5em_rgba(0,0,0,0.15)] text-base tracking-wider leading-none px-[1.75em] pt-[0.95em] pb-[0.85em] cursor-pointer no-underline transform transition-transform duration-200 ease-in-out hover:scale-105">Edit</button>
+                    <button class="inline-block font-medium bg-[#db2c00] text-white border-0 rounded-full shadow-[0_0.125em_0.5em_rgba(0,0,0,0.15)] text-base tracking-wider leading-none px-[1.75em] pt-[0.95em] pb-[0.85em] cursor-pointer no-underline transform transition-transform duration-200 ease-in-out hover:scale-105">Delete</button>
+                </div>
+            </div>
 
             {if !formatted_date.is_empty() {
                 view! {

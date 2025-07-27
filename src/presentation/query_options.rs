@@ -1,12 +1,12 @@
 use crate::business::error::CoreError;
 use crate::business::filter::{Filter, FilterOperator, FilterValue};
+use crate::business::sort::SortCriterion;
 use serde::Deserialize;
 use std::collections::HashMap;
 use std::str::FromStr;
 use time::format_description::well_known::Rfc3339;
 use time::macros::format_description;
 use time::{Date, OffsetDateTime, Time};
-use crate::business::sort::SortCriterion;
 
 #[derive(Debug, Deserialize)]
 pub struct QueryOptions {
@@ -15,6 +15,7 @@ pub struct QueryOptions {
     pub sort: Option<String>,
     pub p_filters: Option<Vec<String>>,
     pub a_filters: Option<Vec<String>>,
+    pub search: Option<String>,
 }
 
 impl QueryOptions {
@@ -45,6 +46,15 @@ impl QueryOptions {
                 if let Ok(f) = QueryOptions::parse_single_filter(raw, false) {
                     filters.push(f);
                 }
+            }
+        }
+
+        if let Some(search_value) = &self.search {
+            let keyword = search_value.trim();
+            if !keyword.is_empty() {
+                filters.push(Filter::Search {
+                    value: keyword.to_string(),
+                });
             }
         }
         filters
@@ -176,8 +186,8 @@ impl QueryOptions {
                 } else {
                     Err(CoreError::UnprocessableEntity(
                         "invalid_range_value".into(),
-                        HashMap::from([("value".into(), value_str.into())],
-                    )))
+                        HashMap::from([("value".into(), value_str.into())]),
+                    ))
                 }
             }
             FilterOperator::Is => {
@@ -186,8 +196,8 @@ impl QueryOptions {
                 } else {
                     Err(CoreError::UnprocessableEntity(
                         "invalid_bool_value".into(),
-                        HashMap::from([("value".into(), value_str.into())],
-                    )))
+                        HashMap::from([("value".into(), value_str.into())]),
+                    ))
                 }
             }
             _ => {
@@ -217,6 +227,7 @@ impl QueryOptions {
 mod tests {
     use super::*;
     use crate::business::filter::{FilterOperator, FilterValue};
+    use leptos::prelude::RenderHtml;
     use time::macros::{datetime, time};
     use time::Month;
 
@@ -356,6 +367,41 @@ mod tests {
                 operator: FilterOperator::IsNull,
                 value: FilterValue::Bool(true)
             }
+        );
+    }
+
+    #[test]
+    fn test_to_filter() {
+        let query = QueryOptions {
+            sort: Some("+name|-age".into_owned()),
+            first_result: Some(0),
+            max_results: Some(5),
+            a_filters: Some(vec!["p_name:=:giang".to_owned()]),
+            p_filters: Some(vec!["name:=:hoang".to_owned(), "age:<=:5".to_owned()]),
+            search: Some("abc xyz".to_owned()),
+        };
+        assert_eq!(
+            query.to_filters(),
+            vec![
+                Filter::Property {
+                property_name: "name".to_owned(),
+                operator: FilterOperator::Equal,
+                value: FilterValue::String("hoang".to_owned())
+            },
+                Filter::Property {
+                    property_name: "age".to_owned(),
+                    operator: FilterOperator::LessThanOrEqual,
+                    value: FilterValue::Int(5)
+                },
+                Filter::Attribute {
+                    attr_name: "p_name".to_owned(),
+                    operator:FilterOperator::Equal,
+                    value: FilterValue::String("giang".to_owned())
+                },
+                Filter::Search {
+                    value: "abc xyz".to_owned()
+                }
+            ]
         );
     }
 }

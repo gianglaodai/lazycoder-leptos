@@ -22,6 +22,11 @@ define_orm_with_common_fields!(UserOrm {
     pub password: String
 });
 
+impl UserOrm {
+    pub fn searchable_columns() -> Vec<&'static str> {
+        vec!["username", "email"]
+    }
+}
 impl From<UserOrm> for User {
     fn from(user: UserOrm) -> Self {
         Self {
@@ -123,6 +128,14 @@ impl SqlxRepository for UserSqlxRepository {
 
     fn get_table_name(&self) -> &str {
         "users"
+    }
+
+    fn get_columns(&self) -> Vec<&str> {
+        UserOrm::columns()
+    }
+
+    fn get_searchable_columns(&self) -> Vec<&str> {
+        UserOrm::searchable_columns()
     }
 
     fn get_pool(&self) -> &PgPool {

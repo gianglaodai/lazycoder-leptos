@@ -2,12 +2,12 @@
 
 use crate::business::error::CoreError;
 use crate::business::filter::{Filter, FilterOperator, FilterValue};
-use crate::business::repository::{Repository};
+use crate::business::repository::Repository;
+use crate::business::sort::SortCriterion;
 use crate::define_orm_with_common_fields;
 use sqlx::postgres::PgRow;
 use sqlx::{FromRow, PgPool, Postgres, QueryBuilder};
 use uuid::Uuid;
-use crate::business::sort::SortCriterion;
 
 #[derive(Debug, sqlx::Type)]
 #[sqlx(type_name = "attribute_datatype", rename_all = "lowercase")]
@@ -44,6 +44,8 @@ pub trait SqlxRepository: Repository<Self::Entity> {
     type Orm: for<'r> FromRow<'r, PgRow> + Send + Unpin;
 
     fn get_table_name(&self) -> &str;
+    fn get_columns(&self) -> Vec<&str>;
+    fn get_searchable_columns(&self) -> Vec<&str>;
     fn get_pool(&self) -> &PgPool;
 
     fn from_orm(orm: Self::Orm) -> Self::Entity;
@@ -135,9 +137,17 @@ pub trait SqlxRepository: Repository<Self::Entity> {
             self.get_table_name()
         ));
 
-        let (property_filters, attribute_filters): (Vec<_>, Vec<_>) = filters
-            .into_iter()
-            .partition(|f| matches!(f, Filter::Property { .. }));
+        let (property_filters, attribute_filters, search_filters): (Vec<_>, Vec<_>, Vec<_>) =
+            filters
+                .into_iter()
+                .fold((vec![], vec![], vec![]), |mut acc, f| {
+                    match &f {
+                        Filter::Property { .. } => acc.0.push(f),
+                        Filter::Attribute { .. } => acc.1.push(f),
+                        Filter::Search { .. } => acc.2.push(f),
+                    }
+                    acc
+                });
 
         let mut has_where = false;
 
@@ -167,11 +177,10 @@ pub trait SqlxRepository: Repository<Self::Entity> {
                 query_builder.push(" AND ");
             }
 
-            query_builder.push("EXISTS (SELECT 1 FROM attribute_values av ");
-            query_builder.push("JOIN attributes a ON a.id = av.attribute_id ");
-            query_builder.push("WHERE av.entity_id = ");
-            query_builder.push(format!("{}.id", self.get_table_name()));
-            query_builder.push(" AND av.entity_type = ");
+            query_builder.push(format!(
+                "EXISTS (SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = {}.id AND av.entity_type = ",
+                self.get_table_name()
+            ));
             query_builder.push_bind(self.get_table_name());
 
             if let Filter::Attribute {
@@ -184,6 +193,51 @@ pub trait SqlxRepository: Repository<Self::Entity> {
             }
 
             query_builder.push(")");
+        }
+
+        for filter in search_filters {
+            if let Filter::Search { value } = filter {
+                let keyword = value.trim();
+                if keyword.is_empty() {
+                    continue;
+                }
+
+                if !has_where {
+                    query_builder.push(" WHERE ");
+                    has_where = true;
+                } else {
+                    query_builder.push(" AND ");
+                }
+
+                query_builder.push("(");
+
+                    let searchable_columns = self.get_searchable_columns();
+                    query_builder.push("(to_tsvector('simple', unaccent(");
+                    for (i, col) in searchable_columns.iter().enumerate() {
+                        if i > 0 {
+                            query_builder.push(" || ' ' || ");
+                        }
+                        query_builder.push("coalesce(").push(col).push(", '')");
+                    }
+                    query_builder
+                        .push(")) @@ plainto_tsquery('simple', unaccent(")
+                        .push_bind(keyword.to_string())
+                        .push(")))");
+
+                query_builder.push(" OR ");
+
+                {
+                    query_builder.push(" (EXISTS ( SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = ")
+                    .push(self.get_table_name()).push(".id")
+                    .push(" AND av.entity_type = ")
+                    .push_bind(self.get_table_name())
+                    .push(" AND to_tsvector('simple', unaccent(coalesce(av.string_value, ''))) @@ plainto_tsquery('simple', unaccent(")
+                    .push_bind(keyword.to_string())
+                    .push("))))");
+                }
+
+                query_builder.push(")");
+            }
         }
 
         if !sort_criteria.is_empty() {
