@@ -12,7 +12,7 @@ pub fn ArticlesPage() -> impl IntoView {
         query.with(|q| {
             q.get("first_result")
                 .and_then(|p| p.parse::<i64>().ok())
-                .unwrap_or(1)
+                .unwrap_or(0)
         })
     };
     let max_results = move || {

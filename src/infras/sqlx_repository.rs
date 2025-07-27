@@ -220,8 +220,8 @@ pub trait SqlxRepository: Repository<Self::Entity> {
                         query_builder.push("coalesce(").push(col).push(", '')");
                     }
                     query_builder
-                        .push(")) @@ plainto_tsquery('simple', unaccent(")
-                        .push_bind(keyword.to_string())
+                        .push(")) @@ to_tsquery('simple', unaccent(")
+                        .push_bind(keyword.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>().join(" | "))
                         .push(")))");
 
                 query_builder.push(" OR ");
@@ -231,8 +231,8 @@ pub trait SqlxRepository: Repository<Self::Entity> {
                     .push(self.get_table_name()).push(".id")
                     .push(" AND av.entity_type = ")
                     .push_bind(self.get_table_name())
-                    .push(" AND to_tsvector('simple', unaccent(coalesce(av.string_value, ''))) @@ plainto_tsquery('simple', unaccent(")
-                    .push_bind(keyword.to_string())
+                    .push(" AND to_tsvector('simple', unaccent(coalesce(av.string_value, ''))) @@ to_tsquery('simple', unaccent(")
+                    .push_bind(keyword.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>().join(" | "))
                     .push("))))");
                 }
 
