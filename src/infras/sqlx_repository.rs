@@ -23,6 +23,7 @@ pub enum AttributeDataType {
 
 define_orm_with_common_fields!(AttributeOrm {
     pub name: String,
+    pub entity_type: String,
     pub data_type: AttributeDataType,
 });
 

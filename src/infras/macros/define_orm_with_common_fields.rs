@@ -11,6 +11,7 @@ macro_rules! define_orm_with_common_fields {
         pub struct $name {
             pub id: Option<i32>,
             pub uid: Option<uuid::Uuid>,
+            pub version: Option<i32>,
             pub created_at: Option<time::OffsetDateTime>,
             pub updated_at: Option<time::OffsetDateTime>,
             $($field)*
@@ -18,7 +19,7 @@ macro_rules! define_orm_with_common_fields {
 
         impl $name {
             pub fn columns() -> Vec<&'static str> {
-                vec!["id", "uid", "created_at", "updated_at", $(stringify!($field),)*]
+                vec!["id", "uid", "version", "created_at", "updated_at", $(stringify!($field),)*]
             }
         }
     };

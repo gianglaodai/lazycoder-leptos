@@ -32,18 +32,19 @@ impl PostOrm {
 }
 
 impl From<PostOrm> for Post {
-    fn from(post: PostOrm) -> Self {
+    fn from(orm: PostOrm) -> Self {
         Self {
-            id: post.id,
-            uid: post.uid.map(|uid| uid.to_string()),
-            created_at: post.created_at,
-            updated_at: post.updated_at,
-            slug: post.slug,
-            title: post.title,
-            summary: post.summary,
-            content: post.content,
-            status: PostStatus::from(post.status),
-            author_id: post.author_id,
+            id: orm.id,
+            uid: orm.uid.map(|uid| uid.to_string()),
+            version: orm.version,
+            created_at: orm.created_at,
+            updated_at: orm.updated_at,
+            slug: orm.slug,
+            title: orm.title,
+            summary: orm.summary,
+            content: orm.content,
+            status: PostStatus::from(orm.status),
+            author_id: orm.author_id,
         }
     }
 }

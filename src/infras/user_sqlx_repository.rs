@@ -28,15 +28,16 @@ impl UserOrm {
     }
 }
 impl From<UserOrm> for User {
-    fn from(user: UserOrm) -> Self {
+    fn from(orm: UserOrm) -> Self {
         Self {
-            id: user.id,
-            uid: user.uid.map(|uid| uid.to_string()),
-            created_at: user.created_at,
-            updated_at: user.updated_at,
-            username: user.username,
-            email: user.email,
-            password: user.password,
+            id: orm.id,
+            uid: orm.uid.map(|uid| uid.to_string()),
+            version: orm.version,
+            created_at: orm.created_at,
+            updated_at: orm.updated_at,
+            username: orm.username,
+            email: orm.email,
+            password: orm.password,
         }
     }
 }

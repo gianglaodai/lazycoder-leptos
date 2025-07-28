@@ -14,34 +14,36 @@ define_to_with_common_fields_fe!(PostTO {
 });
 
 impl From<PostTO> for Post {
-    fn from(post: PostTO) -> Self {
+    fn from(to: PostTO) -> Self {
         Self {
-            id: post.id,
-            uid: post.uid,
-            created_at: post.created_at,
-            updated_at: post.updated_at,
-            slug: post.slug,
-            title: post.title,
-            summary: post.summary,
-            content: post.content,
-            status: PostStatus::from_str(&post.status).unwrap_or(PostStatus::DRAFT),
+            id: to.id,
+            uid: to.uid,
+            version: to.version,
+            created_at: to.created_at,
+            updated_at: to.updated_at,
+            slug: to.slug,
+            title: to.title,
+            summary: to.summary,
+            content: to.content,
+            status: PostStatus::from_str(&to.status).unwrap_or(PostStatus::DRAFT),
             author_id: None,
         }
     }
 }
 
 impl From<Post> for PostTO {
-    fn from(post: Post) -> Self {
+    fn from(entity: Post) -> Self {
         Self {
-            id: post.id,
-            uid: post.uid,
-            created_at: post.created_at,
-            updated_at: post.updated_at,
-            slug: post.slug,
-            title: post.title,
-            summary: post.summary,
-            content: post.content,
-            status: post.status.as_str().to_string(),
+            id: entity.id,
+            uid: entity.uid,
+            version: entity.version,
+            created_at: entity.created_at,
+            updated_at: entity.updated_at,
+            slug: entity.slug,
+            title: entity.title,
+            summary: entity.summary,
+            content: entity.content,
+            status: entity.status.as_str().to_string(),
         }
     }
 }

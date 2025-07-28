@@ -16,29 +16,31 @@ define_to_with_common_fields_be!(UserTO {
 });
 
 impl From<UserTO> for User {
-    fn from(user: UserTO) -> Self {
+    fn from(to: UserTO) -> Self {
         Self {
-            id: user.id,
-            uid: user.uid,
-            created_at: user.created_at,
-            updated_at: user.updated_at,
-            username: user.username,
-            email: user.email,
-            password: user.password,
+            id: to.id,
+            uid: to.uid,
+            version: to.version,
+            created_at: to.created_at,
+            updated_at: to.updated_at,
+            username: to.username,
+            email: to.email,
+            password: to.password,
         }
     }
 }
 
 impl From<User> for UserTO {
-    fn from(user: User) -> Self {
+    fn from(entity: User) -> Self {
         Self {
-            id: user.id,
-            uid: user.uid,
-            created_at: user.created_at,
-            updated_at: user.updated_at,
-            username: user.username,
-            email: user.email,
-            password: user.password,
+            id: entity.id,
+            uid: entity.uid,
+            version: entity.version,
+            created_at: entity.created_at,
+            updated_at: entity.updated_at,
+            username: entity.username,
+            email: entity.email,
+            password: entity.password,
         }
     }
 }
