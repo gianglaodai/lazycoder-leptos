@@ -7,6 +7,7 @@ macro_rules! define_to_with_common_fields_be {
             pub id: Option<i32>,
             #[serde(default)]
             pub uid: Option<String>,
+            #[serde(default)]
             pub version: Option<i32>,
             #[serde(default, with = "time::serde::timestamp::option")]
             pub created_at: Option<time::OffsetDateTime>,
