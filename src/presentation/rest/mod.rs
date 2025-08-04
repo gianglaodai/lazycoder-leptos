@@ -1,5 +1,5 @@
 
 #![cfg(feature = "ssr")]
-pub mod user_api;
-pub mod post_api;
+pub mod user_controller;
+pub mod post_controller;
 pub mod response_result;

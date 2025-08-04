@@ -3,11 +3,13 @@ export default {
     content: {
         files: [
             '*.html',
-            './src/**/*.rs',
+            './src/**/*.{rs,html}',
         ],
     },
     theme: {
         extend: {},
     },
-    plugins: [],
+    plugins: [
+        require('@tailwindcss/typography'),
+    ],
 }
