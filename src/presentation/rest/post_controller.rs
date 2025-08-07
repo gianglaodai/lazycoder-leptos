@@ -112,7 +112,7 @@ pub async fn update(
     id: Path<i32>,
     mut post: Json<PostTO>,
 ) -> impl Responder {
-    post.id = Some(id.into_inner());
+    post.id = id.into_inner();
     respond_result(
         state
             .post_service

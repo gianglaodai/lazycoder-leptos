@@ -84,12 +84,7 @@ fn Article(post: PostTO) -> impl IntoView {
     let format =
         format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]").unwrap();
     let formatted_date = post
-        .created_at
-        .map(|dt| {
-            dt.format(&format)
-                .unwrap_or_else(|_| "Unknown date".to_string())
-        })
-        .unwrap_or_else(|| "".to_string());
+        .created_at.format(&format).unwrap_or_else(|_| "Unknown date".to_string());
 
     view! {
         <article class="mb-8 p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">

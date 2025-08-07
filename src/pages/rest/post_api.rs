@@ -1,5 +1,4 @@
 use crate::business::post_service::{Post, PostStatus};
-use crate::business::sort::SortCriterion;
 use crate::define_to_with_common_fields_fe;
 use leptos::prelude::ServerFnError;
 use leptos::*;
@@ -49,6 +48,7 @@ impl From<Post> for PostTO {
 }
 #[server(name=LoadPosts,prefix="/load", endpoint="/posts")]
 pub async fn load_posts(first_result: i64, max_results: i32) -> Result<Vec<PostTO>, ServerFnError> {
+    use crate::business::sort::SortCriterion;
     use crate::state::AppState;
     use leptos_actix::extract;
 

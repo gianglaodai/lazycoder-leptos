@@ -31,7 +31,7 @@ impl From<UserOrm> for User {
     fn from(orm: UserOrm) -> Self {
         Self {
             id: orm.id,
-            uid: orm.uid.map(|uid| uid.to_string()),
+            uid:orm.uid.to_string(),
             version: orm.version,
             created_at: orm.created_at,
             updated_at: orm.updated_at,
@@ -100,9 +100,6 @@ impl Repository<User> for UserSqlxRepository {
     }
 
     async fn update(&self, user: &User) -> Result<User, CoreError> {
-        let id = user.id.ok_or_else(|| {
-            CoreError::UnprocessableEntity("id_is_required".into(), HashMap::new())
-        })?;
         let now = time::OffsetDateTime::now_utc();
 
         let user = sqlx::query_as::<_, UserOrm>(
@@ -115,7 +112,7 @@ impl Repository<User> for UserSqlxRepository {
         .bind(&user.email)
         .bind(&user.password)
         .bind(&now)
-        .bind(id)
+        .bind(user.id)
         .fetch_one(&self.pool)
         .await?;
 

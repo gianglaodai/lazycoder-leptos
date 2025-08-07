@@ -35,7 +35,7 @@ impl From<PostOrm> for Post {
     fn from(orm: PostOrm) -> Self {
         Self {
             id: orm.id,
-            uid: orm.uid.map(|uid| uid.to_string()),
+            uid: orm.uid.to_string(),
             version: orm.version,
             created_at: orm.created_at,
             updated_at: orm.updated_at,
@@ -104,9 +104,6 @@ impl Repository<Post> for PostSqlxRepository {
     }
 
     async fn update(&self, post: &Post) -> Result<Post, CoreError> {
-        let id = post.id.ok_or_else(|| {
-            CoreError::UnprocessableEntity("id_is_required".into(), HashMap::new())
-        })?;
         let now = time::OffsetDateTime::now_utc();
         let post = sqlx::query_as::<_, PostOrm>(
             "UPDATE posts SET slug=$1, title=$2, summary=$3, content=$4, status=$5, updated_at=$6 WHERE id=$7 RETURNING *",
@@ -117,7 +114,7 @@ impl Repository<Post> for PostSqlxRepository {
             .bind(&post.content)
             .bind(post.status.as_i32())
             .bind(now)
-            .bind(id)
+            .bind(post.id)
             .fetch_one(&self.pool)
             .await?;
 
