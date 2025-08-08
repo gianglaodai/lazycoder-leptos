@@ -1,17 +1,17 @@
 use crate::business::error::CoreError;
 use crate::business::filter::Filter;
-use std::future::Future;
 use crate::business::sort::SortCriterion;
+use std::future::Future;
 
-pub trait Repository<T, C> {
+pub trait Creatable {
+    type Entity;
+}
+pub trait Repository<T, C: Creatable<Entity = T>> {
     fn find_all(&self, filters: Vec<Filter>) -> impl Future<Output = Result<Vec<T>, CoreError>> {
         self.find_many(vec![], None, None, filters)
     }
 
-    fn count(
-        &self,
-        filters: Vec<Filter>,
-    ) -> impl Future<Output = Result<i64, CoreError>>;
+    fn count(&self, filters: Vec<Filter>) -> impl Future<Output = Result<i64, CoreError>>;
     fn find_many(
         &self,
         sort_criteria: Vec<SortCriterion>,

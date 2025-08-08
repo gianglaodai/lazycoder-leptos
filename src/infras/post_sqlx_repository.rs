@@ -124,7 +124,7 @@ impl Repository<Post, PostCreate> for PostSqlxRepository {
 
 impl SqlxRepository for PostSqlxRepository {
     type Entity = Post;
-    type CreateEntity = PostCreate;
+    type EntityCreate = PostCreate;
     type Orm = PostOrm;
 
     fn get_table_name(&self) -> &str {

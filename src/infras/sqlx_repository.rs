@@ -2,7 +2,7 @@
 
 use crate::business::error::CoreError;
 use crate::business::filter::{Filter, FilterOperator, FilterValue};
-use crate::business::repository::Repository;
+use crate::business::repository::{Creatable, Repository};
 use crate::business::sort::SortCriterion;
 use crate::define_orm_with_common_fields;
 use sqlx::postgres::PgRow;
@@ -40,9 +40,12 @@ define_orm_with_common_fields!(AttributeValueOrm {
     pub entity_type: String,
 });
 
-pub trait SqlxRepository: Repository<Self::Entity, Self::CreateEntity> {
+pub trait SqlxRepository: Repository<Self::Entity, Self::EntityCreate>
+where
+    Self::EntityCreate: Creatable<Entity = Self::Entity>,
+{
     type Entity;
-    type CreateEntity;
+    type EntityCreate;
     type Orm: for<'r> FromRow<'r, PgRow> + Send + Unpin;
 
     fn get_table_name(&self) -> &str;
@@ -213,18 +216,24 @@ pub trait SqlxRepository: Repository<Self::Entity, Self::CreateEntity> {
 
                 query_builder.push("(");
 
-                    let searchable_columns = self.get_searchable_columns();
-                    query_builder.push("(to_tsvector('simple', unaccent(");
-                    for (i, col) in searchable_columns.iter().enumerate() {
-                        if i > 0 {
-                            query_builder.push(" || ' ' || ");
-                        }
-                        query_builder.push("coalesce(").push(col).push(", '')");
+                let searchable_columns = self.get_searchable_columns();
+                query_builder.push("(to_tsvector('simple', unaccent(");
+                for (i, col) in searchable_columns.iter().enumerate() {
+                    if i > 0 {
+                        query_builder.push(" || ' ' || ");
                     }
-                    query_builder
-                        .push(")) @@ to_tsquery('simple', unaccent(")
-                        .push_bind(keyword.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>().join(" | "))
-                        .push(")))");
+                    query_builder.push("coalesce(").push(col).push(", '')");
+                }
+                query_builder
+                    .push(")) @@ to_tsquery('simple', unaccent(")
+                    .push_bind(
+                        keyword
+                            .split_whitespace()
+                            .map(|s| s.to_string())
+                            .collect::<Vec<_>>()
+                            .join(" | "),
+                    )
+                    .push(")))");
 
                 query_builder.push(" OR ");
 

@@ -122,7 +122,7 @@ impl Repository<User, UserCreate> for UserSqlxRepository {
 
 impl SqlxRepository for UserSqlxRepository {
     type Entity = User;
-    type CreateEntity = UserCreate;
+    type EntityCreate = UserCreate;
     type Orm = UserOrm;
 
     fn get_table_name(&self) -> &str {
