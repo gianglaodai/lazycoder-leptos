@@ -8,7 +8,6 @@ use crate::business::user_service::{User, UserCreate, UserRepository};
 use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::SqlxRepository;
 use sqlx::PgPool;
-use std::collections::HashMap;
 use uuid::Uuid;
 
 #[derive(Clone)]
