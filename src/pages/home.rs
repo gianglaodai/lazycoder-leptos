@@ -1,37 +1,19 @@
+use crate::pages::components::MarkdownEditor;
+use crate::pages::components::MarkdownViewer;
 use leptos::prelude::*;
 use leptos::svg::title;
 use leptos::web_sys;
-use crate::pages::components::MarkdownEditor;
-use crate::pages::components::MarkdownViewer;
 
 /// Renders the home page of your application.
 #[component]
 pub fn HomePage() -> impl IntoView {
     // Feature items with icons and descriptions
     let features = vec![
-        ("⚡", "Lightning Fast", "Built with Rust for maximum performance"),
+        ("⚡", "Lightning Fast", "Built with Rust for maximum performance",),
         ("🔒", "Secure", "Enterprise-grade security out of the box"),
         ("🌐", "Responsive", "Looks great on any device"),
         ("🚀", "Modern", "Built with the latest web technologies"),
     ];
-    let content = "
-# 📘 Hướng dẫn sử dụng hệ thống
-
-Chào mừng bạn đến với **Hệ thống Quản lý Dự án**. Dưới đây là các thành phần chính:
-
----
-
-## 📂 1. Cấu trúc thư mục
-
-```bash
-.
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── utils/
-├── public/
-└── README.md
-    ";
 
     let handle_submit = Callback::new(move |markdown: String| {
         web_sys::console::log_1(&markdown.into());
@@ -91,7 +73,5 @@ Chào mừng bạn đến với **Hệ thống Quản lý Dự án**. Dưới đ
                 </button>
             </div>
         </section>
-        <MarkdownEditor initial_content=content.to_owned() on_submit=handle_submit />
-        <MarkdownViewer content=content.to_owned() title="title".to_string() class="class".to_string() />
     }
 }

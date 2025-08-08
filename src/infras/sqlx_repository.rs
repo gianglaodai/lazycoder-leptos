@@ -40,8 +40,9 @@ define_orm_with_common_fields!(AttributeValueOrm {
     pub entity_type: String,
 });
 
-pub trait SqlxRepository: Repository<Self::Entity> {
+pub trait SqlxRepository: Repository<Self::Entity, Self::CreateEntity> {
     type Entity;
+    type CreateEntity;
     type Orm: for<'r> FromRow<'r, PgRow> + Send + Unpin;
 
     fn get_table_name(&self) -> &str;

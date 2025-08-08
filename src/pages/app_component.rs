@@ -14,7 +14,7 @@ pub fn App() -> impl IntoView {
     provide_meta_context();
 
     view! {
-        <Stylesheet id="leptos" href="/pkg/lazycoder-leptos.css"/>
+        <Stylesheet id="leptos" href="/pkg/lazycoder_leptos.css"/>
         <Title text="Welcome to LazyCoder"/>
 
         <Router>

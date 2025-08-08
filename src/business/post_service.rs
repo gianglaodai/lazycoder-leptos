@@ -68,7 +68,7 @@ define_struct_with_common_fields!(Post {
     pub author_id: Option<i32>,
 });
 
-pub trait PostRepository: Repository<Post> + Send + Sync {
+pub trait PostRepository: Repository<Post, PostCreate> + Send + Sync {
     fn find_by_slug(&self, slug: &str) -> impl Future<Output = Result<Option<Post>, CoreError>>;
     fn find_by_author(&self, author_id: i32) -> impl Future<Output = Result<Vec<Post>, CoreError>>;
 }
@@ -105,8 +105,8 @@ impl<R: PostRepository> PostService<R> {
     pub async fn get_by_uid(&self, uid: String) -> Result<Option<Post>, CoreError> {
         self.post_repository.find_by_uid(uid).await
     }
-    pub async fn create(&self, post: &Post) -> Result<Post, CoreError> {
-        self.post_repository.create(post).await
+    pub async fn create(&self, post_create: &PostCreate) -> Result<Post, CoreError> {
+        self.post_repository.create(post_create).await
     }
     pub async fn update(&self, post: &Post) -> Result<Post, CoreError> {
         self.post_repository.update(post).await

@@ -5,7 +5,7 @@ use crate::define_struct_with_common_fields;
 use std::sync::Arc;
 use crate::business::sort::SortCriterion;
 
-pub trait UserRepository: Repository<User> + Send + Sync {
+pub trait UserRepository: Repository<User, UserCreate> + Send + Sync {
     fn find_by_username(
         &self,
         name: &str,
@@ -55,8 +55,8 @@ impl<R: UserRepository> UserService<R> {
     pub async fn get_by_uid(&self, uid: String) -> Result<Option<User>, CoreError> {
         self.user_repository.find_by_uid(uid).await
     }
-    pub async fn create(&self, user: &User) -> Result<User, CoreError> {
-        self.user_repository.create(user).await
+    pub async fn create(&self, user_create: &UserCreate) -> Result<User, CoreError> {
+        self.user_repository.create(user_create).await
     }
     pub async fn update(&self, user: &User) -> Result<User, CoreError> {
         self.user_repository.update(user).await

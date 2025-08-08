@@ -2,7 +2,7 @@
 
 use crate::business::error::CoreError;
 use crate::business::filter::Filter;
-use crate::business::post_service::{Post, PostRepository, PostStatus};
+use crate::business::post_service::{Post, PostCreate, PostRepository, PostStatus};
 use crate::business::repository::Repository;
 use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::SqlxRepository;
@@ -16,7 +16,7 @@ pub struct PostSqlxRepository {
     pool: PgPool,
 }
 
-define_orm_with_common_fields!(PostOrm {
+define_orm_with_common_fields!(Post {
     pub slug: String,
     pub title: String,
     pub summary: String,
@@ -55,7 +55,7 @@ impl PostSqlxRepository {
     }
 }
 
-impl Repository<Post> for PostSqlxRepository {
+impl Repository<Post, PostCreate> for PostSqlxRepository {
     async fn find_many(
         &self,
         sort_criteria: Vec<SortCriterion>,
@@ -85,7 +85,7 @@ impl Repository<Post> for PostSqlxRepository {
     async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
         SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
-    async fn create(&self, post: &Post) -> Result<Post, CoreError> {
+    async fn create(&self, post_create: &PostCreate) -> Result<Post, CoreError> {
         let now = time::OffsetDateTime::now_utc();
         let row: PostOrm = sqlx::query_as::<_, PostOrm>(
             "INSERT INTO posts (uid, created_at, updated_at, slug, title, summary, content, status) values ($1, $2, $3, $4, $5, $6, $7, $8) returning *",
@@ -93,11 +93,11 @@ impl Repository<Post> for PostSqlxRepository {
             .bind(Uuid::now_v7())
             .bind(&now)
             .bind(&now)
-            .bind(&post.slug)
-            .bind(&post.title)
-            .bind(&post.summary)
-            .bind(&post.content)
-            .bind(&post.status.as_i32())
+            .bind(&post_create.slug)
+            .bind(&post_create.title)
+            .bind(&post_create.summary)
+            .bind(&post_create.content)
+            .bind(&post_create.status.as_i32())
             .fetch_one(&self.pool)
             .await?;
         Ok(Post::from(row))
@@ -124,6 +124,7 @@ impl Repository<Post> for PostSqlxRepository {
 
 impl SqlxRepository for PostSqlxRepository {
     type Entity = Post;
+    type CreateEntity = PostCreate;
     type Orm = PostOrm;
 
     fn get_table_name(&self) -> &str {

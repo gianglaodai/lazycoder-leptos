@@ -1,6 +1,6 @@
 #![cfg(feature = "ssr")]
 
-use crate::business::user_service::User;
+use crate::business::user_service::{User, UserCreate};
 use crate::define_to_with_common_fields_be;
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
@@ -8,7 +8,7 @@ use crate::state::AppState;
 use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
 
-define_to_with_common_fields_be!(UserTO {
+define_to_with_common_fields_be!(User {
     pub username: String,
     pub email: String,
     #[serde(skip_serializing, default)]
@@ -23,6 +23,16 @@ impl From<UserTO> for User {
             version: to.version,
             created_at: to.created_at,
             updated_at: to.updated_at,
+            username: to.username,
+            email: to.email,
+            password: to.password,
+        }
+    }
+}
+
+impl From<UserCreateTO> for UserCreate {
+    fn from(to: UserCreateTO) -> Self {
+        Self {
             username: to.username,
             email: to.email,
             password: to.password,
@@ -89,11 +99,11 @@ pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Respon
 }
 
 #[post("")]
-pub async fn create(state: Data<AppState>, user: Json<UserTO>) -> impl Responder {
+pub async fn create(state: Data<AppState>, user: Json<UserCreateTO>) -> impl Responder {
     respond_result(
         state
             .user_service
-            .create(&User::from(user.into_inner()))
+            .create(&UserCreate::from(user.into_inner()))
             .await
             .map(UserTO::from),
     )

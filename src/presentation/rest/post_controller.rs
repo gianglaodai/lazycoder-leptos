@@ -1,4 +1,4 @@
-use crate::business::post_service::{Post, PostStatus};
+use crate::business::post_service::{Post, PostCreate, PostStatus};
 use crate::define_to_with_common_fields_be;
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
@@ -7,7 +7,7 @@ use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
 use std::str::FromStr;
 
-define_to_with_common_fields_be!(PostTO {
+define_to_with_common_fields_be!(Post {
     pub slug: String,
     pub title: String,
     pub summary: String,
@@ -23,6 +23,19 @@ impl From<PostTO> for Post {
             version: to.version,
             created_at: to.created_at,
             updated_at: to.updated_at,
+            slug: to.slug,
+            title: to.title,
+            summary: to.summary,
+            content: to.content,
+            status: PostStatus::from_str(&to.status).unwrap_or(PostStatus::DRAFT),
+            author_id: None,
+        }
+    }
+}
+
+impl From<PostCreateTO> for PostCreate {
+    fn from(to: PostCreateTO) -> Self {
+        Self {
             slug: to.slug,
             title: to.title,
             summary: to.summary,
@@ -96,11 +109,11 @@ pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Respon
 }
 
 #[post("")]
-pub async fn create(state: Data<AppState>, post: Json<PostTO>) -> impl Responder {
+pub async fn create(state: Data<AppState>, post: Json<PostCreateTO>) -> impl Responder {
     respond_result(
         state
             .post_service
-            .create(&Post::from(post.into_inner()))
+            .create(&PostCreate::from(post.into_inner()))
             .await
             .map(PostTO::from),
     )

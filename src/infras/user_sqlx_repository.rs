@@ -4,7 +4,7 @@ use crate::business::error::CoreError;
 use crate::business::filter::Filter;
 use crate::business::repository::Repository;
 use crate::business::sort::SortCriterion;
-use crate::business::user_service::{User, UserRepository};
+use crate::business::user_service::{User, UserCreate, UserRepository};
 use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::SqlxRepository;
 use sqlx::PgPool;
@@ -16,7 +16,7 @@ pub struct UserSqlxRepository {
     pool: PgPool,
 }
 
-define_orm_with_common_fields!(UserOrm {
+define_orm_with_common_fields!(User {
     pub username: String,
     pub email: String,
     pub password: String
@@ -48,7 +48,7 @@ impl UserSqlxRepository {
     }
 }
 
-impl Repository<User> for UserSqlxRepository {
+impl Repository<User, UserCreate> for UserSqlxRepository {
     async fn find_many(
         &self,
         sort_criteria: Vec<SortCriterion>,
@@ -79,7 +79,7 @@ impl Repository<User> for UserSqlxRepository {
         SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
 
-    async fn create(&self, user: &User) -> Result<User, CoreError> {
+    async fn create(&self, user_create: &UserCreate) -> Result<User, CoreError> {
         let now = time::OffsetDateTime::now_utc();
 
         let user = sqlx::query_as::<_, UserOrm>(
@@ -88,9 +88,9 @@ impl Repository<User> for UserSqlxRepository {
              RETURNING *",
         )
         .bind(Uuid::now_v7())
-        .bind(&user.username)
-        .bind(&user.email)
-        .bind(&user.password)
+        .bind(&user_create.username)
+        .bind(&user_create.email)
+        .bind(&user_create.password)
         .bind(&now)
         .bind(&now)
         .fetch_one(&self.pool)
@@ -122,6 +122,7 @@ impl Repository<User> for UserSqlxRepository {
 
 impl SqlxRepository for UserSqlxRepository {
     type Entity = User;
+    type CreateEntity = UserCreate;
     type Orm = UserOrm;
 
     fn get_table_name(&self) -> &str {

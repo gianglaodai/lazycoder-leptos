@@ -4,7 +4,7 @@ use leptos::prelude::ServerFnError;
 use leptos::*;
 use std::str::FromStr;
 
-define_to_with_common_fields_fe!(PostTO {
+define_to_with_common_fields_fe!(Post {
     pub slug: String,
     pub title: String,
     pub summary: String,
@@ -53,7 +53,6 @@ pub async fn load_posts(first_result: i64, max_results: i32) -> Result<Vec<PostT
     use leptos_actix::extract;
 
     let state: actix_web::web::Data<AppState> = extract().await?;
-
     let result = state
         .post_service
         .get_many(
