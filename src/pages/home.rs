@@ -5,66 +5,93 @@ use leptos::prelude::*;
 pub fn HomePage() -> impl IntoView {
     // Feature items with icons and descriptions
     let features = vec![
-        ("⚡", "Lightning Fast", "Built with Rust for maximum performance",),
-        ("🔒", "Secure", "Enterprise-grade security out of the box"),
-        ("🌐", "Responsive", "Looks great on any device"),
-        ("🚀", "Modern", "Built with the latest web technologies"),
+        ("⚡", "Nhanh chóng", "Code xong trước deadline, còn thời gian order trà sữa."),
+        ("🔒", "An toàn", "Code sạch, bug ít – khỏi bận tâm fix giữa đêm."),
+        ("🤸", "Linh hoạt", "Dự án scale mượt, dev rảnh đi phượt."),
+        ("🚀", "Luôn mới", "Tận dụng công nghệ mới để… không phải code lại."),
     ];
 
     view! {
+        <div class="font-serif">
         // Hero Section
         <section class="py-24">
             <div class="container-page text-center">
                 <h1 class="text-4xl sm:text-5xl lg:text-6xl font-serif font-semibold tracking-tight mb-6">
-                    "Xây Blog hiện đại, kiểu Kevin Powell"
+                    "Lazy để busy"
                 </h1>
                 <p class="text-lg sm:text-xl text-stone-600 mb-10 max-w-2xl mx-auto prose-balanced">
-                    "Đơn giản, tinh tế, tập trung vào nội dung. Dùng Tailwind để có trải nghiệm mượt mà, sạch sẽ và dễ đọc."
+                    "Máy chạy, dev chơi – Code ít, hiệu quả nhiều.
+                    Đây là nơi tôi chia sẻ bí kíp 'lười đúng cách' để bạn code gọn, bug ít, và có thêm thời gian cho cà phê, game, hay ngủ trưa."
                 </p>
-                <div class="flex items-center justify-center gap-4">
-                    <button class="bg-brand-600 text-white px-6 py-3 rounded-full font-medium hover:bg-brand-700 transition-colors shadow-sm">
-                        "Bắt đầu ngay"
-                    </button>
-                    <button class="px-6 py-3 rounded-full font-medium border border-stone-300 text-stone-800 hover:bg-stone-100 transition-colors">
-                        "Tìm hiểu thêm"
-                    </button>
-                </div>
+                <a href="#features" class="px-6 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
+                    "Học cách lazy như một pro"
+                </a>
             </div>
         </section>
 
         // Features Section
-        <section class="py-16 bg-white/60">
+        <section id="features" class="py-24 bg-stone-50">
             <div class="container-page">
-                <h2 class="text-2xl sm:text-3xl font-serif font-semibold text-center mb-12">
-                    "Vì sao chọn LazyCoder?"
-                </h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
-                    {features.into_iter().map(|(icon, title, description)| {
+                <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 items-stretch">
+                    {features.into_iter().map(|(icon, title, desc)| {
                         view! {
-                            <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm/20 hover:shadow transition-shadow">
-                                <div class="text-4xl mb-3">{icon}</div>
-                                <h3 class="text-lg font-semibold mb-1">{title}</h3>
-                                <p class="text-stone-600 text-sm leading-6">{description}</p>
+                            <div class="group h-full text-center rounded-2xl bg-gradient-to-br from-stone-50 to-white border border-stone-200/60 shadow-md hover:shadow-2xl transition-all duration-300 p-6 sm:p-8 hover:-translate-y-1 overflow-hidden">
+                                <div class="mx-auto mb-5 grid w-16 h-16 place-content-center rounded-full bg-gradient-to-tr from-indigo-600 to-sky-400 text-white shadow-xl ring-8 ring-white/60 hover:scale-105 transition-transform duration-300">
+                                    <span class="text-3xl">{icon}</span>
+                                </div>
+                                <h3 class="text-lg sm:text-xl font-serif font-semibold mb-2 text-stone-900">{title}</h3>
+                                <p class="text-stone-600 leading-relaxed">{desc}</p>
                             </div>
                         }
-                    }).collect_view()}
+                    }).collect::<Vec<_>>()}
                 </div>
             </div>
         </section>
 
-        // CTA Section
+        // About Section
         <section class="py-20">
-            <div class="container-page text-center">
-                <h2 class="text-2xl sm:text-3xl font-serif font-semibold mb-6">
-                    "Sẵn sàng bắt đầu?"
+            <div class="container-page text-center max-w-3xl mx-auto">
+                <h2 class="text-3xl font-serif font-semibold mb-6">
+                    "Vì sao 'lười' lại là siêu năng lực?"
                 </h2>
                 <p class="text-lg text-stone-600 mb-8">
-                    "Tham gia cộng đồng developer đang xây dựng blog đẹp và hiệu quả với LazyCoder."
+                    "Trong lập trình, 'lười' không phải là tránh việc – mà là tìm cách làm ít việc nhất để đạt kết quả tốt nhất.
+                    Tôi chia sẻ tips tối ưu code, tự động hóa task lặp, và tư duy thiết kế giúp bạn tiết kiệm thời gian, công sức… để làm điều bạn thích (kể cả là ngủ)."
                 </p>
-                <button class="bg-brand-600 text-white px-8 py-3 rounded-full font-medium hover:bg-brand-700 transition-colors text-base shadow-sm">
-                    "Tạo tài khoản"
-                </button>
+                <a href="#mentorship" class="px-6 py-3 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition">
+                    "Just do it"
+                </a>
             </div>
         </section>
+
+        // Mentorship Section
+        <section id="mentorship" class="py-20 bg-blue-50">
+            <div class="container-page text-center max-w-3xl mx-auto">
+                <h2 class="text-3xl font-serif font-semibold mb-6">
+                    "Muốn máy chạy, dev chơi?"
+                </h2>
+                <p class="text-lg text-stone-600 mb-8">
+                    "Tôi mentor lập trình viên mới ra trường, giúp họ đi từ ‘code cho xong’ sang ‘code như hacker lão luyện’.
+                    Không giáo trình nhàm chán, chỉ có tình huống thực tế, giải pháp gọn nhẹ và tư duy xịn."
+                </p>
+                <a href="/contact" class="px-6 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
+                    "Đặt lịch với tôi"
+                </a>
+            </div>
+        </section>
+
+        // Footer CTA
+        <section class="py-20 bg-stone-900 text-white text-center">
+            <div class="container-page">
+                <h2 class="text-3xl font-serif font-semibold mb-4">
+                    "Lazy để busy – Máy chạy, dev chơi"
+                </h2>
+                <p class="mb-8">"Muốn trở thành coder lười nhất (theo nghĩa tốt) mà bạn từng biết chưa?"</p>
+                <a href="/start" class="px-6 py-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition">
+                    "Just do it"
+                </a>
+            </div>
+        </section>
+        </div>
     }
 }

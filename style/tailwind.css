@@ -49,8 +49,8 @@
 }
 
 @layer base {
-  html { @apply scroll-smooth; }
-  body { @apply bg-[--color-bg] text-[--color-ink] antialiased font-sans; }
+  html { @apply scroll-smooth min-w-[320px]; }
+  body { @apply bg-[--color-bg] text-[--color-ink] antialiased font-sans min-w-[320px]; }
   h1,h2,h3 { @apply font-sans tracking-tight text-balance; }
   code, pre { font-family: var(--font-mono); }
   ::selection { @apply bg-brand-200; }

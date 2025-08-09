@@ -6,7 +6,7 @@ use crate::pages::about::AboutMePage;
 use crate::pages::home::HomePage;
 use crate::pages::not_found::NotFoundPage;
 use crate::pages::articles::ArticlesPage;
-use crate::pages::components::Navigation;
+use crate::pages::components::{Navigation, Footer};
 use crate::pages::newsletter::NewsletterPage;
 
 #[component]
@@ -31,6 +31,7 @@ pub fn App() -> impl IntoView {
                     <Route path=WildcardSegment("any") view=NotFoundPage/>
                 </Routes>
             </main>
+            <Footer/>
         </Router>
     }
 }
