@@ -1,2 +1,65 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap");
+
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
+/* Load Roboto from Google Fonts */
+
+/* Local font-face for ComicShannsMonoNerdFont */
+@font-face {
+  font-family: "ComicShannsMonoNerdFont";
+  src: url("/assets/fonts/ComicShannsMonoNerdFontMono-Regular.otf") format("opentype"),
+       url("/assets/fonts/ComicShannsMonoNerdFont-Regular.otf") format("opentype");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "ComicShannsMonoNerdFont";
+  src: url("/assets/fonts/ComicShannsMonoNerdFontMono-Bold.otf") format("opentype"),
+       url("/assets/fonts/ComicShannsMonoNerdFont-Bold.otf") format("opentype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* Kevin Powell-inspired theme using Tailwind v4 @theme variables */
+@theme {
+  /* Typography */
+  --font-sans: "Roboto", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji", sans-serif;
+  --font-serif: "Patrick Hand", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-mono: "ComicShannsMonoNerdFont", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Warm neutral background and readable ink */
+  --color-ink: var(--color-stone-900);
+  --color-bg: var(--color-stone-50);
+
+  /* Brand accent (warm amber/gold) */
+  --color-brand-50: var(--color-amber-50);
+  --color-brand-100: var(--color-amber-100);
+  --color-brand-200: var(--color-amber-200);
+  --color-brand-300: var(--color-amber-300);
+  --color-brand-400: var(--color-amber-400);
+  --color-brand-500: var(--color-amber-500);
+  --color-brand-600: var(--color-amber-600);
+  --color-brand-700: var(--color-amber-700);
+  --color-brand-800: var(--color-amber-800);
+  --color-brand-900: var(--color-amber-900);
+}
+
+@layer base {
+  html { @apply scroll-smooth; }
+  body { @apply bg-[--color-bg] text-[--color-ink] antialiased font-sans; }
+  h1,h2,h3 { @apply font-sans tracking-tight text-balance; }
+  code, pre { font-family: var(--font-mono); }
+  ::selection { @apply bg-brand-200; }
+}
+
+/* Typography defaults for long-form content */
+@layer utilities {
+  .prose-balanced { text-wrap: balance; }
+  .container-page { @apply max-w-7xl mx-auto px-4 sm:px-6 lg:px-8; }
+  /* Ensure code blocks in prose use the monospace font */
+  .prose code, .prose pre { font-family: var(--font-mono); }
+}

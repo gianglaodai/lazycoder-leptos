@@ -35,7 +35,7 @@ pub fn MarkdownEditor(
                 <div class="space-y-4">
                     <h3 class="text-lg font-semibold text-gray-700">Preview</h3>
                     <article
-                        class="w-full h-96 p-4 border border-gray-300 rounded-lg bg-gray-50 overflow-auto prose prose-lg max-w-none"
+                        class="w-full h-96 p-4 border border-gray-300 rounded-lg bg-gray-50 overflow-auto prose prose-lg max-w-none prose-code:font-mono prose-pre:font-mono"
                         inner_html=rendered_html
                     />
                 </div>

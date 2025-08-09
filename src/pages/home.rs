@@ -13,38 +13,38 @@ pub fn HomePage() -> impl IntoView {
 
     view! {
         // Hero Section
-        <section class="py-20 text-center">
-            <h1 class="text-5xl font-bold text-gray-900 mb-6">
-                "Welcome to "
-                <span class="text-blue-600">"LazyCoder"</span>
-            </h1>
-            <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                "The ultimate platform for lazy coders who want to build amazing things "
-                "without all the hassle."
-            </p>
-            <div class="space-x-4">
-                <button class="bg-blue-600 text-white px-6 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-                    "Get Started"
-                </button>
-                <button class="border border-gray-300 px-6 py-3 rounded-lg font-medium text-gray-700 hover:bg-gray-50 transition-colors">
-                    "Learn More"
-                </button>
+        <section class="py-24">
+            <div class="container-page text-center">
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-serif font-semibold tracking-tight mb-6">
+                    "Xây Blog hiện đại, kiểu Kevin Powell"
+                </h1>
+                <p class="text-lg sm:text-xl text-stone-600 mb-10 max-w-2xl mx-auto prose-balanced">
+                    "Đơn giản, tinh tế, tập trung vào nội dung. Dùng Tailwind để có trải nghiệm mượt mà, sạch sẽ và dễ đọc."
+                </p>
+                <div class="flex items-center justify-center gap-4">
+                    <button class="bg-brand-600 text-white px-6 py-3 rounded-full font-medium hover:bg-brand-700 transition-colors shadow-sm">
+                        "Bắt đầu ngay"
+                    </button>
+                    <button class="px-6 py-3 rounded-full font-medium border border-stone-300 text-stone-800 hover:bg-stone-100 transition-colors">
+                        "Tìm hiểu thêm"
+                    </button>
+                </div>
             </div>
         </section>
 
         // Features Section
-        <section class="py-16 bg-gray-50">
-            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-                <h2 class="text-3xl font-bold text-center text-gray-900 mb-12">
-                    "Why Choose LazyCoder?"
+        <section class="py-16 bg-white/60">
+            <div class="container-page">
+                <h2 class="text-2xl sm:text-3xl font-serif font-semibold text-center mb-12">
+                    "Vì sao chọn LazyCoder?"
                 </h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
                     {features.into_iter().map(|(icon, title, description)| {
                         view! {
-                            <div class="bg-white p-6 rounded-xl shadow-sm hover:shadow-md transition-shadow">
-                                <div class="text-4xl mb-4">{icon}</div>
-                                <h3 class="text-xl font-semibold mb-2">{title}</h3>
-                                <p class="text-gray-600">{description}</p>
+                            <div class="bg-white p-6 rounded-2xl border border-stone-200 shadow-sm/20 hover:shadow transition-shadow">
+                                <div class="text-4xl mb-3">{icon}</div>
+                                <h3 class="text-lg font-semibold mb-1">{title}</h3>
+                                <p class="text-stone-600 text-sm leading-6">{description}</p>
                             </div>
                         }
                     }).collect_view()}
@@ -53,16 +53,16 @@ pub fn HomePage() -> impl IntoView {
         </section>
 
         // CTA Section
-        <section class="py-20 text-center">
-            <div class="max-w-3xl mx-auto px-4">
-                <h2 class="text-3xl font-bold text-gray-900 mb-6">
-                    "Ready to get started?"
+        <section class="py-20">
+            <div class="container-page text-center">
+                <h2 class="text-2xl sm:text-3xl font-serif font-semibold mb-6">
+                    "Sẵn sàng bắt đầu?"
                 </h2>
-                <p class="text-xl text-gray-600 mb-8">
-                    "Join thousands of developers who are already building amazing things with LazyCoder."
+                <p class="text-lg text-stone-600 mb-8">
+                    "Tham gia cộng đồng developer đang xây dựng blog đẹp và hiệu quả với LazyCoder."
                 </p>
-                <button class="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors text-lg">
-                    "Create Your Account"
+                <button class="bg-brand-600 text-white px-8 py-3 rounded-full font-medium hover:bg-brand-700 transition-colors text-base shadow-sm">
+                    "Tạo tài khoản"
                 </button>
             </div>
         </section>

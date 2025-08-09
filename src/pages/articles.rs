@@ -34,8 +34,8 @@ pub fn ArticlesPage() -> impl IntoView {
     );
 
     view! {
-        <div class="max-w-4xl mx-auto px-4 py-8">
-            <h1 class="text-3xl font-bold text-gray-900 mb-8">Latest Articles</h1>
+        <div class="container-page py-10">
+            <h1 class="text-3xl font-serif font-semibold mb-8">Bài viết mới nhất</h1>
 
             <Suspense fallback=move || view! {<div class="text-center py-8">Loading posts...</div>}>
                 {move || match posts_resource.get() {
@@ -87,20 +87,20 @@ fn Article(post: PostTO) -> impl IntoView {
         .created_at.format(&format).unwrap_or_else(|_| "Unknown date".to_string());
 
     view! {
-        <article class="mb-8 p-6 bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-            <div class="flex justify-between items-center">
-                <h2 class="text-2xl font-bold text-gray-800 mb-2 hover:text-blue-600 transition-colors">
+        <article class="mb-8 p-6 bg-white rounded-2xl border border-stone-200 shadow-sm/20 hover:shadow transition-shadow">
+            <div class="flex justify-between items-start gap-4">
+                <h2 class="text-xl font-semibold mb-2 hover:text-stone-900 transition-colors">
                     {post.title}
                 </h2>
                 <div class="flex gap-2">
-                    <button class="inline-block font-medium bg-[#255b98] text-white border-0 rounded-full shadow-[0_0.125em_0.5em_rgba(0,0,0,0.15)] text-base tracking-wider leading-none px-[1.75em] pt-[0.95em] pb-[0.85em] cursor-pointer no-underline transform transition-transform duration-200 ease-in-out hover:scale-105">Edit</button>
-                    <button class="inline-block font-medium bg-[#db2c00] text-white border-0 rounded-full shadow-[0_0.125em_0.5em_rgba(0,0,0,0.15)] text-base tracking-wider leading-none px-[1.75em] pt-[0.95em] pb-[0.85em] cursor-pointer no-underline transform transition-transform duration-200 ease-in-out hover:scale-105">Delete</button>
+                    <button class="inline-flex items-center rounded-full bg-stone-800 text-white px-4 py-2 text-xs font-medium shadow-sm hover:bg-stone-900 transition-colors">Edit</button>
+                    <button class="inline-flex items-center rounded-full bg-red-600 text-white px-4 py-2 text-xs font-medium shadow-sm hover:bg-red-700 transition-colors">Delete</button>
                 </div>
             </div>
 
             {if !formatted_date.is_empty() {
                 view! {
-                    <p class="text-sm text-gray-500 mb-4">
+                    <p class="text-sm text-stone-500 mb-4">
                         <time datetime=formatted_date.clone()>
                             {formatted_date.clone()}
                         </time>
@@ -110,13 +110,13 @@ fn Article(post: PostTO) -> impl IntoView {
                 view! {}.into_any()
             }}
 
-            <p class="text-gray-600 mb-4">
+            <p class="text-stone-700 mb-4 leading-7">
                 {post.summary}
             </p>
 
             <A
                 href=format!("/articles/{}", post.slug)
-                attr:class="inline-flex items-center text-blue-600 hover:text-blue-800 font-medium"
+                attr:class="inline-flex items-center font-medium underline decoration-brand-300/0 hover:decoration-brand-400 underline-offset-4 text-stone-800 hover:text-stone-900"
             >
                 Read more
                 <svg class="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
