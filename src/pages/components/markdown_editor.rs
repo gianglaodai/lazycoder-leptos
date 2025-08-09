@@ -1,11 +1,10 @@
 use leptos::prelude::*;
-use leptos::web_sys;
 use markdown::{to_html_with_options, Options};
 
 #[component]
 pub fn MarkdownEditor(
     #[prop(optional)] initial_content: Option<String>,
-    #[prop(optional)] on_submit: Option<Callback<String>>,
+    on_submit: Callback<String>,
 ) -> impl IntoView {
     let (content, set_content) = signal(initial_content.unwrap_or_default());
     
@@ -43,24 +42,16 @@ pub fn MarkdownEditor(
             </div>
             
             // Submit button
-            {move || {
-                if let Some(submit_callback) = on_submit {
-                    view! {
-                        <div class="mt-4 flex justify-end">
-                            <button
-                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
-                                on:click=move |_| {
-                                    submit_callback.run(content.get());
-                                }
-                            >
-                                "Submit Changes"
-                            </button>
-                        </div>
-                    }.into_any()
-                } else {
-                    view! {}.into_any()
-                }
-            }}
+            <div class="mt-4 flex justify-end">
+                <button
+                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors"
+                    on:click=move |_| {
+                        on_submit.run(content.get());
+                    }
+                >
+                    "Submit Changes"
+                </button>
+            </div>
             
             // Toolbar with common markdown shortcuts
             <div class="mt-6 p-4 bg-gray-100 rounded-lg">

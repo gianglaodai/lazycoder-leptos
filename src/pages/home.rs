@@ -1,8 +1,4 @@
-use crate::pages::components::MarkdownEditor;
-use crate::pages::components::MarkdownViewer;
 use leptos::prelude::*;
-use leptos::svg::title;
-use leptos::web_sys;
 
 /// Renders the home page of your application.
 #[component]
@@ -15,9 +11,6 @@ pub fn HomePage() -> impl IntoView {
         ("🚀", "Modern", "Built with the latest web technologies"),
     ];
 
-    let handle_submit = Callback::new(move |markdown: String| {
-        web_sys::console::log_1(&markdown.into());
-    });
     view! {
         // Hero Section
         <section class="py-20 text-center">

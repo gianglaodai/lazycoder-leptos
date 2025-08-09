@@ -21,13 +21,13 @@ pub enum AttributeDataType {
     Time,
 }
 
-define_orm_with_common_fields!(AttributeOrm {
+define_orm_with_common_fields!(Attribute {
     pub name: String,
     pub entity_type: String,
     pub data_type: AttributeDataType,
 });
 
-define_orm_with_common_fields!(AttributeValueOrm {
+define_orm_with_common_fields!(AttributeValue {
     pub int_value: Option<i32>,
     pub double_value: Option<f64>,
     pub string_value: Option<String>,
