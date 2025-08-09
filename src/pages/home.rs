@@ -14,7 +14,7 @@ pub fn HomePage() -> impl IntoView {
     view! {
         <div class="font-serif">
         // Hero Section
-        <section class="py-24">
+        <section class="py-24 bg-gradient-to-b from-white to-stone-100">
             <div class="container-page text-center">
                 <h1 class="text-4xl sm:text-5xl lg:text-6xl font-serif font-semibold tracking-tight mb-6">
                     "Lazy để busy"
@@ -30,12 +30,12 @@ pub fn HomePage() -> impl IntoView {
         </section>
 
         // Features Section
-        <section id="features" class="py-24 bg-stone-50">
+        <section id="features" class="py-24 bg-gradient-to-tr from-stone-50 via-sky-100 to-stone-200">
             <div class="container-page">
                 <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 items-stretch">
                     {features.into_iter().map(|(icon, title, desc)| {
                         view! {
-                            <div class="group h-full text-center rounded-2xl bg-gradient-to-br from-stone-50 to-white border border-stone-200/60 shadow-md hover:shadow-2xl transition-all duration-300 p-6 sm:p-8 hover:-translate-y-1 overflow-hidden">
+                            <div class="group h-full text-center rounded-2xl bg-gradient-to-br from-stone-100 via-stone-50 to-stone-300 border border-stone-200/80 shadow-md hover:shadow-2xl transition-all duration-300 p-6 sm:p-8 hover:-translate-y-1 overflow-hidden">
                                 <div class="mx-auto mb-5 grid w-16 h-16 place-content-center rounded-full bg-gradient-to-tr from-indigo-600 to-sky-400 text-white shadow-xl ring-8 ring-white/60 hover:scale-105 transition-transform duration-300">
                                     <span class="text-3xl">{icon}</span>
                                 </div>
@@ -49,7 +49,7 @@ pub fn HomePage() -> impl IntoView {
         </section>
 
         // About Section
-        <section class="py-20">
+        <section class="py-20 bg-gradient-to-b from-white to-stone-100">
             <div class="container-page text-center max-w-3xl mx-auto">
                 <h2 class="text-3xl font-serif font-semibold mb-6">
                     "Vì sao 'lười' lại là siêu năng lực?"
@@ -59,13 +59,13 @@ pub fn HomePage() -> impl IntoView {
                     Tôi chia sẻ tips tối ưu code, tự động hóa task lặp, và tư duy thiết kế giúp bạn tiết kiệm thời gian, công sức… để làm điều bạn thích (kể cả là ngủ)."
                 </p>
                 <a href="#mentorship" class="px-6 py-3 bg-green-600 text-white rounded-lg shadow hover:bg-green-700 transition">
-                    "Just do it"
+                    "JUST DO IT"
                 </a>
             </div>
         </section>
 
         // Mentorship Section
-        <section id="mentorship" class="py-20 bg-blue-50">
+        <section id="mentorship" class="py-20 bg-gradient-to-tr from-blue-800 to-emerald-500 text-white **:text-white">
             <div class="container-page text-center max-w-3xl mx-auto">
                 <h2 class="text-3xl font-serif font-semibold mb-6">
                     "Muốn máy chạy, dev chơi?"
@@ -75,7 +75,7 @@ pub fn HomePage() -> impl IntoView {
                     Không giáo trình nhàm chán, chỉ có tình huống thực tế, giải pháp gọn nhẹ và tư duy xịn."
                 </p>
                 <a href="/contact" class="px-6 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
-                    "Đặt lịch với tôi"
+                    "CONTACT ME"
                 </a>
             </div>
         </section>
@@ -88,7 +88,7 @@ pub fn HomePage() -> impl IntoView {
                 </h2>
                 <p class="mb-8">"Muốn trở thành coder lười nhất (theo nghĩa tốt) mà bạn từng biết chưa?"</p>
                 <a href="/start" class="px-6 py-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition">
-                    "Just do it"
+                    "JUST DO IT"
                 </a>
             </div>
         </section>
