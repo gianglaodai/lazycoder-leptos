@@ -24,7 +24,7 @@ pub fn HomePage() -> impl IntoView {
                     Đây là nơi tôi chia sẻ bí kíp 'lười đúng cách' để bạn code gọn, bug ít, và có thêm thời gian cho cà phê, game, hay ngủ trưa."
                 </p>
                 <a href="#features" class="px-6 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700 transition">
-                    "Học cách lazy như một pro"
+                    "LAZY LIKE A PRO"
                 </a>
             </div>
         </section>
@@ -49,7 +49,7 @@ pub fn HomePage() -> impl IntoView {
         </section>
 
         // About Section
-        <section class="py-20 bg-gradient-to-b from-white to-stone-100">
+        <section class="py-20 bg-gradient-to-tr from-blue-800 to-emerald-500 text-white **:text-white">
             <div class="container-page text-center max-w-3xl mx-auto">
                 <h2 class="text-3xl font-serif font-semibold mb-6">
                     "Vì sao 'lười' lại là siêu năng lực?"
@@ -65,12 +65,12 @@ pub fn HomePage() -> impl IntoView {
         </section>
 
         // Mentorship Section
-        <section id="mentorship" class="py-20 bg-gradient-to-tr from-blue-800 to-emerald-500 text-white **:text-white">
+        <section id="mentorship" class="py-20 bg-gradient-to-b from-white via-stone-50 to-emerald-50 text-stone-900">
             <div class="container-page text-center max-w-3xl mx-auto">
                 <h2 class="text-3xl font-serif font-semibold mb-6">
                     "Muốn máy chạy, dev chơi?"
                 </h2>
-                <p class="text-lg text-stone-600 mb-8">
+                <p class="text-lg text-stone-700 mb-8">
                     "Tôi mentor lập trình viên mới ra trường, giúp họ đi từ ‘code cho xong’ sang ‘code như hacker lão luyện’.
                     Không giáo trình nhàm chán, chỉ có tình huống thực tế, giải pháp gọn nhẹ và tư duy xịn."
                 </p>
@@ -81,13 +81,13 @@ pub fn HomePage() -> impl IntoView {
         </section>
 
         // Footer CTA
-        <section class="py-20 bg-stone-900 text-white text-center">
+        <section class="py-20 bg-stone-800 text-stone-100 text-center">
             <div class="container-page">
                 <h2 class="text-3xl font-serif font-semibold mb-4">
                     "Lazy để busy – Máy chạy, dev chơi"
                 </h2>
-                <p class="mb-8">"Muốn trở thành coder lười nhất (theo nghĩa tốt) mà bạn từng biết chưa?"</p>
-                <a href="/start" class="px-6 py-3 bg-green-500 text-white rounded-lg shadow hover:bg-green-600 transition">
+                <p class="mb-8 text-stone-300">"Muốn trở thành Lazy Coder chưa?"</p>
+                <a href="/start" class="px-6 py-3 bg-emerald-600 text-white rounded-lg shadow hover:bg-emerald-700 transition">
                     "JUST DO IT"
                 </a>
             </div>
