@@ -65,7 +65,7 @@ impl QueryOptions {
         let parts: Vec<&str> = raw.split(":").collect();
         if parts.len() < 2 {
             return Err(CoreError::UnprocessableEntity(
-                "invalid_filter".to_string(),
+                "error.filters.invalid.format",
                 HashMap::from([("filter".to_string(), raw.to_string())]),
             ));
         }
@@ -158,7 +158,7 @@ impl QueryOptions {
                 let items: Vec<&str> = value_str.split('|').collect();
                 if items.len() != 2 {
                     return Err(CoreError::UnprocessableEntity(
-                        "invalid_range_value_format".into(),
+                        "error.invalid.range.value.format".into(),
                         HashMap::from([("value".into(), value_str.into())]),
                     ));
                 }
@@ -185,7 +185,7 @@ impl QueryOptions {
                     Ok(FilterValue::TimeRange(s, e))
                 } else {
                     Err(CoreError::UnprocessableEntity(
-                        "invalid_range_value".into(),
+                        "error.invalid.range.value".into(),
                         HashMap::from([("value".into(), value_str.into())]),
                     ))
                 }
@@ -195,7 +195,7 @@ impl QueryOptions {
                     Ok(FilterValue::Bool(b))
                 } else {
                     Err(CoreError::UnprocessableEntity(
-                        "invalid_bool_value".into(),
+                        "error.invalid.bool.value".into(),
                         HashMap::from([("value".into(), value_str.into())]),
                     ))
                 }
@@ -211,9 +211,7 @@ impl QueryOptions {
                     Ok(FilterValue::Date(d))
                 } else if let Ok(dt) = OffsetDateTime::parse(value_str, &Rfc3339) {
                     Ok(FilterValue::DateTime(dt))
-                } else if let Ok(t) =
-                    Time::parse(value_str, format_description!("[hour]:[minute]:[second]"))
-                {
+                } else if let Ok(t) = Time::parse(value_str, format_description!("[hour]:[minute]:[second]")) {
                     Ok(FilterValue::Time(t))
                 } else {
                     Ok(FilterValue::String(value_str.into()))

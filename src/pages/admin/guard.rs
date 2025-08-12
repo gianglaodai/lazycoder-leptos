@@ -1,6 +1,5 @@
-use crate::pages::rest::auth_api::{auth_me, UserRole};
+use crate::pages::rest::auth_api::{UserRole, UserTO};
 use leptos::prelude::*;
-use leptos::task::spawn_local;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::use_navigate;
 
@@ -8,24 +7,30 @@ use leptos_router::hooks::use_navigate;
 pub fn AdminGuard(children: leptos::children::ChildrenFn) -> impl IntoView {
     let allowed = RwSignal::new(false);
 
-    // Ask backend to validate session/role
+    // Check client-side user context first (hydrated from session). Avoid extra me() calls.
     {
         let allowed = allowed.clone();
         Effect::new(move |_| {
-            spawn_local(async move {
-                let navigate = use_navigate();
-                match auth_me().await {
-                    Ok(UserRole::ADMIN) => {
-                        allowed.set(true);
-                    }
-                    Ok(UserRole::USER) => {
-                        let _ = navigate("/403", Default::default());
-                    }
-                    Err(_) => {
+            let navigate = use_navigate();
+            if let Some(user_ctx) = use_context::<RwSignal<Option<UserTO>>>() {
+                match user_ctx.get() {
+                    Some(user) => match user.role {
+                        UserRole::ADMIN => {
+                            allowed.set(true);
+                        }
+                        UserRole::USER => {
+                            let _ = navigate("/403", Default::default());
+                        }
+                    },
+                    None => {
+                        // Not authenticated
                         let _ = navigate("/login", Default::default());
                     }
                 }
-            });
+            } else {
+                // No user context available – be safe and redirect to login
+                let _ = navigate("/login", Default::default());
+            }
         });
     }
 

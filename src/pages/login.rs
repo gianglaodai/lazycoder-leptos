@@ -1,4 +1,4 @@
-use crate::pages::rest::auth_api::{auth_login, UserRole};
+use crate::pages::rest::auth_api::{login, UserRole, UserTO};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
 use leptos::{component, view, IntoView};
@@ -10,15 +10,23 @@ pub fn LoginPage() -> impl IntoView {
     let password = RwSignal::new(String::new());
     let remember = RwSignal::new(false);
 
+    // Access the global user context and update it after login
+    let user_ctx = use_context::<RwSignal<Option<UserTO>>>().expect("user context provided in App");
+
     let on_submit = move |ev: leptos::ev::SubmitEvent| {
         ev.prevent_default();
         let input = username_or_email.get();
         let pwd = password.get();
         let remember_flag = remember.get();
+        let user_ctx = user_ctx.clone();
         spawn_local(async move {
-            match auth_login(input, pwd, remember_flag).await {
-                Ok(role) => {
+            match login(input, pwd, remember_flag).await {
+                Ok(user) => {
                     let navigate = use_navigate();
+                    // capture role before moving user into the context
+                    let role = user.role;
+                    // update global user context
+                    user_ctx.set(Some(user));
                     match role {
                         UserRole::ADMIN => {
                             let _ = navigate("/admin/home", Default::default());
@@ -28,7 +36,7 @@ pub fn LoginPage() -> impl IntoView {
                         }
                     }
                 }
-                Err(_e) => {
+                Err(e) => {
                     #[cfg(target_arch = "wasm32")]
                     {
                         let _ = window().alert_with_message(
@@ -71,6 +79,10 @@ pub fn LoginPage() -> impl IntoView {
                     <label for="remember">"Remember me"</label>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">SIGN IN</button>
+                <button type="button" class="w-full bg-stone-200 text-stone-900 py-2 rounded hover:bg-stone-300 transition" on:click=move |_| {
+                    let navigate = use_navigate();
+                    let _ = navigate("/register", Default::default());
+                }>REGISTER</button>
                 <p class="text-sm text-stone-500">"Demo credentials: admin/admin or anyname/password"</p>
             </form>
         </div>

@@ -1,5 +1,6 @@
 use crate::pages::about::AboutMePage;
 use crate::pages::admin::home::AdminHomePage;
+use crate::pages::admin::posts::AdminPostsPage;
 use crate::pages::articles::ArticlesPage;
 use crate::pages::components::{Footer, Navigation};
 use crate::pages::forbidden::ForbiddenPage;
@@ -7,6 +8,8 @@ use crate::pages::home::HomePage;
 use crate::pages::login::LoginPage;
 use crate::pages::newsletter::NewsletterPage;
 use crate::pages::not_found::NotFoundPage;
+use crate::pages::register::RegisterPage;
+use crate::pages::rest::auth_api::{current_user, UserTO};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_meta::{provide_meta_context, Link, Stylesheet, Title};
@@ -18,6 +21,26 @@ use leptos_router::{
 #[component]
 pub fn App() -> impl IntoView {
     provide_meta_context();
+
+    // Provide global user context (hydrated from server session)
+    let user_ctx: RwSignal<Option<UserTO>> = RwSignal::new(None);
+    provide_context(user_ctx);
+
+    // Create a shared Resource preloaded during SSR that reads current user from session
+    let current_user_res = Resource::new(|| (), |_| async move { current_user().await });
+    // Provide the resource globally so admin pages can read it for rendering
+    provide_context(current_user_res);
+
+    // On hydration, sync the resource value into the simple signal for guards/navigation
+    {
+        let res = current_user_res.clone();
+        let user_ctx = user_ctx.clone();
+        Effect::new(move |_| {
+            if let Some(Ok(u)) = res.get() {
+                user_ctx.set(u);
+            }
+        });
+    }
 
     view! {
         <Stylesheet id="leptos" href="/pkg/lazycoder_leptos.css"/>
@@ -33,8 +56,10 @@ pub fn App() -> impl IntoView {
                     <Route path=StaticSegment("") view=HomePage/>
                     <Route path=path!("/home") view=HomePage/>
                     <Route path=path!("/login") view=LoginPage/>
+                    <Route path=path!("/register") view=RegisterPage/>
                     <Route path=path!("/403") view=ForbiddenPage/>
                     <Route path=path!("/admin/home") view=AdminHomePage/>
+                    <Route path=path!("/admin/posts") view=AdminPostsPage/>
                     <Route path=path!("/about") view=AboutMePage/>
                     <Route path=path!("/articles") view=ArticlesPage ssr=SsrMode::OutOfOrder/>
                     <Route path=path!("/newsletter") view=NewsletterPage/>

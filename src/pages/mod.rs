@@ -10,3 +10,4 @@ mod rest;
 pub mod admin;
 pub mod forbidden;
 pub mod login;
+pub mod register;

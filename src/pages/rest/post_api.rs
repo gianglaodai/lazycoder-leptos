@@ -69,7 +69,6 @@ pub async fn load_posts(first_result: i64, max_results: i32) -> Result<Vec<PostT
         .map_err(|e| ServerFnError::ServerError(e.to_string()));
     result
 }
-
 #[server(name=CountPosts,prefix="/load", endpoint="/posts/count")]
 pub async fn count_posts() -> Result<i64, ServerFnError> {
     use crate::state::AppState;
@@ -79,6 +78,89 @@ pub async fn count_posts() -> Result<i64, ServerFnError> {
     state
         .post_service
         .count(vec![])
+        .await
+        .map_err(|e| ServerFnError::ServerError(e.to_string()))
+}
+
+#[server(name=CreatePost, prefix="/load", endpoint="/posts/create")]
+pub async fn create_post(post: PostCreateTO) -> Result<PostTO, ServerFnError> {
+    use crate::business::post_service::{PostCreate, PostStatus};
+    use crate::state::AppState;
+    use actix_session::SessionExt as _;
+    use leptos_actix::extract;
+    use std::str::FromStr;
+
+    // Guard: require ADMIN role from server session
+    let req: actix_web::HttpRequest = extract().await?;
+    let session = req.get_session();
+    let role: Option<String> = session.get("role").map_err(|e| ServerFnError::new(e.to_string()))?;
+    match role.as_deref() {
+        Some("ADMIN") => {}
+        _ => return Err(ServerFnError::new("Forbidden")),
+    }
+
+    let state: actix_web::web::Data<AppState> = extract().await?;
+    let to = post;
+    let create = PostCreate {
+        slug: to.slug,
+        title: to.title,
+        summary: to.summary,
+        content: to.content,
+        status: PostStatus::from_str(&to.status).unwrap_or(PostStatus::DRAFT),
+        author_id: None,
+    };
+    state
+        .post_service
+        .create(&create)
+        .await
+        .map(PostTO::from)
+        .map_err(|e| ServerFnError::ServerError(e.to_string()))
+}
+
+#[server(name=UpdatePost, prefix="/load", endpoint="/posts/update")]
+pub async fn update_post(post: PostTO) -> Result<PostTO, ServerFnError> {
+    use crate::state::AppState;
+    use actix_session::SessionExt as _;
+    use leptos_actix::extract;
+
+    // Guard: require ADMIN role from server session
+    let req: actix_web::HttpRequest = extract().await?;
+    let session = req.get_session();
+    let role: Option<String> = session.get("role").map_err(|e| ServerFnError::new(e.to_string()))?;
+    match role.as_deref() {
+        Some("ADMIN") => {}
+        _ => return Err(ServerFnError::new("Forbidden")),
+    }
+
+    let state: actix_web::web::Data<AppState> = extract().await?;
+    let entity: Post = post.into();
+    state
+        .post_service
+        .update(&entity)
+        .await
+        .map(PostTO::from)
+        .map_err(|e| ServerFnError::ServerError(e.to_string()))
+}
+
+#[server(name=DeletePost, prefix="/load", endpoint="/posts/delete")]
+pub async fn delete_post(id: i32) -> Result<u64, ServerFnError> {
+    use crate::state::AppState;
+    use actix_session::SessionExt as _;
+    use leptos_actix::extract;
+
+    // Guard: require ADMIN role from server session
+    let req: actix_web::HttpRequest = extract().await?;
+    let session = req.get_session();
+    let role: Option<String> = session.get("role").map_err(|e| ServerFnError::new(e.to_string()))?;
+    match role.as_deref() {
+        Some("ADMIN") => {}
+        _ => return Err(ServerFnError::new("Forbidden")),
+    }
+
+    let state: actix_web::web::Data<AppState> = extract().await?;
+    state
+        .post_service
+        .delete_by_id(id)
         .await
         .map_err(|e| ServerFnError::ServerError(e.to_string()))
 }
