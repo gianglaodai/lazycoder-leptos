@@ -5,10 +5,22 @@ use leptos::prelude::*;
 pub fn HomePage() -> impl IntoView {
     // Feature items with icons and descriptions
     let features = vec![
-        ("⚡", "Nhanh chóng", "Code xong trước deadline, còn thời gian order trà sữa."),
-        ("🔒", "An toàn", "Code sạch, bug ít – khỏi bận tâm fix giữa đêm."),
+        (
+            "⚡",
+            "Nhanh chóng",
+            "Code xong trước deadline, còn thời gian order trà sữa.",
+        ),
+        (
+            "🔒",
+            "An toàn",
+            "Code sạch, bug ít – khỏi bận tâm fix giữa đêm.",
+        ),
         ("🤸", "Linh hoạt", "Dự án scale mượt, dev rảnh đi phượt."),
-        ("🚀", "Luôn mới", "Tận dụng công nghệ mới để… không phải code lại."),
+        (
+            "🚀",
+            "Luôn mới",
+            "Tận dụng công nghệ mới để… không phải code lại.",
+        ),
     ];
 
     view! {

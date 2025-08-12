@@ -1,8 +1,8 @@
 #![cfg(feature = "ssr")]
 
-use std::env;
-use sqlx::PgPool;
 use sqlx::postgres::PgPoolOptions;
+use sqlx::PgPool;
+use std::env;
 
 pub async fn init_pool() -> Result<PgPool, sqlx::Error> {
     let db_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set in .env");

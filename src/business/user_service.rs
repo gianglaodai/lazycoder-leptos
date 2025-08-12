@@ -1,9 +1,9 @@
 use crate::business::error::CoreError;
 use crate::business::filter::Filter;
 use crate::business::repository::Repository;
+use crate::business::sort::SortCriterion;
 use crate::define_struct_with_common_fields;
 use std::sync::Arc;
-use crate::business::sort::SortCriterion;
 
 pub trait UserRepository: Repository<User, UserCreate> + Send + Sync {
     fn find_by_username(
@@ -16,10 +16,33 @@ pub trait UserRepository: Repository<User, UserCreate> + Send + Sync {
     ) -> impl std::future::Future<Output = Result<Option<User>, CoreError>>;
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[repr(i32)]
+pub enum UserRole {
+    USER = 0,
+    ADMIN = 1,
+}
+
+impl From<i32> for UserRole {
+    fn from(role: i32) -> Self {
+        match role {
+            1 => UserRole::ADMIN,
+            _ => UserRole::USER,
+        }
+    }
+}
+
+impl UserRole {
+    pub fn as_i32(&self) -> i32 {
+        *self as i32
+    }
+}
+
 define_struct_with_common_fields!(User {
     pub username: String,
     pub email: String,
-    pub password: String
+    pub password: String,
+    pub role: UserRole
 });
 
 #[derive(Clone)]

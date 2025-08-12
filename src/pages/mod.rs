@@ -1,8 +1,12 @@
-pub mod home;
-pub mod app_component;
-pub mod not_found;
 mod about;
+pub mod app_component;
 mod articles;
-mod newsletter;
 pub mod components;
+pub mod home;
+mod newsletter;
+pub mod not_found;
 mod rest;
+
+pub mod admin;
+pub mod forbidden;
+pub mod login;

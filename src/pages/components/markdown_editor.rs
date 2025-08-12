@@ -7,16 +7,17 @@ pub fn MarkdownEditor(
     on_submit: Callback<String>,
 ) -> impl IntoView {
     let (content, set_content) = signal(initial_content.unwrap_or_default());
-    
+
     let rendered_html = move || {
         let options = Options::gfm();
-        to_html_with_options(&content.get(), &options).unwrap_or_else(|_| "Error rendering markdown".to_string())
+        to_html_with_options(&content.get(), &options)
+            .unwrap_or_else(|_| "Error rendering markdown".to_string())
     };
 
     view! {
         <div class="max-w-6xl mx-auto p-6">
             <h2 class="text-2xl font-bold text-gray-800 mb-6">Markdown Editor</h2>
-            
+
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 // Input section
                 <div class="space-y-4">
@@ -30,7 +31,7 @@ pub fn MarkdownEditor(
                         }
                     />
                 </div>
-                
+
                 // Preview section
                 <div class="space-y-4">
                     <h3 class="text-lg font-semibold text-gray-700">Preview</h3>
@@ -40,7 +41,7 @@ pub fn MarkdownEditor(
                     />
                 </div>
             </div>
-            
+
             // Submit button
             <div class="mt-4 flex justify-end">
                 <button
@@ -52,7 +53,7 @@ pub fn MarkdownEditor(
                     "Submit Changes"
                 </button>
             </div>
-            
+
             // Toolbar with common markdown shortcuts
             <div class="mt-6 p-4 bg-gray-100 rounded-lg">
                 <h4 class="text-sm font-semibold text-gray-600 mb-2">Quick Reference:</h4>

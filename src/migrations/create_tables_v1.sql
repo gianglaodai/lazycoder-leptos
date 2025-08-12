@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS users (
     username VARCHAR(255) NOT NULL CONSTRAINT UN_users_username UNIQUE,
     email VARCHAR(255) NOT NULL CONSTRAINT UN_users_email UNIQUE,
     password VARCHAR(255) NOT NULL,
+    role INTEGER NOT NULL DEFAULT 0,
     CONSTRAINT UN_users_username UNIQUE (username),
     CONSTRAINT UN_users_email UNIQUE (email),
     CONSTRAINT UN_users_uid UNIQUE (uid)

@@ -384,10 +384,10 @@ mod tests {
             query.to_filters(),
             vec![
                 Filter::Property {
-                property_name: "name".to_owned(),
-                operator: FilterOperator::Equal,
-                value: FilterValue::String("hoang".to_owned())
-            },
+                    property_name: "name".to_owned(),
+                    operator: FilterOperator::Equal,
+                    value: FilterValue::String("hoang".to_owned())
+                },
                 Filter::Property {
                     property_name: "age".to_owned(),
                     operator: FilterOperator::LessThanOrEqual,
@@ -395,7 +395,7 @@ mod tests {
                 },
                 Filter::Attribute {
                     attr_name: "p_name".to_owned(),
-                    operator:FilterOperator::Equal,
+                    operator: FilterOperator::Equal,
                     value: FilterValue::String("giang".to_owned())
                 },
                 Filter::Search {

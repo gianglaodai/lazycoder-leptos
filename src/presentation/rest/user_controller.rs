@@ -1,6 +1,6 @@
 #![cfg(feature = "ssr")]
 
-use crate::business::user_service::{User, UserCreate};
+use crate::business::user_service::{User, UserCreate, UserRole};
 use crate::define_to_with_common_fields_be;
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
@@ -12,7 +12,9 @@ define_to_with_common_fields_be!(User {
     pub username: String,
     pub email: String,
     #[serde(skip_serializing, default)]
-    pub password: String
+    pub password: String,
+    #[serde(skip_serializing, default)]
+    pub role: i32,
 });
 
 impl From<UserTO> for User {
@@ -26,6 +28,7 @@ impl From<UserTO> for User {
             username: to.username,
             email: to.email,
             password: to.password,
+            role: UserRole::from(to.role),
         }
     }
 }
@@ -36,6 +39,7 @@ impl From<UserCreateTO> for UserCreate {
             username: to.username,
             email: to.email,
             password: to.password,
+            role: UserRole::USER,
         }
     }
 }
@@ -51,6 +55,7 @@ impl From<User> for UserTO {
             username: entity.username,
             email: entity.email,
             password: entity.password,
+            role: entity.role.as_i32(),
         }
     }
 }

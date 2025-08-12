@@ -4,11 +4,11 @@ use crate::business::error::CoreError;
 use crate::business::filter::Filter;
 use crate::business::post_service::{Post, PostCreate, PostRepository, PostStatus};
 use crate::business::repository::Repository;
+use crate::business::sort::SortCriterion;
 use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::SqlxRepository;
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::business::sort::SortCriterion;
 
 #[derive(Clone)]
 pub struct PostSqlxRepository {
@@ -145,8 +145,6 @@ impl SqlxRepository for PostSqlxRepository {
     fn from_orm(orm: Self::Orm) -> Self::Entity {
         Post::from(orm)
     }
-    
-    
 }
 
 impl PostRepository for PostSqlxRepository {

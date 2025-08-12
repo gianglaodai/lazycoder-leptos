@@ -1,13 +1,19 @@
+use crate::pages::about::AboutMePage;
+use crate::pages::admin::home::AdminHomePage;
+use crate::pages::articles::ArticlesPage;
+use crate::pages::components::{Footer, Navigation};
+use crate::pages::forbidden::ForbiddenPage;
+use crate::pages::home::HomePage;
+use crate::pages::login::LoginPage;
+use crate::pages::newsletter::NewsletterPage;
+use crate::pages::not_found::NotFoundPage;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos_meta::{provide_meta_context, Stylesheet, Title, Link};
-use leptos_router::{components::{Route, Router, Routes}, path, SsrMode, StaticSegment, WildcardSegment};
-use crate::pages::about::AboutMePage;
-use crate::pages::home::HomePage;
-use crate::pages::not_found::NotFoundPage;
-use crate::pages::articles::ArticlesPage;
-use crate::pages::components::{Navigation, Footer};
-use crate::pages::newsletter::NewsletterPage;
+use leptos_meta::{provide_meta_context, Link, Stylesheet, Title};
+use leptos_router::{
+    components::{Route, Router, Routes},
+    path, SsrMode, StaticSegment, WildcardSegment,
+};
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -25,6 +31,10 @@ pub fn App() -> impl IntoView {
             <main class="min-h-screen bg-[--color-bg] text-[--color-ink]">
                 <Routes fallback=move || view! { <NotFoundPage/> }>
                     <Route path=StaticSegment("") view=HomePage/>
+                    <Route path=path!("/home") view=HomePage/>
+                    <Route path=path!("/login") view=LoginPage/>
+                    <Route path=path!("/403") view=ForbiddenPage/>
+                    <Route path=path!("/admin/home") view=AdminHomePage/>
                     <Route path=path!("/about") view=AboutMePage/>
                     <Route path=path!("/articles") view=ArticlesPage ssr=SsrMode::OutOfOrder/>
                     <Route path=path!("/newsletter") view=NewsletterPage/>

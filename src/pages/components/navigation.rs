@@ -13,6 +13,7 @@ pub fn Navigation() -> impl IntoView {
                             <A href="/articles" attr:class="text-emerald-600">ARTICLES</A>
                             <A href="/about" attr:class="text-indigo-600">ABOUT ME</A>
                             <A href="/newsletter" attr:class="text-amber-600">NEWSLETTER</A>
+                            <A href="/login" attr:class="text-blue-600">LOGIN</A>
                         </div>
                     </div>
                 </div>

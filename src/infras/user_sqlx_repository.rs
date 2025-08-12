@@ -4,7 +4,7 @@ use crate::business::error::CoreError;
 use crate::business::filter::Filter;
 use crate::business::repository::Repository;
 use crate::business::sort::SortCriterion;
-use crate::business::user_service::{User, UserCreate, UserRepository};
+use crate::business::user_service::{User, UserCreate, UserRepository, UserRole};
 use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::SqlxRepository;
 use sqlx::PgPool;
@@ -18,7 +18,8 @@ pub struct UserSqlxRepository {
 define_orm_with_common_fields!(User {
     pub username: String,
     pub email: String,
-    pub password: String
+    pub password: String,
+    pub role: i32,
 });
 
 impl UserOrm {
@@ -30,13 +31,14 @@ impl From<UserOrm> for User {
     fn from(orm: UserOrm) -> Self {
         Self {
             id: orm.id,
-            uid:orm.uid.to_string(),
+            uid: orm.uid.to_string(),
             version: orm.version,
             created_at: orm.created_at,
             updated_at: orm.updated_at,
             username: orm.username,
             email: orm.email,
             password: orm.password,
+            role: UserRole::from(orm.role),
         }
     }
 }

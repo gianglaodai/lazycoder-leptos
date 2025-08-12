@@ -1,19 +1,19 @@
 #[cfg(feature = "ssr")]
 pub mod app;
+pub mod business;
 #[cfg(feature = "ssr")]
 pub mod config;
+#[cfg(feature = "ssr")]
+pub mod db;
+#[cfg(feature = "ssr")]
+pub mod infras;
 pub mod pages;
+#[cfg(feature = "ssr")]
+pub mod presentation;
 #[cfg(feature = "ssr")]
 pub mod routes;
 #[cfg(feature = "ssr")]
 pub mod state;
-#[cfg(feature = "ssr")]
-pub mod presentation;
-#[cfg(feature = "ssr")]
-pub mod infras;
-pub mod business;
-#[cfg(feature = "ssr")]
-pub mod db;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]

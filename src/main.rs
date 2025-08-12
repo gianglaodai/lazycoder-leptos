@@ -1,4 +1,4 @@
-#![recursion_limit="256"]
+#![recursion_limit = "256"]
 #[cfg(feature = "ssr")]
 use lazycoder_leptos::{app, config, db};
 
@@ -7,10 +7,11 @@ use lazycoder_leptos::{app, config, db};
 async fn main() -> std::io::Result<()> {
     config::init_env();
     let pool = db::init_pool().await.expect("Failed to connect DB");
-    db::run_migrations(&pool).await.expect("Failed to run migrations");
+    db::run_migrations(&pool)
+        .await
+        .expect("Failed to run migrations");
     app::run(pool).await
 }
-
 
 #[cfg(not(any(feature = "ssr", feature = "csr")))]
 pub fn main() {

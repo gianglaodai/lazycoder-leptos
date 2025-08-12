@@ -9,13 +9,11 @@ pub fn MarkdownViewer(
 ) -> impl IntoView {
     let rendered_html = move || {
         let options = Options::gfm();
-        to_html_with_options(&content, &options).unwrap_or_else(|_| "Error rendering markdown".to_string())
+        to_html_with_options(&content, &options)
+            .unwrap_or_else(|_| "Error rendering markdown".to_string())
     };
 
-    let container_class = format!(
-        "max-w-4xl mx-auto p-6 {}",
-        class.unwrap_or_default()
-    );
+    let container_class = format!("max-w-4xl mx-auto p-6 {}", class.unwrap_or_default());
 
     view! {
         <div class=container_class>

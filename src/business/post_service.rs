@@ -1,10 +1,10 @@
 use crate::business::error::CoreError;
 use crate::business::filter::Filter;
 use crate::business::repository::Repository;
+use crate::business::sort::SortCriterion;
 use crate::define_struct_with_common_fields;
 use std::future::Future;
 use std::sync::Arc;
-use crate::business::sort::SortCriterion;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[repr(i32)]
