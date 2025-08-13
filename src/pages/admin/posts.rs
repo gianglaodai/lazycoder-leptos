@@ -7,6 +7,7 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::use_query_map;
 use time::format_description;
+use crate::pages::rest::auth_api::UserTO;
 
 #[component]
 pub fn AdminPostsPage() -> impl IntoView {
@@ -86,6 +87,7 @@ pub fn AdminPostsPage() -> impl IntoView {
 
 #[component]
 fn NewPostForm(reload: RwSignal<u32>) -> impl IntoView {
+    let user_ctx: RwSignal<Option<UserTO>> = expect_context();
     let slug = RwSignal::new(String::new());
     let title = RwSignal::new(String::new());
     let summary = RwSignal::new(String::new());
@@ -99,6 +101,7 @@ fn NewPostForm(reload: RwSignal<u32>) -> impl IntoView {
             summary: summary.get_untracked(),
             content: content.get_untracked(),
             status: status.get_untracked(),
+            user_id: user_ctx.get().map(|u| u.id).unwrap(),
         };
         async move { create_post(payload).await }
     });

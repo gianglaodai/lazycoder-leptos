@@ -10,6 +10,7 @@ define_to_with_common_fields_fe!(Post {
     pub summary: String,
     pub content: String,
     pub status: String,
+    pub user_id: i32,
 });
 
 impl From<PostTO> for Post {
@@ -25,7 +26,7 @@ impl From<PostTO> for Post {
             summary: to.summary,
             content: to.content,
             status: PostStatus::from_str(&to.status).unwrap_or(PostStatus::DRAFT),
-            author_id: None,
+            user_id: to.user_id,
         }
     }
 }
@@ -43,6 +44,7 @@ impl From<Post> for PostTO {
             summary: entity.summary,
             content: entity.content,
             status: entity.status.as_str().to_string(),
+            user_id: entity.user_id,
         }
     }
 }
@@ -107,7 +109,7 @@ pub async fn create_post(post: PostCreateTO) -> Result<PostTO, ServerFnError> {
         summary: to.summary,
         content: to.content,
         status: PostStatus::from_str(&to.status).unwrap_or(PostStatus::DRAFT),
-        author_id: None,
+        user_id: to.user_id,
     };
     state
         .post_service

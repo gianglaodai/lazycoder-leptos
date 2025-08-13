@@ -65,12 +65,12 @@ define_struct_with_common_fields!(Post {
     pub summary: String,
     pub content: String,
     pub status: PostStatus,
-    pub author_id: Option<i32>,
+    pub user_id: i32,
 });
 
 pub trait PostRepository: Repository<Post, PostCreate> + Send + Sync {
     fn find_by_slug(&self, slug: &str) -> impl Future<Output = Result<Option<Post>, CoreError>>;
-    fn find_by_author(&self, author_id: i32) -> impl Future<Output = Result<Vec<Post>, CoreError>>;
+    fn find_by_author(&self, user_id: i32) -> impl Future<Output = Result<Vec<Post>, CoreError>>;
 }
 #[derive(Clone)]
 pub struct PostService<R: PostRepository> {

@@ -4,6 +4,8 @@ use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_router::hooks::use_query_map;
 use time::format_description;
+use leptos::control_flow::Show;
+use crate::pages::rest::auth_api::UserTO;
 
 #[component]
 pub fn ArticlesPage() -> impl IntoView {
@@ -81,6 +83,7 @@ pub fn ArticlesPage() -> impl IntoView {
 
 #[component]
 fn Article(post: PostTO) -> impl IntoView {
+    let user_ctx: RwSignal<Option<UserTO>> = expect_context();
     let format =
         format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]").unwrap();
     let formatted_date = post
@@ -95,8 +98,10 @@ fn Article(post: PostTO) -> impl IntoView {
                     {post.title}
                 </h2>
                 <div class="flex gap-2">
-                    <button class="inline-flex items-center rounded-full bg-stone-800 text-white px-4 py-2 text-xs font-medium shadow-sm hover:bg-stone-900 transition-colors">Edit</button>
-                    <button class="inline-flex items-center rounded-full bg-red-600 text-white px-4 py-2 text-xs font-medium shadow-sm hover:bg-red-700 transition-colors">Delete</button>
+                    <Show when={move || user_ctx.get().map(|u| u.id == post.user_id).unwrap_or(false)}>
+                        <button class="inline-flex items-center rounded-full bg-stone-800 text-white px-4 py-2 text-xs font-medium shadow-sm hover:bg-stone-900 transition-colors">Edit</button>
+                        <button class="inline-flex items-center rounded-full bg-red-600 text-white px-4 py-2 text-xs font-medium shadow-sm hover:bg-red-700 transition-colors">Delete</button>
+                    </Show>
                 </div>
             </div>
 

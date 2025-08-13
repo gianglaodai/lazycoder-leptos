@@ -13,6 +13,7 @@ define_to_with_common_fields_be!(Post {
     pub summary: String,
     pub content: String,
     pub status: String,
+    pub user_id: i32,
 });
 
 impl From<PostTO> for Post {
@@ -28,7 +29,7 @@ impl From<PostTO> for Post {
             summary: to.summary,
             content: to.content,
             status: PostStatus::from_str(&to.status).unwrap_or(PostStatus::DRAFT),
-            author_id: None,
+            user_id: to.user_id,
         }
     }
 }
@@ -41,7 +42,7 @@ impl From<PostCreateTO> for PostCreate {
             summary: to.summary,
             content: to.content,
             status: PostStatus::from_str(&to.status).unwrap_or(PostStatus::DRAFT),
-            author_id: None,
+            user_id: to.user_id,
         }
     }
 }
@@ -59,6 +60,7 @@ impl From<Post> for PostTO {
             summary: entity.summary,
             content: entity.content,
             status: entity.status.as_str().to_string(),
+            user_id: entity.user_id,
         }
     }
 }

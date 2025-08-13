@@ -21,7 +21,7 @@ define_orm_with_common_fields!(Post {
     pub summary: String,
     pub content: String,
     pub status: i32,
-    pub author_id: Option<i32>,
+    pub user_id: i32,
 });
 
 impl PostOrm {
@@ -43,7 +43,7 @@ impl From<PostOrm> for Post {
             summary: orm.summary,
             content: orm.content,
             status: PostStatus::from(orm.status),
-            author_id: orm.author_id,
+            user_id: orm.user_id,
         }
     }
 }
@@ -97,6 +97,7 @@ impl Repository<Post, PostCreate> for PostSqlxRepository {
             .bind(&post_create.summary)
             .bind(&post_create.content)
             .bind(&post_create.status.as_i32())
+            .bind(&post_create.user_id)
             .fetch_one(&self.pool)
             .await?;
         Ok(Post::from(row))
@@ -157,9 +158,9 @@ impl PostRepository for PostSqlxRepository {
         Ok(result.map(Self::from_orm))
     }
 
-    async fn find_by_author(&self, author_id: i32) -> Result<Vec<Post>, CoreError> {
-        let result = sqlx::query_as::<_, PostOrm>("SELECT * FROM posts WHERE author_id=$1")
-            .bind(author_id)
+    async fn find_by_author(&self, user_id: i32) -> Result<Vec<Post>, CoreError> {
+        let result = sqlx::query_as::<_, PostOrm>("SELECT * FROM posts WHERE user_id=$1")
+            .bind(user_id)
             .fetch_all(self.get_pool())
             .await?;
 
