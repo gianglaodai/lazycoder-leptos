@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS posts (
     content TEXT,
     status INTEGER NOT NULL DEFAULT 0,
     published_at TIMESTAMPTZ,
-    user_id INTEGER,
+    user_id INTEGER NOT NULL,
     CONSTRAINT FK_posts_user_id FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
     CONSTRAINT UN_posts_slug UNIQUE (slug),
     CONSTRAINT UN_posts_uid UNIQUE (uid)
