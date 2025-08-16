@@ -1,9 +1,9 @@
 use crate::pages::about::AboutMePage;
 use crate::pages::admin::home::AdminHomePage;
 use crate::pages::admin::posts::AdminPostsPage;
+use crate::pages::admin::post_form::{AdminPostNewPage, AdminPostEditPage};
 use crate::pages::articles::ArticlesPage;
 use crate::pages::components::{Footer, Navigation};
-use crate::pages::forbidden::ForbiddenPage;
 use crate::pages::home::HomePage;
 use crate::pages::login::LoginPage;
 use crate::pages::newsletter::NewsletterPage;
@@ -57,12 +57,13 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/home") view=HomePage/>
                     <Route path=path!("/login") view=LoginPage/>
                     <Route path=path!("/register") view=RegisterPage/>
-                    <Route path=path!("/403") view=ForbiddenPage/>
-                    <Route path=path!("/admin/home") view=AdminHomePage/>
-                    <Route path=path!("/admin/posts") view=AdminPostsPage/>
                     <Route path=path!("/about") view=AboutMePage/>
                     <Route path=path!("/articles") view=ArticlesPage ssr=SsrMode::OutOfOrder/>
                     <Route path=path!("/newsletter") view=NewsletterPage/>
+                    <Route path=path!("/admin/home") view=AdminHomePage/>
+                    <Route path=path!("/admin/posts") view=AdminPostsPage/>
+                    <Route path=path!("/admin/posts/new") view=AdminPostNewPage/>
+                    <Route path=path!("/admin/posts/:id/edit") view=AdminPostEditPage/>
                     <Route path=WildcardSegment("any") view=NotFoundPage/>
                 </Routes>
             </main>

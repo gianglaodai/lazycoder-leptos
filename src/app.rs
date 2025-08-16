@@ -5,7 +5,7 @@ use leptos_actix::handle_server_fns;
 use sqlx::PgPool;
 
 pub async fn run(pool: PgPool) -> std::io::Result<()> {
-    use crate::pages::app_component::App;
+    use crate::pages::app::App;
     use crate::state::new_app_state;
     use actix_files::Files;
     use actix_session::storage::CookieSessionStore;

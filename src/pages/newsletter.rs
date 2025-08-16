@@ -1,5 +1,7 @@
 use leptos::prelude::*;
 use leptos_router::components::A;
+use crate::pages::components::Button;
+use crate::pages::components::button::ButtonVariant;
 
 #[component]
 pub fn NewsletterPage() -> impl IntoView {
@@ -74,12 +76,9 @@ pub fn NewsletterPage() -> impl IntoView {
                                 <p class="text-gray-600 mb-6">
                                     "You've been successfully added to our newsletter. Check your email for the confirmation."
                                 </p>
-                                <button
-                                    on:click=move |_| set_is_subscribed.set(false)
-                                    class="text-blue-600 hover:text-blue-800 font-medium"
-                                >
+                                <Button variant=ButtonVariant::Link on_click=Callback::new(move |_| set_is_subscribed.set(false))>
                                     "Back to form"
-                                </button>
+                                </Button>
                             </div>
                         }
                     >
@@ -136,29 +135,7 @@ pub fn NewsletterPage() -> impl IntoView {
                                 </div>
                             </div>
                             <div>
-                                <button
-                                    type="submit"
-                                    disabled=is_loading
-                                    class=move || {
-                                        let base = "w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500";
-                                        if is_loading.get() {
-                                            format!("{} opacity-75 cursor-not-allowed", base)
-                                        } else {
-                                            base.to_string()
-                                        }
-                                    }
-                                >
-                                    <Show
-                                        when=is_loading
-                                        fallback=|| view! { "Subscribe" }
-                                    >
-                                        <svg class="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        "Subscribing..."
-                                    </Show>
-                                </button>
+                                <Button class="w-full" r#type="submit".to_string() disabled=is_loading.get()>Subscribe</Button>
                             </div>
                         </form>
                     </Show>

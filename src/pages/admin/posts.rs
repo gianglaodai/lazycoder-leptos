@@ -1,13 +1,14 @@
 use crate::pages::admin::guard::AdminGuard;
 use crate::pages::components::Pagination;
+use crate::pages::components::Button;
+use crate::pages::components::button::ButtonVariant;
 use crate::pages::rest::post_api::{
-    count_posts, create_post, delete_post, load_posts, update_post, PostCreateTO, PostTO,
+    count_posts, delete_post, load_posts, update_post, PostTO,
 };
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::use_query_map;
 use time::format_description;
-use crate::pages::rest::auth_api::UserTO;
 
 #[component]
 pub fn AdminPostsPage() -> impl IntoView {
@@ -44,7 +45,7 @@ pub fn AdminPostsPage() -> impl IntoView {
             <div class="container-page py-10 font-serif">
                 <div class="flex items-center justify-between mb-6">
                     <h1 class="text-3xl font-bold">Manage Posts</h1>
-                    <NewPostForm reload=reload />
+                    <Button href="/admin/posts/new">New Post</Button>
                 </div>
 
                 <Suspense fallback=move || view! {<div class="text-center py-8">Loading posts...</div>}>
@@ -81,65 +82,6 @@ pub fn AdminPostsPage() -> impl IntoView {
                     </Suspense>
                 </div>
             </div>
-        </AdminGuard>
-    }
-}
-
-#[component]
-fn NewPostForm(reload: RwSignal<u32>) -> impl IntoView {
-    let user_ctx: RwSignal<Option<UserTO>> = expect_context();
-    let slug = RwSignal::new(String::new());
-    let title = RwSignal::new(String::new());
-    let summary = RwSignal::new(String::new());
-    let content = RwSignal::new(String::new());
-    let status = RwSignal::new("DRAFT".to_string());
-
-    let submit = Action::new(move |_: &()| {
-        let payload = PostCreateTO {
-            slug: slug.get_untracked(),
-            title: title.get_untracked(),
-            summary: summary.get_untracked(),
-            content: content.get_untracked(),
-            status: status.get_untracked(),
-            user_id: user_ctx.get().map(|u| u.id).unwrap(),
-        };
-        async move { create_post(payload).await }
-    });
-
-    Effect::new({
-        let reload = reload.clone();
-        move |_| {
-            if let Some(Ok(_p)) = submit.value().get() {
-                // reset
-                slug.set(String::new());
-                title.set(String::new());
-                summary.set(String::new());
-                content.set(String::new());
-                status.set("DRAFT".to_string());
-                reload.update(|v| *v += 1);
-            }
-        }
-    });
-
-    view! {
-        <AdminGuard>
-            <details class="rounded-lg border border-stone-200 p-4 bg-white shadow-sm">
-                <summary class="cursor-pointer font-medium">New Post</summary>
-                <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                    <input class="input" placeholder="Slug" prop:value=move || slug.get() on:input=move |ev| slug.set(event_target_value(&ev)) />
-                    <input class="input" placeholder="Title" prop:value=move || title.get() on:input=move |ev| title.set(event_target_value(&ev)) />
-                    <input class="input md:col-span-2" placeholder="Summary" prop:value=move || summary.get() on:input=move |ev| summary.set(event_target_value(&ev)) />
-                    <textarea class="input md:col-span-2" placeholder="Content" prop:value=move || content.get() on:input=move |ev| content.set(event_target_value(&ev)) ></textarea>
-                    <select class="input" prop:value=move || status.get() on:change=move |ev| status.set(event_target_value(&ev))>
-                        <option value="DRAFT">DRAFT</option>
-                        <option value="REVIEW">REVIEW</option>
-                        <option value="PUBLISHED">PUBLISHED</option>
-                        <option value="ARCHIVED">ARCHIVED</option>
-                        <option value="DELETED">DELETED</option>
-                    </select>
-                    <button class="btn btn-primary" on:click=move |_| { submit.dispatch(()); }>Create</button>
-                </div>
-            </details>
         </AdminGuard>
     }
 }
@@ -201,27 +143,10 @@ fn AdminPostItem(post: PostTO, reload: RwSignal<u32>) -> impl IntoView {
                         <div class="text-sm text-stone-500">Slug: {slug.clone()} - Status: {move || status.get()} - Created: {created.clone()} - Updated: {updated.clone()}</div>
                     </div>
                     <div class="flex gap-2">
-                        <button class="btn" on:click=move |_| editing.update(|v| *v = !*v)>
-                            {move || if editing.get() { "Cancel".to_string() } else { "Edit".to_string() }}
-                        </button>
-                        <button class="btn btn-danger" on:click=move |_| { delete_action.dispatch(()); }>Delete</button>
+                        <Button href=format!("/admin/posts/{}/edit", post_id) variant=ButtonVariant::Outline>Edit</Button>
+                        <Button variant=ButtonVariant::Destructive on_click=Callback::new(move |_| { delete_action.dispatch(()); })>Delete</Button>
                     </div>
                 </div>
-                <Show when=move || editing.get()>
-                    <div class="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
-                        <input class="input md:col-span-2" placeholder="Title" prop:value=move || title.get() on:input=move |ev| title.set(event_target_value(&ev)) />
-                        <input class="input md:col-span-2" placeholder="Summary" prop:value=move || summary.get() on:input=move |ev| summary.set(event_target_value(&ev)) />
-                        <textarea class="input md:col-span-2" placeholder="Content" prop:value=move || content.get() on:input=move |ev| content.set(event_target_value(&ev)) ></textarea>
-                        <select class="input" prop:value=move || status.get() on:change=move |ev| status.set(event_target_value(&ev))>
-                            <option value="DRAFT">DRAFT</option>
-                            <option value="REVIEW">REVIEW</option>
-                            <option value="PUBLISHED">PUBLISHED</option>
-                            <option value="ARCHIVED">ARCHIVED</option>
-                            <option value="DELETED">DELETED</option>
-                        </select>
-                        <button class="btn btn-primary" on:click=move |_| { update_action.dispatch(()); }>Save</button>
-                    </div>
-                </Show>
             </div>
         </AdminGuard>
     }

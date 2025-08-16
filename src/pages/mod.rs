@@ -1,5 +1,5 @@
 mod about;
-pub mod app_component;
+pub mod app;
 mod articles;
 pub mod components;
 pub mod home;

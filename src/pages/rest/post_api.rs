@@ -166,3 +166,17 @@ pub async fn delete_post(id: i32) -> Result<u64, ServerFnError> {
         .await
         .map_err(|e| ServerFnError::ServerError(e.to_string()))
 }
+
+#[server(name=LoadPostById, prefix="/load", endpoint="/posts/get")]
+pub async fn load_post_by_id(id: i32) -> Result<PostTO, ServerFnError> {
+    use crate::state::AppState;
+    use leptos_actix::extract;
+
+    let state: actix_web::web::Data<AppState> = extract().await?;
+    let result = state.post_service.get_by_id(id).await;
+    match result {
+        Ok(Some(p)) => Ok(PostTO::from(p)),
+        Ok(None) => Err(ServerFnError::ServerError("Not Found".to_string())),
+        Err(e) => Err(ServerFnError::ServerError(e.to_string())),
+    }
+}

@@ -1,3 +1,4 @@
+use crate::pages::components::Button;
 use crate::pages::rest::auth_api::register;
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -95,8 +96,8 @@ pub fn RegisterPage() -> impl IntoView {
                         required
                     />
                 </div>
-                <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transition">CREATE ACCOUNT</button>
-                <p class="text-sm text-stone-500">"Already have an account? "<a href="/login" class="text-blue-600 hover:underline">"Sign in"</a></p>
+                <Button class="w-full" r#type="submit".to_string()>CREATE ACCOUNT</Button>
+                <p class="text-sm text-stone-500">Already have an account? <a href="/login" class="text-blue-600 hover:underline">Sign in</a></p>
             </form>
         </div>
     }

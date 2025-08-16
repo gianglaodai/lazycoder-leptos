@@ -1,3 +1,5 @@
+use crate::pages::components::Button;
+use crate::pages::components::button::ButtonVariant;
 use crate::pages::rest::auth_api::{login, UserRole, UserTO};
 use leptos::prelude::*;
 use leptos::task::spawn_local;
@@ -78,11 +80,11 @@ pub fn LoginPage() -> impl IntoView {
                     <input id="remember" type="checkbox" class="h-4 w-4" prop:checked=move || remember.get() on:change=move |ev| remember.set(event_target_checked(&ev)) />
                     <label for="remember">"Remember me"</label>
                 </div>
-                <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 transition">SIGN IN</button>
-                <button type="button" class="w-full bg-stone-200 text-stone-900 py-2 rounded hover:bg-stone-300 transition" on:click=move |_| {
+                <Button class="w-full" r#type="submit".to_string()>SIGN IN</Button>
+                <Button class="w-full" variant=ButtonVariant::Outline on_click=Callback::new(move |_| {
                     let navigate = use_navigate();
                     let _ = navigate("/register", Default::default());
-                }>REGISTER</button>
+                })>REGISTER</Button>
                 <p class="text-sm text-stone-500">"Demo credentials: admin/admin or anyname/password"</p>
             </form>
         </div>

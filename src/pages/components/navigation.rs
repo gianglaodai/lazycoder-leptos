@@ -2,6 +2,8 @@ use crate::pages::rest::auth_api::{logout, UserTO};
 use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_router::hooks::use_navigate;
+use crate::pages::components::Button;
+use crate::pages::components::button::ButtonVariant;
 
 #[component]
 pub fn Navigation() -> impl IntoView {
@@ -49,14 +51,14 @@ pub fn Navigation() -> impl IntoView {
                             }
                         >
                             <div class="flex items-center">
-                                <button class="text-xl font-bold underline underline-offset-4 decoration-1 hover:no-underline hover:text-black transition-colors" on:click=move |ev| { ev.stop_propagation(); show_menu.update(|v| *v = !*v); }>
+                                <Button variant=ButtonVariant::Link class="text-xl font-bold underline underline-offset-4 decoration-1 hover:no-underline hover:text-black transition-colors" on_click=Callback::new(move |ev: leptos::ev::MouseEvent| { ev.stop_propagation(); show_menu.update(|v| *v = !*v); })>
                                     {move || format!("Welcome, {}", username.get())}
-                                </button>
+                                </Button>
                                 <Show when=move || show_menu.get() fallback=|| ()>
                                     <div class="absolute right-0 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none z-50" on:click=|ev| ev.stop_propagation()>
                                         <div class="py-1 text-[--color-ink]">
                                             <A href="/settings" attr:class="block px-4 py-2 text-sm hover:bg-gray-100">Settings</A>
-                                            <button class="w-full text-left block px-4 py-2 text-sm hover:bg-gray-100" on:click={logout}>Logout</button>
+                                            <Button class="w-full text-left block px-4 py-2 text-sm hover:bg-gray-100" variant=ButtonVariant::Ghost on_click=Callback::new(move |_| logout(()))>Logout</Button>
                                         </div>
                                     </div>
                                 </Show>
