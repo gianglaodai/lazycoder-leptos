@@ -34,9 +34,8 @@
     --font-mono: "ComicShannsMonoNerdFont", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 
     /* Warm neutral background and readable ink */
-    /*--color-ink: var(--color-stone-900);*/
-    /*--color-bg: var(--color-stone-50);*/
-    /* Brand accent (warm amber/gold) */
+    --color-ink: var(--color-stone-900);
+    --color-bg: var(--color-stone-50);
     --color-brand-50: var(--color-amber-50);
     --color-brand-100: var(--color-amber-100);
     --color-brand-200: var(--color-amber-200);
@@ -48,42 +47,6 @@
     --color-brand-800: var(--color-amber-800);
     --color-brand-900: var(--color-amber-900);
 
-    /*Tropical*/
-    /*--color-bg: var(--color-emerald-50);*/
-    /*--color-ink: var(--color-stone-900);*/
-    /*--color-primary: var(--color-emerald-600);*/
-    /*--color-primary-foreground: var(--color-white);*/
-    /*--color-secondary: var(--color-orange-500);*/
-    /*--color-secondary-foreground: var(--color-white);*/
-    /*--color-accent: var(--color-yellow-300);*/
-    /*--color-accent-foreground: var(--color-stone-900);*/
-    /*--color-destructive: var(--color-red-600);*/
-    /*--color-destructive-foreground: var(--color-white);*/
-    /*--color-input: var(--color-stone-300);*/
-    /*Candy Pop*/
-    /*--color-bg: var(--color-pink-50);*/
-    /*--color-ink: var(--color-neutral-900);*/
-    /*--color-primary: var(--color-fuchsia-600);*/
-    /*--color-primary-foreground: var(--color-white);*/
-    /*--color-secondary: var(--color-amber-500);*/
-    /*--color-secondary-foreground: var(--color-stone-900);*/
-    /*--color-accent: var(--color-cyan-400);*/
-    /*--color-accent-foreground: var(--color-stone-900);*/
-    /*--color-destructive: var(--color-red-600);*/
-    /*--color-destructive-foreground: var(--color-white);*/
-    /*--color-input: var(--color-stone-300);*/
-    /*Pastel*/
-    --color-bg: var(--color-sky-50);
-    --color-ink: var(--color-slate-900);
-    --color-primary: var(--color-sky-500);
-    --color-primary-foreground: var(--color-white);
-    --color-secondary: var(--color-pink-500);
-    --color-secondary-foreground: var(--color-white);
-    --color-accent: var(--color-lime-200);
-    --color-accent-foreground: var(--color-stone-900);
-    --color-destructive: var(--color-rose-600);
-    --color-destructive-foreground: var(--color-white);
-    --color-input: var(--color-stone-300);
 }
 
 @layer base {
@@ -105,6 +68,50 @@
 
     ::selection {
         @apply bg-brand-200;
+    }
+
+    html[data-theme="tropical"] {
+        --color-bg: var(--color-emerald-50);
+        --color-ink: var(--color-stone-900);
+        --color-primary: var(--color-emerald-600);
+        --color-primary-foreground: var(--color-white);
+        --color-secondary: var(--color-orange-500);
+        --color-secondary-foreground: var(--color-white);
+        --color-accent: var(--color-yellow-300);
+        --color-accent-foreground: var(--color-stone-900);
+        --color-destructive: var(--color-red-600);
+        --color-destructive-foreground: var(--color-white);
+        --color-input: var(--color-stone-300);
+    }
+
+    /*Candy Pop*/
+    html[data-theme="candy-pop"] {
+        --color-bg: var(--color-pink-50);
+        --color-ink: var(--color-neutral-900);
+        --color-primary: var(--color-fuchsia-600);
+        --color-primary-foreground: var(--color-white);
+        --color-secondary: var(--color-amber-500);
+        --color-secondary-foreground: var(--color-stone-900);
+        --color-accent: var(--color-cyan-400);
+        --color-accent-foreground: var(--color-stone-900);
+        --color-destructive: var(--color-red-600);
+        --color-destructive-foreground: var(--color-white);
+        --color-input: var(--color-stone-300);
+    }
+
+    /*Pastel*/
+    html[data-theme="pastel"] {
+        --color-bg: var(--color-sky-50);
+        --color-ink: var(--color-slate-900);
+        --color-primary: var(--color-sky-500);
+        --color-primary-foreground: var(--color-white);
+        --color-secondary: var(--color-pink-500);
+        --color-secondary-foreground: var(--color-white);
+        --color-accent: var(--color-lime-200);
+        --color-accent-foreground: var(--color-stone-900);
+        --color-destructive: var(--color-rose-600);
+        --color-destructive-foreground: var(--color-white);
+        --color-input: var(--color-stone-300);
     }
 }
 

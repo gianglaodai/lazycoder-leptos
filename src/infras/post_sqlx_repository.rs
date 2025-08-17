@@ -87,7 +87,7 @@ impl Repository<Post, PostCreate> for PostSqlxRepository {
     async fn create(&self, post_create: &PostCreate) -> Result<Post, CoreError> {
         let now = time::OffsetDateTime::now_utc();
         let row: PostOrm = sqlx::query_as::<_, PostOrm>(
-            "INSERT INTO posts (uid, created_at, updated_at, slug, title, summary, content, status) values ($1, $2, $3, $4, $5, $6, $7, $8) returning *",
+            "INSERT INTO posts (uid, created_at, updated_at, slug, title, summary, content, status, user_id) values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning *",
         )
             .bind(Uuid::now_v7())
             .bind(&now)
