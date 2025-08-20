@@ -1,7 +1,8 @@
 #![cfg(feature = "ssr")]
 use crate::business::auth_service::AuthService;
-use crate::business::post_service::PostService;
+use crate::business::post_service::{PostInfoService, PostService};
 use crate::business::user_service::UserService;
+use crate::infras::post_info_sqlx_repository::PostInfoSqlxRepository;
 use crate::infras::post_sqlx_repository::PostSqlxRepository;
 use crate::infras::user_sqlx_repository::UserSqlxRepository;
 use sqlx::PgPool;

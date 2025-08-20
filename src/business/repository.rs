@@ -6,7 +6,8 @@ use std::future::Future;
 pub trait Creatable {
     type Entity;
 }
-pub trait Repository<T, C: Creatable<Entity = T>> {
+
+pub trait ViewRepository<T> {
     fn find_all(&self, filters: Vec<Filter>) -> impl Future<Output = Result<Vec<T>, CoreError>> {
         self.find_many(vec![], None, None, filters)
     }
@@ -21,6 +22,9 @@ pub trait Repository<T, C: Creatable<Entity = T>> {
     ) -> impl Future<Output = Result<Vec<T>, CoreError>>;
     fn find_by_id(&self, id: i32) -> impl Future<Output = Result<Option<T>, CoreError>>;
     fn find_by_uid(&self, uid: String) -> impl Future<Output = Result<Option<T>, CoreError>>;
+}
+
+pub trait Repository<T, C: Creatable<Entity = T>>: ViewRepository<T> {
     fn delete_by_id(&self, id: i32) -> impl Future<Output = Result<u64, CoreError>>;
     fn delete_by_uid(&self, uid: String) -> impl Future<Output = Result<u64, CoreError>>;
     fn create(&self, entity_create: &C) -> impl Future<Output = Result<T, CoreError>>;

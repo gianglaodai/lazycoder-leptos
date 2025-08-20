@@ -3,7 +3,7 @@
 use crate::business::error::CoreError;
 use crate::business::filter::Filter;
 use crate::business::post_service::{Post, PostCreate, PostRepository, PostStatus};
-use crate::business::repository::Repository;
+use crate::business::repository::{Repository, ViewRepository};
 use crate::business::sort::SortCriterion;
 use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::SqlxRepository;
@@ -54,7 +54,11 @@ impl PostSqlxRepository {
     }
 }
 
-impl Repository<Post, PostCreate> for PostSqlxRepository {
+impl ViewRepository<Post> for PostSqlxRepository {
+    async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
+        SqlxRepository::count(self, filters).await
+    }
+
     async fn find_many(
         &self,
         sort_criteria: Vec<SortCriterion>,
@@ -65,10 +69,6 @@ impl Repository<Post, PostCreate> for PostSqlxRepository {
         SqlxRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
     }
 
-    async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
-        SqlxRepository::count(self, filters).await
-    }
-
     async fn find_by_id(&self, id: i32) -> Result<Option<Post>, CoreError> {
         SqlxRepository::find_by_id(self, id).await
     }
@@ -76,7 +76,9 @@ impl Repository<Post, PostCreate> for PostSqlxRepository {
     async fn find_by_uid(&self, uid: String) -> Result<Option<Post>, CoreError> {
         SqlxRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
+}
 
+impl Repository<Post, PostCreate> for PostSqlxRepository {
     async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
         SqlxRepository::delete_by_id(self, id).await
     }
@@ -84,6 +86,7 @@ impl Repository<Post, PostCreate> for PostSqlxRepository {
     async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
         SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
+
     async fn create(&self, post_create: &PostCreate) -> Result<Post, CoreError> {
         let now = time::OffsetDateTime::now_utc();
         let row: PostOrm = sqlx::query_as::<_, PostOrm>(

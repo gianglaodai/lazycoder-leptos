@@ -2,7 +2,7 @@
 
 use crate::business::error::CoreError;
 use crate::business::filter::Filter;
-use crate::business::repository::Repository;
+use crate::business::repository::{Repository, ViewRepository};
 use crate::business::sort::SortCriterion;
 use crate::business::user_service::{User, UserCreate, UserRepository, UserRole};
 use crate::define_orm_with_common_fields;
@@ -49,7 +49,11 @@ impl UserSqlxRepository {
     }
 }
 
-impl Repository<User, UserCreate> for UserSqlxRepository {
+impl ViewRepository<User> for UserSqlxRepository {
+    async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
+        SqlxRepository::count(self, filters).await
+    }
+
     async fn find_many(
         &self,
         sort_criteria: Vec<SortCriterion>,
@@ -60,10 +64,6 @@ impl Repository<User, UserCreate> for UserSqlxRepository {
         SqlxRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
     }
 
-    async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
-        SqlxRepository::count(self, filters).await
-    }
-
     async fn find_by_id(&self, id: i32) -> Result<Option<User>, CoreError> {
         SqlxRepository::find_by_id(self, id).await
     }
@@ -71,7 +71,9 @@ impl Repository<User, UserCreate> for UserSqlxRepository {
     async fn find_by_uid(&self, uid: String) -> Result<Option<User>, CoreError> {
         SqlxRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
+}
 
+impl Repository<User, UserCreate> for UserSqlxRepository {
     async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
         SqlxRepository::delete_by_id(self, id).await
     }
