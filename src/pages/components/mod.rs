@@ -8,6 +8,7 @@ pub mod input;
 pub mod select;
 pub mod textarea;
 pub mod dialog;
+pub mod table;
 
 // Re-export components for easier importing
 pub use button::Button;
@@ -20,3 +21,4 @@ pub use input::Input;
 pub use select::Select;
 pub use textarea::Textarea;
 pub use dialog::{Dialog, DialogTrigger, DialogOverlay, DialogContent, DialogHeader, DialogFooter, DialogTitle, DialogDescription, DialogClose};
+pub use table::{Table, TableHeader, TableBody, TableFooter, TableRow, TableHead, TableCell, TableCaption};

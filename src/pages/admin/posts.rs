@@ -3,7 +3,7 @@ use crate::pages::components::button::ButtonVariant;
 use crate::pages::components::Pagination;
 use crate::pages::components::{
     Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader,
-    DialogTitle, DialogTrigger, Input,
+    DialogTitle, DialogTrigger, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption,
 };
 use crate::pages::rest::auth_api::UserTO;
 use crate::pages::rest::post_api::{
@@ -33,7 +33,6 @@ fn NewPostDialog() -> impl IntoView {
         let navigate = navigate.clone();
         move |_| {
             if let Some(Ok(post)) = create_action.value().get() {
-                // Clear error and title
                 error.set(String::new());
                 title.set(String::new());
                 navigate(&format!("/admin/posts/{}", post.id), Default::default());
@@ -114,12 +113,42 @@ pub fn AdminPostsPage() -> impl IntoView {
                 <Suspense fallback=move || view! {<div class="text-center py-8">Loading posts...</div>}>
                     {move || match posts_resource.get() {
                         Some(Ok(posts)) => view! {
-                            <div class="space-y-4">
-                                {posts.into_iter()
-                                    .map(|post| view! { <AdminPostItem post=post reload=reload/> })
-                                    .collect_view()
-                                }
-                            </div>
+                            <Table>
+                                <TableHeader>
+                                    <TableRow>
+                                        <TableHead>Title</TableHead>
+                                        <TableHead>Slug</TableHead>
+                                        <TableHead>Status</TableHead>
+                                        <TableHead>Created</TableHead>
+                                        <TableHead>Updated</TableHead>
+                                        <TableHead class="text-right">Actions</TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {posts.into_iter().map(|post| {
+                                        let format = format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]").unwrap();
+                                        let created = post.created_at.format(&format).unwrap_or_else(|_| "".to_string());
+                                        let updated = post.updated_at.format(&format).unwrap_or_else(|_| "".to_string());
+                                        let post_id = post.id;
+                                        let slug = post.slug.clone();
+                                        let title = post.title.clone();
+                                        let status = post.status.clone();
+                                        view! {
+                                            <TableRow>
+                                                <TableCell>{title}</TableCell>
+                                                <TableCell class="font-mono text-xs">{slug}</TableCell>
+                                                <TableCell>{status}</TableCell>
+                                                <TableCell class="whitespace-nowrap text-xs text-stone-600">{created}</TableCell>
+                                                <TableCell class="whitespace-nowrap text-xs text-stone-600">{updated}</TableCell>
+                                                <TableCell class="text-right">
+                                                    <Button href=format!("/admin/posts/{}/edit", post_id) variant=ButtonVariant::Outline>Edit</Button>
+                                                </TableCell>
+                                            </TableRow>
+                                        }
+                                    }).collect_view()}
+                                </TableBody>
+                                <TableCaption>A list of your posts.</TableCaption>
+                            </Table>
                         }.into_any(),
                         Some(Err(e)) => view! {
                             <div class="text-red-600">Error loading posts: {e.to_string()}</div>
@@ -158,7 +187,6 @@ fn AdminPostItem(post: PostTO, reload: RwSignal<u32>) -> impl IntoView {
     let content = RwSignal::new(post.content.clone());
     let status = RwSignal::new(post.status.clone());
 
-    // Prepare values needed for display and actions before any potential moves
     let format =
         format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]").unwrap();
     let created = post

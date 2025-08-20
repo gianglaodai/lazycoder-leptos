@@ -171,7 +171,6 @@ pub fn tw_merge(input: &str) -> String {
         }
         let parsed = parse_token(raw);
         let Some(group) = find_group(parsed.core) else {
-            // Không nhận diện nhóm => không hợp nhất, cứ giữ nguyên
             active.push(true);
             out.push(raw);
             continue;
