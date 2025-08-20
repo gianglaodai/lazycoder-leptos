@@ -1,6 +1,8 @@
 use crate::pages::admin::guard::AdminGuard;
 use crate::pages::components::MarkdownEditor;
 use crate::pages::components::Button;
+use crate::pages::components::Input;
+use crate::pages::components::Select;
 use crate::pages::components::button::ButtonVariant;
 use crate::pages::rest::auth_api::UserTO;
 use crate::pages::rest::post_api::{create_post, load_post_by_id, update_post, PostCreateTO, PostTO};
@@ -57,10 +59,17 @@ pub fn AdminPostForm(
                 {move || meta.clone().map(|m| view!{ <div class="text-sm text-stone-500 mb-3">{m}</div> }.into_any()).unwrap_or_else(|| view!{<div/>}.into_any())}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {move || if show_slug { view!{
-                        <input class="input" placeholder="Slug" prop:value=move || slug.get() on:input=move |ev| slug.set(event_target_value(&ev)) />
-                    }.into_any() } else { view!{<div/>}.into_any() }}
-                    <input class="input" placeholder="Title" prop:value=move || title.get() on:input=move |ev| title.set(event_target_value(&ev)) />
-                    <input class="input md:col-span-2" placeholder="Summary" prop:value=move || summary.get() on:input=move |ev| summary.set(event_target_value(&ev)) />
+                        <Input placeholder="Slug" value=slug on_input=Callback::new(move |ev: leptos::ev::Event| slug.set(event_target_value(&ev))) />
+                    }.into_any() } else { view!{}.into_any() }}
+                    <Input placeholder="Title" value=title on_input=Callback::new(move |ev: leptos::ev::Event| title.set(event_target_value(&ev))) />
+                    <Input class="md:col-span-2" placeholder="Summary" value=summary on_input=Callback::new(move |ev: leptos::ev::Event| summary.set(event_target_value(&ev))) />
+                    <Select value=status on_change=Callback::new(move |ev: leptos::ev::Event| status.set(event_target_value(&ev)))>
+                        <option value="DRAFT">DRAFT</option>
+                        <option value="REVIEW">REVIEW</option>
+                        <option value="PUBLISHED">PUBLISHED</option>
+                        <option value="ARCHIVED">ARCHIVED</option>
+                        <option value="DELETED">DELETED</option>
+                    </Select>
                     <div class="md:col-span-2">
                         <MarkdownEditor
                             initial_content=content.get()
@@ -70,13 +79,6 @@ pub fn AdminPostForm(
                             })
                         />
                     </div>
-                    <select class="input" prop:value=move || status.get() on:change=move |ev| status.set(event_target_value(&ev))>
-                        <option value="DRAFT">DRAFT</option>
-                        <option value="REVIEW">REVIEW</option>
-                        <option value="PUBLISHED">PUBLISHED</option>
-                        <option value="ARCHIVED">ARCHIVED</option>
-                        <option value="DELETED">DELETED</option>
-                    </select>
                     <div class="flex gap-2">
                         <Button href=cancel_href.clone() variant=ButtonVariant::Outline>Cancel</Button>
                         <Button on_click=Callback::new(move |_| submit())>{submit_label.clone()}</Button>

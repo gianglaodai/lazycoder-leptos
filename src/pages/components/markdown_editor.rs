@@ -1,5 +1,6 @@
 use leptos::prelude::*;
 use markdown::{to_html_with_options, Options};
+use crate::pages::components::Textarea;
 
 #[component]
 pub fn MarkdownEditor(
@@ -15,25 +16,23 @@ pub fn MarkdownEditor(
     };
 
     view! {
-        <div class="max-w-6xl mx-auto p-6">
-
+        <div>
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="space-y-4">
-                    <textarea
-                        class="w-full h-96 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
+                    <Textarea
+                        class="h-96 resize-none font-mono text-sm"
                         placeholder="Type your markdown here..."
-                        prop:value=content
-                        on:input=move |ev| {
+                        value=content
+                        on_input=Callback::new(move |ev: leptos::ev::Event| {
                             set_content.set(event_target_value(&ev));
-                        }
-                        on:blur=move |_| {
+                        })
+                        on_blur=Callback::new(move |_: leptos::ev::FocusEvent| {
                             on_submit.run(content.get());
-                        }
+                        })
                     />
                 </div>
 
                 <div class="space-y-4">
-                    <h3 class="text-lg font-semibold text-gray-700">Preview</h3>
                     <article
                         class="w-full h-96 p-4 border border-gray-300 rounded-lg bg-gray-50 overflow-auto prose prose-lg max-w-none prose-code:font-mono prose-pre:font-mono"
                         inner_html=rendered_html
