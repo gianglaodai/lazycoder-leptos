@@ -1,6 +1,5 @@
 use leptos::prelude::*;
 use markdown::{to_html_with_options, Options};
-use crate::pages::components::Button;
 
 #[component]
 pub fn MarkdownEditor(
@@ -17,12 +16,9 @@ pub fn MarkdownEditor(
 
     view! {
         <div class="max-w-6xl mx-auto p-6">
-            <h2 class="text-2xl font-bold text-gray-800 mb-6">Markdown Editor</h2>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                // Input section
                 <div class="space-y-4">
-                    <h3 class="text-lg font-semibold text-gray-700">Editor</h3>
                     <textarea
                         class="w-full h-96 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-transparent font-mono text-sm"
                         placeholder="Type your markdown here..."
@@ -30,10 +26,12 @@ pub fn MarkdownEditor(
                         on:input=move |ev| {
                             set_content.set(event_target_value(&ev));
                         }
+                        on:blur=move |_| {
+                            on_submit.run(content.get());
+                        }
                     />
                 </div>
 
-                // Preview section
                 <div class="space-y-4">
                     <h3 class="text-lg font-semibold text-gray-700">Preview</h3>
                     <article
@@ -43,14 +41,6 @@ pub fn MarkdownEditor(
                 </div>
             </div>
 
-            // Submit button
-            <div class="mt-4 flex justify-end">
-                <Button on_click=Callback::new(move |_| {
-                        on_submit.run(content.get());
-                    })>
-                    "Submit Changes"
-                </Button>
-            </div>
 
             // Toolbar with common markdown shortcuts
             <div class="mt-6 p-4 bg-gray-100 rounded-lg">

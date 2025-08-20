@@ -2,7 +2,7 @@
 
 use crate::business::error::CoreError;
 use crate::business::filter::{Filter, FilterOperator, FilterValue};
-use crate::business::repository::{Creatable, Repository};
+use crate::business::repository::{Creatable, Repository, ViewRepository};
 use crate::business::sort::SortCriterion;
 use crate::define_orm_with_common_fields;
 use sqlx::postgres::PgRow;
@@ -40,21 +40,15 @@ define_orm_with_common_fields!(AttributeValue {
     pub entity_type: String,
 });
 
-pub trait SqlxRepository: Repository<Self::Entity, Self::EntityCreate>
-where
-    Self::EntityCreate: Creatable<Entity = Self::Entity>,
-{
+pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
     type Entity;
-    type EntityCreate;
     type Orm: for<'r> FromRow<'r, PgRow> + Send + Unpin;
-
     fn get_table_name(&self) -> &str;
     fn get_columns(&self) -> Vec<&str>;
     fn get_searchable_columns(&self) -> Vec<&str>;
     fn get_pool(&self) -> &PgPool;
 
     fn from_orm(orm: Self::Orm) -> Self::Entity;
-
     async fn find_many(
         &self,
         sort_criteria: Vec<SortCriterion>,
@@ -79,30 +73,6 @@ where
             .fetch_one(self.get_pool())
             .await?;
         Ok(result)
-    }
-
-    async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
-        let result = sqlx::query(&format!(
-            "DELETE FROM {} WHERE id = $1",
-            self.get_table_name()
-        ))
-        .bind(id)
-        .execute(self.get_pool())
-        .await?;
-
-        Ok(result.rows_affected())
-    }
-
-    async fn delete_by_uid(&self, uid: Uuid) -> Result<u64, CoreError> {
-        let result = sqlx::query(&format!(
-            "DELETE FROM {} WHERE uid = $1",
-            self.get_table_name()
-        ))
-        .bind(uid)
-        .execute(self.get_pool())
-        .await?;
-
-        Ok(result.rows_affected())
     }
 
     async fn find_by_id(&self, id: i32) -> Result<Option<Self::Entity>, CoreError> {
@@ -239,12 +209,12 @@ where
 
                 {
                     query_builder.push(" (EXISTS ( SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = ")
-                    .push(self.get_table_name()).push(".id")
-                    .push(" AND av.entity_type = ")
-                    .push_bind(self.get_table_name())
-                    .push(" AND to_tsvector('simple', unaccent(coalesce(av.string_value, ''))) @@ to_tsquery('simple', unaccent(")
-                    .push_bind(keyword.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>().join(" | "))
-                    .push("))))");
+                        .push(self.get_table_name()).push(".id")
+                        .push(" AND av.entity_type = ")
+                        .push_bind(self.get_table_name())
+                        .push(" AND to_tsvector('simple', unaccent(coalesce(av.string_value, ''))) @@ to_tsquery('simple', unaccent(")
+                        .push_bind(keyword.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>().join(" | "))
+                        .push("))))");
                 }
 
                 query_builder.push(")");
@@ -490,5 +460,60 @@ where
                 }
             }
         };
+    }
+}
+pub trait SqlxRepository:
+    SqlxViewRepository + Repository<<Self as SqlxViewRepository>::Entity, Self::EntityCreate>
+where
+    Self::EntityCreate: Creatable<Entity = Self::Entity>,
+{
+    type EntityCreate;
+
+    async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
+        let result = sqlx::query(&format!(
+            "DELETE FROM {} WHERE id = $1",
+            self.get_table_name()
+        ))
+        .bind(id)
+        .execute(self.get_pool())
+        .await?;
+
+        Ok(result.rows_affected())
+    }
+
+    async fn delete_by_uid(&self, uid: Uuid) -> Result<u64, CoreError> {
+        let result = sqlx::query(&format!(
+            "DELETE FROM {} WHERE uid = $1",
+            self.get_table_name()
+        ))
+        .bind(uid)
+        .execute(self.get_pool())
+        .await?;
+
+        Ok(result.rows_affected())
+    }
+
+    async fn find_by_id(&self, id: i32) -> Result<Option<Self::Entity>, CoreError> {
+        let result = sqlx::query_as::<_, Self::Orm>(&format!(
+            "SELECT * FROM {} WHERE id=$1",
+            self.get_table_name()
+        ))
+        .bind(id)
+        .fetch_optional(self.get_pool())
+        .await?;
+
+        Ok(result.map(|orm| Self::from_orm(orm)))
+    }
+
+    async fn find_by_uid(&self, uid: Uuid) -> Result<Option<Self::Entity>, CoreError> {
+        let result = sqlx::query_as::<_, Self::Orm>(&format!(
+            "SELECT * FROM {} WHERE uid=$1",
+            self.get_table_name()
+        ))
+        .bind(uid)
+        .fetch_optional(self.get_pool())
+        .await?;
+
+        Ok(result.map(|orm| Self::from_orm(orm)))
     }
 }

@@ -6,7 +6,7 @@ use crate::business::post_service::{Post, PostCreate, PostRepository, PostStatus
 use crate::business::repository::{Repository, ViewRepository};
 use crate::business::sort::SortCriterion;
 use crate::define_orm_with_common_fields;
-use crate::infras::sqlx_repository::SqlxRepository;
+use crate::infras::sqlx_repository::{SqlxRepository, SqlxViewRepository};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -56,7 +56,7 @@ impl PostSqlxRepository {
 
 impl ViewRepository<Post> for PostSqlxRepository {
     async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
-        SqlxRepository::count(self, filters).await
+        SqlxViewRepository::count(self, filters).await
     }
 
     async fn find_many(
@@ -66,15 +66,15 @@ impl ViewRepository<Post> for PostSqlxRepository {
         max_results: Option<i32>,
         filters: Vec<Filter>,
     ) -> Result<Vec<Post>, CoreError> {
-        SqlxRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
+        SqlxViewRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
     }
 
     async fn find_by_id(&self, id: i32) -> Result<Option<Post>, CoreError> {
-        SqlxRepository::find_by_id(self, id).await
+        SqlxViewRepository::find_by_id(self, id).await
     }
 
     async fn find_by_uid(&self, uid: String) -> Result<Option<Post>, CoreError> {
-        SqlxRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
+        SqlxViewRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
 }
 
@@ -125,30 +125,27 @@ impl Repository<Post, PostCreate> for PostSqlxRepository {
     }
 }
 
-impl SqlxRepository for PostSqlxRepository {
+impl SqlxViewRepository for PostSqlxRepository {
     type Entity = Post;
-    type EntityCreate = PostCreate;
     type Orm = PostOrm;
-
     fn get_table_name(&self) -> &str {
         "posts"
     }
-
     fn get_columns(&self) -> Vec<&str> {
         PostOrm::columns()
     }
-
     fn get_searchable_columns(&self) -> Vec<&str> {
         PostOrm::searchable_columns()
     }
-
     fn get_pool(&self) -> &PgPool {
         &self.pool
     }
-
     fn from_orm(orm: Self::Orm) -> Self::Entity {
         Post::from(orm)
     }
+}
+impl SqlxRepository for PostSqlxRepository {
+    type EntityCreate = PostCreate;
 }
 
 impl PostRepository for PostSqlxRepository {

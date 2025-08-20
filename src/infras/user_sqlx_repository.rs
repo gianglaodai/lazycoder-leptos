@@ -6,7 +6,7 @@ use crate::business::repository::{Repository, ViewRepository};
 use crate::business::sort::SortCriterion;
 use crate::business::user_service::{User, UserCreate, UserRepository, UserRole};
 use crate::define_orm_with_common_fields;
-use crate::infras::sqlx_repository::SqlxRepository;
+use crate::infras::sqlx_repository::{SqlxRepository, SqlxViewRepository};
 use sqlx::PgPool;
 use uuid::Uuid;
 
@@ -51,7 +51,7 @@ impl UserSqlxRepository {
 
 impl ViewRepository<User> for UserSqlxRepository {
     async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
-        SqlxRepository::count(self, filters).await
+        SqlxViewRepository::count(self, filters).await
     }
 
     async fn find_many(
@@ -61,15 +61,15 @@ impl ViewRepository<User> for UserSqlxRepository {
         max_results: Option<i32>,
         filters: Vec<Filter>,
     ) -> Result<Vec<User>, CoreError> {
-        SqlxRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
+        SqlxViewRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
     }
 
     async fn find_by_id(&self, id: i32) -> Result<Option<User>, CoreError> {
-        SqlxRepository::find_by_id(self, id).await
+        SqlxViewRepository::find_by_id(self, id).await
     }
 
     async fn find_by_uid(&self, uid: String) -> Result<Option<User>, CoreError> {
-        SqlxRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
+        SqlxViewRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
 }
 
@@ -123,11 +123,9 @@ impl Repository<User, UserCreate> for UserSqlxRepository {
     }
 }
 
-impl SqlxRepository for UserSqlxRepository {
+impl SqlxViewRepository for UserSqlxRepository {
     type Entity = User;
-    type EntityCreate = UserCreate;
     type Orm = UserOrm;
-
     fn get_table_name(&self) -> &str {
         "users"
     }
@@ -147,6 +145,10 @@ impl SqlxRepository for UserSqlxRepository {
     fn from_orm(orm: Self::Orm) -> Self::Entity {
         User::from(orm)
     }
+}
+
+impl SqlxRepository for UserSqlxRepository {
+    type EntityCreate = UserCreate;
 }
 
 impl UserRepository for UserSqlxRepository {
