@@ -492,28 +492,4 @@ where
 
         Ok(result.rows_affected())
     }
-
-    async fn find_by_id(&self, id: i32) -> Result<Option<Self::Entity>, CoreError> {
-        let result = sqlx::query_as::<_, Self::Orm>(&format!(
-            "SELECT * FROM {} WHERE id=$1",
-            self.get_table_name()
-        ))
-        .bind(id)
-        .fetch_optional(self.get_pool())
-        .await?;
-
-        Ok(result.map(|orm| Self::from_orm(orm)))
-    }
-
-    async fn find_by_uid(&self, uid: Uuid) -> Result<Option<Self::Entity>, CoreError> {
-        let result = sqlx::query_as::<_, Self::Orm>(&format!(
-            "SELECT * FROM {} WHERE uid=$1",
-            self.get_table_name()
-        ))
-        .bind(uid)
-        .fetch_optional(self.get_pool())
-        .await?;
-
-        Ok(result.map(|orm| Self::from_orm(orm)))
-    }
 }
