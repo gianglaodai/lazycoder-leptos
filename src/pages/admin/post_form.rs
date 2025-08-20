@@ -1,14 +1,13 @@
 use crate::pages::admin::guard::AdminGuard;
-use crate::pages::components::MarkdownEditor;
+use crate::pages::components::button::ButtonVariant;
 use crate::pages::components::Button;
 use crate::pages::components::Input;
+use crate::pages::components::MarkdownEditor;
 use crate::pages::components::Select;
-use crate::pages::components::button::ButtonVariant;
-use crate::pages::rest::auth_api::UserTO;
-use crate::pages::rest::post_api::{create_post, load_post_by_id, update_post, PostCreateTO, PostTO};
+use crate::pages::rest::post_api::{load_post_by_id, update_post, PostTO};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
-use leptos_router::hooks::{use_navigate, use_params_map};
+use leptos_router::hooks::use_params_map;
 use time::format_description;
 
 #[derive(Clone, Debug)]
@@ -86,53 +85,6 @@ pub fn AdminPostForm(
                 </div>
             </div>
         </div>
-    }
-}
-
-#[component]
-pub fn AdminPostNewPage() -> impl IntoView {
-    let user_ctx: RwSignal<Option<UserTO>> = expect_context();
-    let navigate = use_navigate();
-
-    let submit = Action::new(move |vals: &PostFormValues| {
-        let payload = PostCreateTO {
-            slug: vals.slug.clone(),
-            title: vals.title.clone(),
-            summary: vals.summary.clone(),
-            content: vals.content.clone(),
-            status: vals.status.clone(),
-            user_id: user_ctx.get().map(|u| u.id).unwrap(),
-        };
-        async move { create_post(payload).await }
-    });
-
-    Effect::new(move |_| {
-        if let Some(Ok(_)) = submit.value().get() {
-            navigate("/admin/posts", Default::default());
-        }
-    });
-
-    view! {
-        <AdminGuard>
-            <AdminPostForm
-                heading="New Post".to_string()
-                show_slug=true
-                initial_slug="".to_string()
-                initial_title="".to_string()
-                initial_summary="".to_string()
-                initial_content="".to_string()
-                initial_status="DRAFT".to_string()
-                meta=None
-                submit_label="Create".to_string()
-                cancel_href="/admin/posts".to_string()
-                on_submit=Callback::new({
-                    let submit = submit.clone();
-                    move |vals: PostFormValues| {
-                        let _ = submit.dispatch(vals);
-                    }
-                })
-            />
-        </AdminGuard>
     }
 }
 

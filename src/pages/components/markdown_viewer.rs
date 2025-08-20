@@ -18,11 +18,11 @@ pub fn MarkdownViewer(
     view! {
         <div class=container_class>
             {title.map(|t| view! {
-                <h2 class="text-2xl font-bold text-gray-800 mb-6">{t}</h2>
+                <h2 class="text-2xl font-bold text-foreground mb-6">{t}</h2>
             })}
 
             <div
-                class="prose prose-lg max-w-none prose-headings:text-gray-800 prose-p:text-gray-700 prose-a:text-blue-600 prose-strong:text-gray-900 prose-code:text-pink-600 prose-code:bg-gray-100 prose-code:px-1 prose-code:rounded prose-pre:bg-gray-900 prose-pre:text-gray-100 prose-code:font-mono prose-pre:font-mono"
+                class="prose max-w-none prose-zinc dark:prose-invert prose-a:text-primary prose-strong:text-foreground prose-code:bg-muted prose-code:text-foreground prose-code:px-1 prose-code:rounded prose-pre:bg-muted"
                 inner_html=rendered_html
             />
         </div>

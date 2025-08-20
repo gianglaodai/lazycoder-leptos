@@ -84,13 +84,37 @@ pub async fn count_posts() -> Result<i64, ServerFnError> {
         .map_err(|e| ServerFnError::ServerError(e.to_string()))
 }
 
+fn slugify(input: &str) -> String {
+    let mut out = String::with_capacity(input.len());
+    let mut last_dash = false;
+    for ch in input.chars() {
+        let c = ch.to_ascii_lowercase();
+        if c.is_ascii_alphanumeric() {
+            out.push(c);
+            last_dash = false;
+        } else if c.is_ascii_whitespace() || c == '-' || c == '_' {
+            if !last_dash && !out.is_empty() {
+                out.push('-');
+                last_dash = true;
+            }
+        } else {
+            // non-ascii or punctuation -> treat as separator
+            if !last_dash && !out.is_empty() {
+                out.push('-');
+                last_dash = true;
+            }
+        }
+    }
+    // trim trailing '-'
+    while out.ends_with('-') { out.pop(); }
+    if out.is_empty() { "post".to_string() } else { out }
+}
 #[server(name=CreatePost, prefix="/load", endpoint="/posts/create")]
-pub async fn create_post(post: PostCreateTO) -> Result<PostTO, ServerFnError> {
+pub async fn create_post(title: String, user_id: i32) -> Result<PostTO, ServerFnError> {
     use crate::business::post_service::{PostCreate, PostStatus};
     use crate::state::AppState;
     use actix_session::SessionExt as _;
     use leptos_actix::extract;
-    use std::str::FromStr;
 
     // Guard: require ADMIN role from server session
     let req: actix_web::HttpRequest = extract().await?;
@@ -102,14 +126,13 @@ pub async fn create_post(post: PostCreateTO) -> Result<PostTO, ServerFnError> {
     }
 
     let state: actix_web::web::Data<AppState> = extract().await?;
-    let to = post;
     let create = PostCreate {
-        slug: to.slug,
-        title: to.title,
-        summary: to.summary,
-        content: to.content,
-        status: PostStatus::from_str(&to.status).unwrap_or(PostStatus::DRAFT),
-        user_id: to.user_id,
+        slug: slugify(&title),
+        title,
+        summary: "".to_string(),
+        content: "".to_string(),
+        status: PostStatus::DRAFT,
+        user_id,
     };
     state
         .post_service

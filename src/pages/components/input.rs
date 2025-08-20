@@ -15,7 +15,7 @@ pub fn Input(
     #[prop(optional)] disabled: bool,
     #[prop(optional)] required: bool,
     #[prop(into, optional)] placeholder: Option<String>,
-    #[prop(into, optional, default = MaybeSignal::from(String::new()))] value: MaybeSignal<String>,
+    #[prop(into, optional, default = Signal::from(String::new()))] value: Signal<String>,
     #[prop(into, optional)] on_input: Option<Callback<ev::Event, ()>>,
     #[prop(into, optional)] on_change: Option<Callback<ev::Event, ()>>,
 ) -> impl IntoView {

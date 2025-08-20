@@ -1,7 +1,7 @@
 use crate::pages::about::AboutMePage;
 use crate::pages::admin::home::AdminHomePage;
+use crate::pages::admin::post_form::AdminPostEditPage;
 use crate::pages::admin::posts::AdminPostsPage;
-use crate::pages::admin::post_form::{AdminPostNewPage, AdminPostEditPage};
 use crate::pages::articles::ArticlesPage;
 use crate::pages::components::{Footer, Navigation};
 use crate::pages::home::HomePage;
@@ -62,8 +62,7 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/newsletter") view=NewsletterPage/>
                     <Route path=path!("/admin/home") view=AdminHomePage/>
                     <Route path=path!("/admin/posts") view=AdminPostsPage/>
-                    <Route path=path!("/admin/posts/new") view=AdminPostNewPage/>
-                    <Route path=path!("/admin/posts/:id/edit") view=AdminPostEditPage/>
+                    <Route path=path!("/admin/posts/:id") view=AdminPostEditPage/>
                     <Route path=WildcardSegment("any") view=NotFoundPage/>
                 </Routes>
             </main>

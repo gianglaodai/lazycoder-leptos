@@ -11,11 +11,6 @@ macro_rules! define_to_with_common_fields_fe {
                 pub updated_at: time::OffsetDateTime,
                 $($field)*
             }
-
-            #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
-            pub struct [<$name CreateTO>] {
-                $($field)*
-            }
         }
     };
 }
