@@ -1,18 +1,19 @@
 use crate::pages::admin::guard::AdminGuard;
 use crate::pages::components::button::ButtonVariant;
-use crate::pages::components::Pagination;
 use crate::pages::components::{
     Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader,
-    DialogTitle, DialogTrigger, Input, Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption,
+    DialogTitle, DialogTrigger, Input, Pagination, PaginationContent, PaginationEllipsis,
+    PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, Table, TableBody,
+    TableCaption, TableCell, TableHead, TableHeader, TableRow,
 };
 use crate::pages::rest::auth_api::UserTO;
-use crate::pages::rest::post_api::{
-    count_posts, create_post, delete_post, load_posts, update_post, PostTO,
-};
+use crate::pages::rest::post_api::{create_post, delete_post, update_post, PostTO};
+use crate::pages::rest::post_info_api::{count_post_infos, load_post_infos};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
 use time::format_description;
+use tokio::join;
 
 #[component]
 fn NewPostDialog() -> impl IntoView {
@@ -92,14 +93,18 @@ pub fn AdminPostsPage() -> impl IntoView {
 
     let reload = RwSignal::new(0u32);
 
-    let posts_resource = Resource::new(
+    let posts_and_total_resource = Resource::new(
         move || (first_result(), max_results(), reload.get()),
-        |(first_result, max_results, _)| async move { load_posts(first_result, max_results).await },
-    );
-
-    let total_posts_resource = Resource::new(
-        move || (first_result(), max_results(), reload.get()),
-        |(_, _, _)| async { count_posts().await },
+        |(first_result, max_results, _)| async move {
+            let fut_posts = load_post_infos(first_result, max_results);
+            let fut_count = count_post_infos();
+            let (posts_res, total_res) = join!(fut_posts, fut_count);
+            match (posts_res, total_res) {
+                (Ok(posts), Ok(total)) => Ok((posts, total)),
+                (Err(e), _) => Err(e),
+                (_, Err(e)) => Err(e),
+            }
+        },
     );
 
     view! {
@@ -111,8 +116,8 @@ pub fn AdminPostsPage() -> impl IntoView {
                 </div>
 
                 <Suspense fallback=move || view! {<div class="text-center py-8">Loading posts...</div>}>
-                    {move || match posts_resource.get() {
-                        Some(Ok(posts)) => view! {
+                    {move || match posts_and_total_resource.get() {
+                        Some(Ok((posts, total))) => view! {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
@@ -149,6 +154,101 @@ pub fn AdminPostsPage() -> impl IntoView {
                                 </TableBody>
                                 <TableCaption>A list of your posts.</TableCaption>
                             </Table>
+                            <div class="mt-6">
+                                <Pagination>
+                                    <PaginationContent>
+                                        <PaginationItem>
+                                            {
+                                                let fr = first_result();
+                                             let max = max_results();
+                                             let max_i64 = max as i64;
+                                             let total_i64 = total as i64;
+                                             let total_pages = if max_i64 <= 0 { 1 } else { ((total_i64 + max_i64 - 1) / max_i64).max(1) };
+                                             let current_page = if max_i64 > 0 { fr / max_i64 } else { 0 };
+                                             let prev_fr = if current_page > 0 { Some(fr - max_i64) } else { None };
+                                             match prev_fr {
+                                                Some(pf) => view! { <PaginationPrevious href=format!("?first_result={}&max_results={}", pf, max) /> }.into_any(),
+                                                None => view! { <PaginationPrevious /> }.into_any(),
+                                             }
+                                            }
+                                        </PaginationItem>
+
+                                        {let fr = first_result();
+                                         let max = max_results();
+                                         let max_i64 = max as i64;
+                                         let total_i64 = total as i64;
+                                         let total_pages = if max_i64 <= 0 { 1 } else { ((total_i64 + max_i64 - 1) / max_i64).max(1) };
+                                         let current_page = if max_i64 > 0 { fr / max_i64 } else { 0 };
+                                         let mut v: Vec<leptos::prelude::AnyView> = Vec::new();
+                                         if total_pages <= 7 {
+                                             for i in 0..total_pages {
+                                                 let is_active = i == current_page;
+                                                 let first = i * max_i64;
+                                                 v.push(view! {
+                                                     <PaginationItem>
+                                                         <PaginationLink is_active=is_active href=format!("?first_result={}&max_results={}", first, max)>
+                                                             { (i + 1).to_string() }
+                                                         </PaginationLink>
+                                                     </PaginationItem>
+                                                 }.into_any());
+                                             }
+                                         } else {
+                                             // First page
+                                             v.push(view! {
+                                                 <PaginationItem>
+                                                     <PaginationLink is_active={current_page==0} href=format!("?first_result={}&max_results={}", 0, max)>
+                                                         { "1" }
+                                                     </PaginationLink>
+                                                 </PaginationItem>
+                                             }.into_any());
+                                             // Left ellipsis
+                                             if current_page > 2 { v.push(view! { <PaginationEllipsis /> }.into_any()); }
+                                             // Middle pages: current-1, current, current+1
+                                             let set: std::collections::BTreeSet<i64> = [current_page.saturating_sub(1), current_page, (current_page+1).min(total_pages-1)].into_iter().collect();
+                                             for i in set {
+                                                 if i > 0 && i < total_pages-1 {
+                                                     let first = i * max_i64;
+                                                     let is_active = i == current_page;
+                                                     v.push(view! {
+                                                         <PaginationItem>
+                                                             <PaginationLink is_active=is_active href=format!("?first_result={}&max_results={}", first, max)>
+                                                                 { (i + 1).to_string() }
+                                                             </PaginationLink>
+                                                         </PaginationItem>
+                                                     }.into_any());
+                                                 }
+                                             }
+                                             // Right ellipsis
+                                             if current_page + 3 < total_pages { v.push(view! { <PaginationEllipsis /> }.into_any()); }
+                                             // Last page
+                                             v.push(view! {
+                                                 <PaginationItem>
+                                                     <PaginationLink is_active={current_page==total_pages-1} href=format!("?first_result={}&max_results={}", (total_pages-1)*max_i64, max)>
+                                                         { total_pages.to_string() }
+                                                     </PaginationLink>
+                                                 </PaginationItem>
+                                             }.into_any());
+                                         }
+                                         view! { {v} }.into_any()
+                                        }
+
+                                        <PaginationItem>
+                                            {let fr = first_result();
+                                             let max = max_results();
+                                             let max_i64 = max as i64;
+                                             let total_i64 = total as i64;
+                                             let total_pages = if max_i64 <= 0 { 1 } else { ((total_i64 + max_i64 - 1) / max_i64).max(1) };
+                                             let current_page = if max_i64 > 0 { fr / max_i64 } else { 0 };
+                                             let next_fr = if (current_page + 1) < total_pages { Some(fr + max_i64) } else { None };
+                                             match next_fr {
+                                                Some(nf) => view! { <PaginationNext href=format!("?first_result={}&max_results={}", nf, max) /> }.into_any(),
+                                                None => view! { <PaginationNext /> }.into_any(),
+                                             }
+                                            }
+                                        </PaginationItem>
+                                    </PaginationContent>
+                                </Pagination>
+                            </div>
                         }.into_any(),
                         Some(Err(e)) => view! {
                             <div class="text-red-600">Error loading posts: {e.to_string()}</div>
@@ -156,23 +256,6 @@ pub fn AdminPostsPage() -> impl IntoView {
                         None => view! {<div class="text-center py-8">Loading...</div>}.into_any()
                     }}
                 </Suspense>
-
-                <div class="mt-6">
-                    <Suspense fallback=move || view! {<div>Loading total...</div>}>
-                        {move || match total_posts_resource.get() {
-                            Some(Ok(total_posts)) => view! {
-                                <Pagination
-                                    first_result=first_result()
-                                    total_entities=total_posts
-                                    max_results=10
-                                    max_visible_pages=5
-                                />
-                            }.into_any(),
-                            Some(Err(_)) => view!{<div>Error loading total</div>}.into_any(),
-                            None => view!{<div>Loading...</div>}.into_any(),
-                        }}
-                    </Suspense>
-                </div>
             </div>
         </AdminGuard>
     }

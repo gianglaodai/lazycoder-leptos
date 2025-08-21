@@ -13,7 +13,7 @@ pub fn Select(
     #[prop(into, optional)] name: Option<String>,
     #[prop(optional)] disabled: bool,
     #[prop(optional)] required: bool,
-    #[prop(into, optional, default = MaybeSignal::from(String::new()))] value: MaybeSignal<String>,
+    #[prop(into, optional, default = Signal::from(String::new()))] value: Signal<String>,
     #[prop(into, optional)] on_change: Option<Callback<ev::Event, ()>>,
     children: Children,
 ) -> impl IntoView {

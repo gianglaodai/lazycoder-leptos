@@ -38,7 +38,7 @@ pub fn LoginPage() -> impl IntoView {
                         }
                     }
                 }
-                Err(e) => {
+                Err(_e) => {
                     #[cfg(target_arch = "wasm32")]
                     {
                         let _ = window().alert_with_message(

@@ -10,6 +10,9 @@ async fn main() -> std::io::Result<()> {
     db::run_migrations(&pool)
         .await
         .expect("Failed to run migrations");
+    db::run_view_migrations(&pool)
+        .await
+        .expect("Failed to run view migrations");
     app::run(pool).await
 }
 

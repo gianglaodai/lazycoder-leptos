@@ -31,6 +31,7 @@ markdown = { version = "1.0.0", features = ["serde"] }
 paste = "1.0"
 once_cell = "1.21.3"
 regex = "1.11.1"
+tokio = "1.47.1"
 
 [features]
 csr = ["leptos/csr"]

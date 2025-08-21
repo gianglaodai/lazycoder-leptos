@@ -2,7 +2,7 @@
 
 use crate::business::error::CoreError;
 use crate::business::filter::Filter;
-use crate::business::post_service::{PostInfo, PostStatus};
+use crate::business::post_service::{PostInfo, PostInfoRepository, PostStatus};
 use crate::business::repository::ViewRepository;
 use crate::business::sort::SortCriterion;
 use crate::define_orm_with_common_fields;
@@ -100,4 +100,8 @@ impl SqlxViewRepository for PostInfoSqlxRepository {
     fn from_orm(orm: Self::Orm) -> Self::Entity {
         PostInfo::from(orm)
     }
+}
+
+impl PostInfoRepository for PostInfoSqlxRepository {
+
 }

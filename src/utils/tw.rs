@@ -16,10 +16,10 @@ struct Rule {
 }
 
 static CONFLICTS: Lazy<HashMap<&'static str, HashSet<&'static str>>> = Lazy::new(|| {
-    let mut margin_related = HashSet::from([
+    let margin_related = HashSet::from([
         "m", "mx", "my", "mt", "mr", "mb", "ml"
     ]);
-    let mut padding_related = HashSet::from([
+    let padding_related = HashSet::from([
         "p", "px", "py", "pt", "pr", "pb", "pl"
     ]);
 
@@ -165,7 +165,7 @@ pub fn tw_merge(input: &str) -> String {
 
     let mut active: Vec<bool> = Vec::new();
 
-    'outer: for raw in input.split_whitespace() {
+    for raw in input.split_whitespace() {
         if raw.is_empty() {
             continue;
         }

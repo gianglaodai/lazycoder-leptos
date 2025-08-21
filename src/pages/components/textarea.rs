@@ -15,7 +15,7 @@ pub fn Textarea(
     #[prop(optional)] required: bool,
     #[prop(optional)] rows: Option<u32>,
     #[prop(into, optional)] placeholder: Option<String>,
-    #[prop(into, optional, default = MaybeSignal::from(String::new()))] value: MaybeSignal<String>,
+    #[prop(into, optional, default = Signal::from(String::new()))] value: Signal<String>,
     #[prop(optional)] on_input: Option<Callback<ev::Event, ()>>,
     #[prop(optional)] on_blur: Option<Callback<ev::FocusEvent, ()>>,
 ) -> impl IntoView {
