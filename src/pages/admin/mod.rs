@@ -1,4 +1,4 @@
 pub mod guard;
 pub mod home;
-pub mod posts;
 pub mod post_form;
+pub mod posts;

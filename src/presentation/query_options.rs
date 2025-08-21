@@ -211,7 +211,9 @@ impl QueryOptions {
                     Ok(FilterValue::Date(d))
                 } else if let Ok(dt) = OffsetDateTime::parse(value_str, &Rfc3339) {
                     Ok(FilterValue::DateTime(dt))
-                } else if let Ok(t) = Time::parse(value_str, format_description!("[hour]:[minute]:[second]")) {
+                } else if let Ok(t) =
+                    Time::parse(value_str, format_description!("[hour]:[minute]:[second]"))
+                {
                     Ok(FilterValue::Time(t))
                 } else {
                     Ok(FilterValue::String(value_str.into()))

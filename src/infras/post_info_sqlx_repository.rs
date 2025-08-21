@@ -102,6 +102,4 @@ impl SqlxViewRepository for PostInfoSqlxRepository {
     }
 }
 
-impl PostInfoRepository for PostInfoSqlxRepository {
-
-}
+impl PostInfoRepository for PostInfoSqlxRepository {}

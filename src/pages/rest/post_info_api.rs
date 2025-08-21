@@ -35,7 +35,10 @@ impl From<PostInfo> for PostInfoTO {
 }
 
 #[server(name=LoadPostInfos,prefix="/load", endpoint="/posts-info")]
-pub async fn load_post_infos(first_result: i64, max_results: i32) -> Result<Vec<PostInfoTO>, ServerFnError> {
+pub async fn load_post_infos(
+    first_result: i64,
+    max_results: i32,
+) -> Result<Vec<PostInfoTO>, ServerFnError> {
     use crate::business::sort::SortCriterion;
     use crate::state::AppState;
     use leptos_actix::extract;
@@ -44,13 +47,21 @@ pub async fn load_post_infos(first_result: i64, max_results: i32) -> Result<Vec<
     let result = state
         .post_info_service
         .get_many(
-            vec![SortCriterion { field: "updated_at".to_owned(), ascending: false }],
+            vec![SortCriterion {
+                field: "updated_at".to_owned(),
+                ascending: false,
+            }],
             Some(first_result as i32),
             Some(max_results),
             vec![],
         )
         .await
-        .map(|items| items.into_iter().map(PostInfoTO::from).collect::<Vec<PostInfoTO>>())
+        .map(|items| {
+            items
+                .into_iter()
+                .map(PostInfoTO::from)
+                .collect::<Vec<PostInfoTO>>()
+        })
         .map_err(|e| ServerFnError::ServerError(e.to_string()));
     result
 }

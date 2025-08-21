@@ -1,13 +1,13 @@
-use crate::pages::components::{Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext, PaginationEllipsis};
+use crate::pages::components::button::ButtonVariant;
+use crate::pages::components::Button;
+use crate::pages::components::Paginator;
+use crate::pages::rest::auth_api::UserTO;
 use crate::pages::rest::post_api::{count_posts, load_posts, PostTO};
+use leptos::control_flow::Show;
 use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_router::hooks::use_query_map;
 use time::format_description;
-use leptos::control_flow::Show;
-use crate::pages::rest::auth_api::UserTO;
-use crate::pages::components::Button;
-use crate::pages::components::button::ButtonVariant;
 
 #[component]
 pub fn ArticlesPage() -> impl IntoView {
@@ -67,98 +67,12 @@ pub fn ArticlesPage() -> impl IntoView {
             <Suspense fallback=move || view! {<div>Loading total...</div>}>
                 {move || match total_posts_resource.get() {
                         Some(Ok(total_posts)) => view! {
-                        <Pagination>
-                            <PaginationContent>
-                                <PaginationItem>
-                                    {let fr = first_result();
-                                     let max = max_results();
-                                     let max_i64 = max as i64;
-                                     let total = total_posts as i64;
-                                     let total_pages = if max_i64 <= 0 { 1 } else { ((total + max_i64 - 1) / max_i64).max(1) };
-                                     let current_page = if max_i64 > 0 { fr / max_i64 } else { 0 };
-                                     let prev_fr = if current_page > 0 { Some(fr - max_i64) } else { None };
-                                     match prev_fr {
-                                        Some(pf) => view! { <PaginationPrevious href=format!("?first_result={}&max_results={}", pf, max) /> }.into_any(),
-                                        None => view! { <PaginationPrevious /> }.into_any(),
-                                     }
-                                    }
-                                </PaginationItem>
-
-                                {let fr = first_result();
-                                 let max = max_results();
-                                 let max_i64 = max as i64;
-                                 let total = total_posts as i64;
-                                 let total_pages = if max_i64 <= 0 { 1 } else { ((total + max_i64 - 1) / max_i64).max(1) };
-                                 let current_page = if max_i64 > 0 { fr / max_i64 } else { 0 };
-                                 let mut v: Vec<leptos::prelude::AnyView> = Vec::new();
-                                 if total_pages <= 7 {
-                                     for i in 0..total_pages {
-                                         let is_active = i == current_page;
-                                         let first = i * max_i64;
-                                         v.push(view! {
-                                             <PaginationItem>
-                                                 <PaginationLink is_active=is_active href=format!("?first_result={}&max_results={}", first, max)>
-                                                     { (i + 1).to_string() }
-                                                 </PaginationLink>
-                                             </PaginationItem>
-                                         }.into_any());
-                                     }
-                                 } else {
-                                     // First page
-                                     v.push(view! {
-                                         <PaginationItem>
-                                             <PaginationLink is_active={current_page==0} href=format!("?first_result={}&max_results={}", 0, max)>
-                                                 { "1" }
-                                             </PaginationLink>
-                                         </PaginationItem>
-                                     }.into_any());
-                                     // Left ellipsis
-                                     if current_page > 2 { v.push(view! { <PaginationEllipsis /> }.into_any()); }
-                                     // Middle pages: current-1, current, current+1
-                                     let set: std::collections::BTreeSet<i64> = [current_page.saturating_sub(1), current_page, (current_page+1).min(total_pages-1)].into_iter().collect();
-                                     for i in set {
-                                         if i > 0 && i < total_pages-1 {
-                                             let first = i * max_i64;
-                                             let is_active = i == current_page;
-                                             v.push(view! {
-                                                 <PaginationItem>
-                                                     <PaginationLink is_active=is_active href=format!("?first_result={}&max_results={}", first, max)>
-                                                         { (i + 1).to_string() }
-                                                     </PaginationLink>
-                                                 </PaginationItem>
-                                             }.into_any());
-                                         }
-                                     }
-                                     // Right ellipsis
-                                     if current_page + 3 < total_pages { v.push(view! { <PaginationEllipsis /> }.into_any()); }
-                                     // Last page
-                                     v.push(view! {
-                                         <PaginationItem>
-                                             <PaginationLink is_active={current_page==total_pages-1} href=format!("?first_result={}&max_results={}", (total_pages-1)*max_i64, max)>
-                                                 { total_pages.to_string() }
-                                             </PaginationLink>
-                                         </PaginationItem>
-                                     }.into_any());
-                                 }
-                                 view! { {v} }.into_any()
-                                }
-
-                                <PaginationItem>
-                                    {let fr = first_result();
-                                     let max = max_results();
-                                     let max_i64 = max as i64;
-                                     let total = total_posts as i64;
-                                     let total_pages = if max_i64 <= 0 { 1 } else { ((total + max_i64 - 1) / max_i64).max(1) };
-                                     let current_page = if max_i64 > 0 { fr / max_i64 } else { 0 };
-                                     let next_fr = if (current_page + 1) < total_pages { Some(fr + max_i64) } else { None };
-                                     match next_fr {
-                                        Some(nf) => view! { <PaginationNext href=format!("?first_result={}&max_results={}", nf, max) /> }.into_any(),
-                                        None => view! { <PaginationNext /> }.into_any(),
-                                     }
-                                    }
-                                </PaginationItem>
-                            </PaginationContent>
-                        </Pagination>
+                        <Paginator
+                            first_result=first_result()
+                            total_entities=total_posts as i64
+                            max_results=max_results() as i64
+                            max_visible_pages=7
+                        />
                     }.into_any(),
                         Some(Err(_e)) => view!{<div>Error loading total</div>}.into_any(),
                         None => view!{<div>Loading...</div>}.into_any()}

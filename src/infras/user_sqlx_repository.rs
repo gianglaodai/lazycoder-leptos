@@ -168,11 +168,15 @@ impl UserRepository for UserSqlxRepository {
         Ok(result.map(Self::from_orm))
     }
 
-    async fn find_by_email_or_username(&self, email_or_username: &str) -> Result<Option<User>, CoreError> {
-        let result = sqlx::query_as::<_, UserOrm>("SELECT * FROM users WHERE email = $1 OR username = $1")
-            .bind(email_or_username)
-            .fetch_optional(self.get_pool())
-            .await?;
+    async fn find_by_email_or_username(
+        &self,
+        email_or_username: &str,
+    ) -> Result<Option<User>, CoreError> {
+        let result =
+            sqlx::query_as::<_, UserOrm>("SELECT * FROM users WHERE email = $1 OR username = $1")
+                .bind(email_or_username)
+                .fetch_optional(self.get_pool())
+                .await?;
         Ok(result.map(Self::from_orm))
     }
 }

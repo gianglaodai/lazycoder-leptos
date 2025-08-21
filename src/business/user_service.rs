@@ -100,7 +100,12 @@ impl<R: UserRepository> UserService<R> {
     pub async fn get_by_username(&self, username: &str) -> Result<Option<User>, CoreError> {
         self.user_repository.find_by_username(username).await
     }
-    pub async fn get_by_email_or_username(&self, email_or_username: &str) -> Result<Option<User>, CoreError> {
-        self.user_repository.find_by_email_or_username(email_or_username).await
+    pub async fn get_by_email_or_username(
+        &self,
+        email_or_username: &str,
+    ) -> Result<Option<User>, CoreError> {
+        self.user_repository
+            .find_by_email_or_username(email_or_username)
+            .await
     }
 }

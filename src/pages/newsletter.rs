@@ -1,7 +1,7 @@
+use crate::pages::components::button::ButtonVariant;
+use crate::pages::components::Button;
 use leptos::prelude::*;
 use leptos_router::components::A;
-use crate::pages::components::Button;
-use crate::pages::components::button::ButtonVariant;
 
 #[component]
 pub fn NewsletterPage() -> impl IntoView {

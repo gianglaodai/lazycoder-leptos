@@ -106,8 +106,14 @@ fn slugify(input: &str) -> String {
         }
     }
     // trim trailing '-'
-    while out.ends_with('-') { out.pop(); }
-    if out.is_empty() { "post".to_string() } else { out }
+    while out.ends_with('-') {
+        out.pop();
+    }
+    if out.is_empty() {
+        "post".to_string()
+    } else {
+        out
+    }
 }
 #[server(name=CreatePost, prefix="/load", endpoint="/posts/create")]
 pub async fn create_post(title: String, user_id: i32) -> Result<PostTO, ServerFnError> {
@@ -119,7 +125,9 @@ pub async fn create_post(title: String, user_id: i32) -> Result<PostTO, ServerFn
     // Guard: require ADMIN role from server session
     let req: actix_web::HttpRequest = extract().await?;
     let session = req.get_session();
-    let role: Option<String> = session.get("role").map_err(|e| ServerFnError::new(e.to_string()))?;
+    let role: Option<String> = session
+        .get("role")
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
     match role.as_deref() {
         Some("ADMIN") => {}
         _ => return Err(ServerFnError::new("Forbidden")),
@@ -151,7 +159,9 @@ pub async fn update_post(post: PostTO) -> Result<PostTO, ServerFnError> {
     // Guard: require ADMIN role from server session
     let req: actix_web::HttpRequest = extract().await?;
     let session = req.get_session();
-    let role: Option<String> = session.get("role").map_err(|e| ServerFnError::new(e.to_string()))?;
+    let role: Option<String> = session
+        .get("role")
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
     match role.as_deref() {
         Some("ADMIN") => {}
         _ => return Err(ServerFnError::new("Forbidden")),
@@ -176,7 +186,9 @@ pub async fn delete_post(id: i32) -> Result<u64, ServerFnError> {
     // Guard: require ADMIN role from server session
     let req: actix_web::HttpRequest = extract().await?;
     let session = req.get_session();
-    let role: Option<String> = session.get("role").map_err(|e| ServerFnError::new(e.to_string()))?;
+    let role: Option<String> = session
+        .get("role")
+        .map_err(|e| ServerFnError::new(e.to_string()))?;
     match role.as_deref() {
         Some("ADMIN") => {}
         _ => return Err(ServerFnError::new("Forbidden")),

@@ -36,13 +36,14 @@ fn caption_cls() -> &'static str {
 }
 
 #[component]
-pub fn Table(
-    #[prop(into, optional)] class: Option<String>,
-    children: Children,
-) -> impl IntoView {
+pub fn Table(#[prop(into, optional)] class: Option<String>, children: Children) -> impl IntoView {
     let class = class.unwrap_or_default();
     let classes = move || {
-        if class.is_empty() { tbl().to_string() } else { format!("{} {}", tbl(), class) }
+        if class.is_empty() {
+            tbl().to_string()
+        } else {
+            format!("{} {}", tbl(), class)
+        }
     };
 
     view! {
@@ -60,7 +61,11 @@ pub fn TableHeader(
 ) -> impl IntoView {
     let class = class.unwrap_or_default();
     let classes = move || {
-        if class.is_empty() { thead_cls().to_string() } else { format!("{} {}", thead_cls(), class) }
+        if class.is_empty() {
+            thead_cls().to_string()
+        } else {
+            format!("{} {}", thead_cls(), class)
+        }
     };
 
     view! { <thead class=classes()>{children()}</thead> }
@@ -73,7 +78,11 @@ pub fn TableBody(
 ) -> impl IntoView {
     let class = class.unwrap_or_default();
     let classes = move || {
-        if class.is_empty() { tbody_cls().to_string() } else { format!("{} {}", tbody_cls(), class) }
+        if class.is_empty() {
+            tbody_cls().to_string()
+        } else {
+            format!("{} {}", tbody_cls(), class)
+        }
     };
 
     view! { <tbody class=classes()>{children()}</tbody> }
@@ -86,7 +95,11 @@ pub fn TableFooter(
 ) -> impl IntoView {
     let class = class.unwrap_or_default();
     let classes = move || {
-        if class.is_empty() { tfoot_cls().to_string() } else { format!("{} {}", tfoot_cls(), class) }
+        if class.is_empty() {
+            tfoot_cls().to_string()
+        } else {
+            format!("{} {}", tfoot_cls(), class)
+        }
     };
 
     view! { <tfoot class=classes()>{children()}</tfoot> }
@@ -99,7 +112,11 @@ pub fn TableRow(
 ) -> impl IntoView {
     let class = class.unwrap_or_default();
     let classes = move || {
-        if class.is_empty() { tr_cls().to_string() } else { format!("{} {}", tr_cls(), class) }
+        if class.is_empty() {
+            tr_cls().to_string()
+        } else {
+            format!("{} {}", tr_cls(), class)
+        }
     };
 
     view! { <tr class=classes()>{children()}</tr> }
@@ -112,7 +129,11 @@ pub fn TableHead(
 ) -> impl IntoView {
     let class = class.unwrap_or_default();
     let classes = move || {
-        if class.is_empty() { th_cls().to_string() } else { format!("{} {}", th_cls(), class) }
+        if class.is_empty() {
+            th_cls().to_string()
+        } else {
+            format!("{} {}", th_cls(), class)
+        }
     };
 
     view! { <th class=classes()>{children()}</th> }
@@ -125,7 +146,11 @@ pub fn TableCell(
 ) -> impl IntoView {
     let class = class.unwrap_or_default();
     let classes = move || {
-        if class.is_empty() { td_cls().to_string() } else { format!("{} {}", td_cls(), class) }
+        if class.is_empty() {
+            td_cls().to_string()
+        } else {
+            format!("{} {}", td_cls(), class)
+        }
     };
 
     view! { <td class=classes()>{children()}</td> }
@@ -138,7 +163,11 @@ pub fn TableCaption(
 ) -> impl IntoView {
     let class = class.unwrap_or_default();
     let classes = move || {
-        if class.is_empty() { caption_cls().to_string() } else { format!("{} {}", caption_cls(), class) }
+        if class.is_empty() {
+            caption_cls().to_string()
+        } else {
+            format!("{} {}", caption_cls(), class)
+        }
     };
 
     view! { <caption class=classes()>{children()}</caption> }

@@ -133,7 +133,6 @@ impl<R: PostRepository> PostService<R> {
     }
 }
 
-
 pub trait PostInfoRepository: ViewRepository<PostInfo> + Send + Sync {}
 
 #[derive(Clone)]
@@ -143,7 +142,9 @@ pub struct PostInfoService<R: PostInfoRepository> {
 
 impl<R: PostInfoRepository> PostInfoService<R> {
     pub fn new(post_info_repository: Arc<R>) -> Self {
-        Self { post_info_repository }
+        Self {
+            post_info_repository,
+        }
     }
 
     pub async fn get_all(&self, filters: Vec<Filter>) -> Result<Vec<PostInfo>, CoreError> {

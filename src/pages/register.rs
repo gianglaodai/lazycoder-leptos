@@ -33,7 +33,8 @@ pub fn RegisterPage() -> impl IntoView {
                 Ok(_) => {
                     #[cfg(target_arch = "wasm32")]
                     {
-                        let _ = window().alert_with_message("Registration successful. Please sign in.");
+                        let _ =
+                            window().alert_with_message("Registration successful. Please sign in.");
                     }
                     let navigate = use_navigate();
                     let _ = navigate("/login", Default::default());

@@ -1,9 +1,9 @@
+use crate::pages::components::button::ButtonVariant;
+use crate::pages::components::Button;
 use crate::pages::rest::auth_api::{logout, UserTO};
 use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_router::hooks::use_navigate;
-use crate::pages::components::Button;
-use crate::pages::components::button::ButtonVariant;
 
 #[component]
 pub fn Navigation() -> impl IntoView {

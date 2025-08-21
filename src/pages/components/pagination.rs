@@ -1,5 +1,5 @@
-use leptos::prelude::*;
 use crate::pages::components::button::{Button, ButtonSize, ButtonVariant};
+use leptos::prelude::*;
 
 // Pagination root: <nav>
 #[component]
@@ -61,7 +61,11 @@ pub fn PaginationLink(
     children: Children,
 ) -> impl IntoView {
     let class = class.unwrap_or_default();
-    let variant = if is_active { ButtonVariant::Outline } else { ButtonVariant::Ghost };
+    let variant = if is_active {
+        ButtonVariant::Outline
+    } else {
+        ButtonVariant::Ghost
+    };
 
     // Render Button with or without href based on provided value to avoid type inference issue
     match href {
@@ -78,7 +82,8 @@ pub fn PaginationLink(
             >
                 {children()}
             </Button>
-        }.into_any(),
+        }
+        .into_any(),
         None => view! {
             <Button
                 attr:aria-current=move || if is_active { Some("page".to_string()) } else { None }
@@ -91,7 +96,8 @@ pub fn PaginationLink(
             >
                 {children()}
             </Button>
-        }.into_any(),
+        }
+        .into_any(),
     }
 }
 
@@ -131,7 +137,11 @@ pub fn PaginationPrevious(
     let class = class.unwrap_or_default();
     let classes = move || {
         let base = "gap-1 px-2.5 sm:pl-2.5";
-        if class.is_empty() { base.to_string() } else { format!("{base} {class}") }
+        if class.is_empty() {
+            base.to_string()
+        } else {
+            format!("{base} {class}")
+        }
     };
     match href {
         Some(url) => view! {
@@ -144,7 +154,8 @@ pub fn PaginationPrevious(
                 {chevron_left_icon()}
                 <span class="hidden sm:block">{"Previous"}</span>
             </PaginationLink>
-        }.into_any(),
+        }
+        .into_any(),
         None => view! {
             <PaginationLink
                 aria_label="Go to previous page".to_string()
@@ -154,7 +165,8 @@ pub fn PaginationPrevious(
                 {chevron_left_icon()}
                 <span class="hidden sm:block">{"Previous"}</span>
             </PaginationLink>
-        }.into_any(),
+        }
+        .into_any(),
     }
 }
 
@@ -167,7 +179,11 @@ pub fn PaginationNext(
     let class = class.unwrap_or_default();
     let classes = move || {
         let base = "gap-1 px-2.5 sm:pr-2.5";
-        if class.is_empty() { base.to_string() } else { format!("{base} {class}") }
+        if class.is_empty() {
+            base.to_string()
+        } else {
+            format!("{base} {class}")
+        }
     };
     match href {
         Some(url) => view! {
@@ -180,7 +196,8 @@ pub fn PaginationNext(
                 <span class="hidden sm:block">{"Next"}</span>
                 {chevron_right_icon()}
             </PaginationLink>
-        }.into_any(),
+        }
+        .into_any(),
         None => view! {
             <PaginationLink
                 aria_label="Go to next page".to_string()
@@ -190,15 +207,14 @@ pub fn PaginationNext(
                 <span class="hidden sm:block">{"Next"}</span>
                 {chevron_right_icon()}
             </PaginationLink>
-        }.into_any(),
+        }
+        .into_any(),
     }
 }
 
 // Ellipsis span
 #[component]
-pub fn PaginationEllipsis(
-    #[prop(into, optional)] class: Option<String>,
-) -> impl IntoView {
+pub fn PaginationEllipsis(#[prop(into, optional)] class: Option<String>) -> impl IntoView {
     let class = class.unwrap_or_default();
     view! {
         <span

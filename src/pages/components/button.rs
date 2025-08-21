@@ -13,7 +13,9 @@ pub enum ButtonVariant {
 }
 
 impl Default for ButtonVariant {
-    fn default() -> Self { ButtonVariant::Default }
+    fn default() -> Self {
+        ButtonVariant::Default
+    }
 }
 
 #[derive(Clone, Copy, PartialEq, Eq)]
@@ -25,14 +27,20 @@ pub enum ButtonSize {
 }
 
 impl Default for ButtonSize {
-    fn default() -> Self { ButtonSize::Default }
+    fn default() -> Self {
+        ButtonSize::Default
+    }
 }
 
 fn variant_classes(variant: ButtonVariant) -> &'static str {
     match variant {
         ButtonVariant::Default => "bg-primary text-primary-foreground hover:bg-primary/90",
-        ButtonVariant::Destructive => "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        ButtonVariant::Outline => "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
+        ButtonVariant::Destructive => {
+            "bg-destructive text-destructive-foreground hover:bg-destructive/90"
+        }
+        ButtonVariant::Outline => {
+            "border border-input bg-background hover:bg-accent hover:text-accent-foreground"
+        }
         ButtonVariant::Secondary => "bg-secondary text-secondary-foreground hover:bg-secondary/80",
         ButtonVariant::Ghost => "hover:bg-accent hover:text-accent-foreground",
         ButtonVariant::Link => "text-primary underline-offset-4 hover:underline",
@@ -68,7 +76,11 @@ pub fn Button(
         // Ensure link variant is meaningful; still allow it on buttons but it's mostly for anchors
         ButtonVariant::Link
     } else {
-        if let ButtonVariant::Link = variant { ButtonVariant::Link } else { variant }
+        if let ButtonVariant::Link = variant {
+            ButtonVariant::Link
+        } else {
+            variant
+        }
     };
 
     let class = class.unwrap_or_default();
@@ -78,7 +90,9 @@ pub fn Button(
         parts.push(base_classes());
         parts.push(size_classes(size));
         parts.push(variant_classes(variant));
-        if !class.is_empty() { parts.push(&class); }
+        if !class.is_empty() {
+            parts.push(&class);
+        }
         parts.join(" ")
     };
 
@@ -99,7 +113,8 @@ pub fn Button(
             <A href=url attr:class=classes()>
                 {content()}
             </A>
-        }.into_any(),
+        }
+        .into_any(),
         None => {
             let t = r#type.unwrap_or_else(|| "button".to_string());
             view! {
@@ -111,7 +126,8 @@ pub fn Button(
                 >
                     {content()}
                 </button>
-            }.into_any()
+            }
+            .into_any()
         }
     }
 }

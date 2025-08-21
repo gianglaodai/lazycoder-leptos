@@ -1,6 +1,6 @@
+use crate::pages::components::Textarea;
 use leptos::prelude::*;
 use markdown::{to_html_with_options, Options};
-use crate::pages::components::Textarea;
 
 #[component]
 pub fn MarkdownEditor(

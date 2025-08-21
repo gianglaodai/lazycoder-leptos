@@ -53,7 +53,10 @@ pub fn Dialog(
         }
     };
 
-    provide_context(DialogContext { open: is_open, set_open: setter });
+    provide_context(DialogContext {
+        open: is_open,
+        set_open: setter,
+    });
 
     // Render children directly; actual placement of overlay/content handled inside DialogContent
     view! { {children()} }
@@ -99,7 +102,9 @@ pub fn DialogContent(
     // FIX: dùng get_untracked trong listener (không cần tracking)
     let _key_listener = window_event_listener(leptos::ev::keydown, move |ev| {
         if ctx.open.get_untracked() {
-            if ev.key() == "Escape" { ctx.set_open.run(false); }
+            if ev.key() == "Escape" {
+                ctx.set_open.run(false);
+            }
         }
     });
 
@@ -111,8 +116,11 @@ pub fn DialogContent(
 
     // FIX: closure đọc (có thể phụ thuộc signal khác trong tương lai)
     let classes = move || {
-        if extra.is_empty() { content_classes().to_string() }
-        else { format!("{} {}", content_classes(), extra) }
+        if extra.is_empty() {
+            content_classes().to_string()
+        } else {
+            format!("{} {}", content_classes(), extra)
+        }
     };
 
     // FIX: closure đọc signal

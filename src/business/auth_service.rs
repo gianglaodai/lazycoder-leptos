@@ -54,9 +54,7 @@ impl<R: UserRepository> AuthService<R> {
             .await?;
 
         let user = match user_opt {
-            Some(u) => {
-                u
-            },
+            Some(u) => u,
             None => {
                 return Err(CoreError::unauthorized("invalid.credentials"));
             }

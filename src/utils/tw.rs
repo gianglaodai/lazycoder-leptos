@@ -16,34 +16,50 @@ struct Rule {
 }
 
 static CONFLICTS: Lazy<HashMap<&'static str, HashSet<&'static str>>> = Lazy::new(|| {
-    let margin_related = HashSet::from([
-        "m", "mx", "my", "mt", "mr", "mb", "ml"
-    ]);
-    let padding_related = HashSet::from([
-        "p", "px", "py", "pt", "pr", "pb", "pl"
-    ]);
+    let margin_related = HashSet::from(["m", "mx", "my", "mt", "mr", "mb", "ml"]);
+    let padding_related = HashSet::from(["p", "px", "py", "pt", "pr", "pb", "pl"]);
 
     let mut m = HashMap::new();
-    for g in &["m","mx","my","mt","mr","mb","ml"] {
+    for g in &["m", "mx", "my", "mt", "mr", "mb", "ml"] {
         m.insert(*g, margin_related.clone());
     }
-    for g in &["p","px","py","pt","pr","pb","pl"] {
+    for g in &["p", "px", "py", "pt", "pr", "pb", "pl"] {
         m.insert(*g, padding_related.clone());
     }
 
-    m.insert("bg-color",    HashSet::from(["bg-color"]));
-    m.insert("text-color",  HashSet::from(["text-color"]));
-    m.insert("border-color",HashSet::from(["border-color"]));
+    m.insert("bg-color", HashSet::from(["bg-color"]));
+    m.insert("text-color", HashSet::from(["text-color"]));
+    m.insert("border-color", HashSet::from(["border-color"]));
 
-    m.insert("bg-opacity",  HashSet::from(["bg-opacity"]));
-    m.insert("text-opacity",HashSet::from(["text-opacity"]));
-    m.insert("border-opacity",HashSet::from(["border-opacity"]));
+    m.insert("bg-opacity", HashSet::from(["bg-opacity"]));
+    m.insert("text-opacity", HashSet::from(["text-opacity"]));
+    m.insert("border-opacity", HashSet::from(["border-opacity"]));
 
-    m.insert("text-size",   HashSet::from(["text-size"]));
-    m.insert("text-align",  HashSet::from(["text-align"]));
+    m.insert("text-size", HashSet::from(["text-size"]));
+    m.insert("text-align", HashSet::from(["text-align"]));
 
-    let br = HashSet::from(["rounded","rounded-t","rounded-r","rounded-b","rounded-l","rounded-tl","rounded-tr","rounded-br","rounded-bl"]);
-    for g in &["rounded","rounded-t","rounded-r","rounded-b","rounded-l","rounded-tl","rounded-tr","rounded-br","rounded-bl"] {
+    let br = HashSet::from([
+        "rounded",
+        "rounded-t",
+        "rounded-r",
+        "rounded-b",
+        "rounded-l",
+        "rounded-tl",
+        "rounded-tr",
+        "rounded-br",
+        "rounded-bl",
+    ]);
+    for g in &[
+        "rounded",
+        "rounded-t",
+        "rounded-r",
+        "rounded-b",
+        "rounded-l",
+        "rounded-tl",
+        "rounded-tr",
+        "rounded-br",
+        "rounded-bl",
+    ] {
         m.insert(*g, br.clone());
     }
 
@@ -51,8 +67,12 @@ static CONFLICTS: Lazy<HashMap<&'static str, HashSet<&'static str>>> = Lazy::new
 
     m.insert("position", HashSet::from(["position"]));
 
-    let inset = HashSet::from(["inset","inset-x","inset-y","top","right","bottom","left"]);
-    for g in &["inset","inset-x","inset-y","top","right","bottom","left"] {
+    let inset = HashSet::from([
+        "inset", "inset-x", "inset-y", "top", "right", "bottom", "left",
+    ]);
+    for g in &[
+        "inset", "inset-x", "inset-y", "top", "right", "bottom", "left",
+    ] {
         m.insert(*g, inset.clone());
     }
 
@@ -70,7 +90,7 @@ fn build_rules() -> Vec<Rule> {
     v.push(r("mr", r"^mr-"));
     v.push(r("mb", r"^mb-"));
     v.push(r("ml", r"^ml-"));
-    v.push(r("m",  r"^m-"));
+    v.push(r("m", r"^m-"));
 
     v.push(r("px", r"^px-"));
     v.push(r("py", r"^py-"));
@@ -78,7 +98,7 @@ fn build_rules() -> Vec<Rule> {
     v.push(r("pr", r"^pr-"));
     v.push(r("pb", r"^pb-"));
     v.push(r("pl", r"^pl-"));
-    v.push(r("p",  r"^p-"));
+    v.push(r("p", r"^p-"));
 
     v.push(r("display", r"^(hidden|block|inline|inline-block|flex|inline-flex|grid|inline-grid|table|inline-table|flow-root)$"));
 
@@ -86,33 +106,45 @@ fn build_rules() -> Vec<Rule> {
 
     v.push(r("inset-x", r"^inset-x-"));
     v.push(r("inset-y", r"^inset-y-"));
-    v.push(r("top",     r"^top-"));
-    v.push(r("right",   r"^right-"));
-    v.push(r("bottom",  r"^bottom-"));
-    v.push(r("left",    r"^left-"));
-    v.push(r("inset",   r"^inset-"));
+    v.push(r("top", r"^top-"));
+    v.push(r("right", r"^right-"));
+    v.push(r("bottom", r"^bottom-"));
+    v.push(r("left", r"^left-"));
+    v.push(r("inset", r"^inset-"));
 
     v.push(r("rounded-tl", r"^rounded-tl-"));
     v.push(r("rounded-tr", r"^rounded-tr-"));
     v.push(r("rounded-br", r"^rounded-br-"));
     v.push(r("rounded-bl", r"^rounded-bl-"));
-    v.push(r("rounded-t",  r"^rounded-t-"));
-    v.push(r("rounded-r",  r"^rounded-r-"));
-    v.push(r("rounded-b",  r"^rounded-b-"));
-    v.push(r("rounded-l",  r"^rounded-l-"));
-    v.push(r("rounded",    r"^rounded(-\[[^\]]+\]|-[a-z0-9]+)?$"));
+    v.push(r("rounded-t", r"^rounded-t-"));
+    v.push(r("rounded-r", r"^rounded-r-"));
+    v.push(r("rounded-b", r"^rounded-b-"));
+    v.push(r("rounded-l", r"^rounded-l-"));
+    v.push(r("rounded", r"^rounded(-\[[^\]]+\]|-[a-z0-9]+)?$"));
 
-    v.push(r("text-size",  r"^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)$"));
+    v.push(r(
+        "text-size",
+        r"^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)$",
+    ));
     v.push(r("text-align", r"^text-(left|center|right|justify)$"));
 
     v.push(r("text-opacity", r"^text-opacity-"));
-    v.push(r("text-color",   r"^text-(?:\[.+\]|(black|white|transparent|current|inherit)|([a-z]+)(?:-\d{1,3})?)$"));
+    v.push(r(
+        "text-color",
+        r"^text-(?:\[.+\]|(black|white|transparent|current|inherit)|([a-z]+)(?:-\d{1,3})?)$",
+    ));
 
     v.push(r("bg-opacity", r"^bg-opacity-"));
-    v.push(r("bg-color",   r"^bg-(?:\[.+\]|(black|white|transparent|current|inherit)|([a-z]+)(?:-\d{1,3})?)$"));
+    v.push(r(
+        "bg-color",
+        r"^bg-(?:\[.+\]|(black|white|transparent|current|inherit)|([a-z]+)(?:-\d{1,3})?)$",
+    ));
 
     v.push(r("border-opacity", r"^border-opacity-"));
-    v.push(r("border-color",   r"^border-(?:\[.+\]|(black|white|transparent|current|inherit)|([a-z]+)(?:-\d{1,3})?)$"));
+    v.push(r(
+        "border-color",
+        r"^border-(?:\[.+\]|(black|white|transparent|current|inherit)|([a-z]+)(?:-\d{1,3})?)$",
+    ));
 
     v
 }
@@ -147,7 +179,11 @@ fn parse_token(token: &str) -> Parsed<'_> {
         parts.join(":")
     };
 
-    Parsed { variants, core, important }
+    Parsed {
+        variants,
+        core,
+        important,
+    }
 }
 
 fn find_group(core: &str) -> Option<&'static str> {
@@ -182,7 +218,10 @@ pub fn tw_merge(input: &str) -> String {
             group,
         };
 
-        let conflicts = CONFLICTS.get(group).cloned().unwrap_or_else(|| HashSet::from([group]));
+        let conflicts = CONFLICTS
+            .get(group)
+            .cloned()
+            .unwrap_or_else(|| HashSet::from([group]));
 
         for other_group in conflicts {
             let victim_key = Key {
@@ -244,7 +283,10 @@ mod tests {
     fn colors_and_opacity() {
         assert_eq!(tw_merge("bg-red-500 bg-blue-500"), "bg-blue-500");
         assert_eq!(tw_merge("text-[#123456] text-red-500"), "text-red-500");
-        assert_eq!(tw_merge("border-opacity-50 border-opacity-20"), "border-opacity-20");
+        assert_eq!(
+            tw_merge("border-opacity-50 border-opacity-20"),
+            "border-opacity-20"
+        );
     }
 
     #[test]
@@ -267,12 +309,21 @@ mod tests {
 
     #[test]
     fn preserve_unknown_classes() {
-        assert_eq!(tw_merge("prose prose-lg custom-class"), "prose prose-lg custom-class");
+        assert_eq!(
+            tw_merge("prose prose-lg custom-class"),
+            "prose prose-lg custom-class"
+        );
     }
 
     #[test]
     fn variants_and_important_together() {
-        assert_eq!(tw_merge("sm:hover:bg-red-500 sm:hover:bg-blue-500"), "sm:hover:bg-blue-500");
-        assert_eq!(tw_merge("sm:hover:!bg-red-500 sm:hover:bg-blue-500"), "sm:hover:!bg-red-500 sm:hover:bg-blue-500");
+        assert_eq!(
+            tw_merge("sm:hover:bg-red-500 sm:hover:bg-blue-500"),
+            "sm:hover:bg-blue-500"
+        );
+        assert_eq!(
+            tw_merge("sm:hover:!bg-red-500 sm:hover:bg-blue-500"),
+            "sm:hover:!bg-red-500 sm:hover:bg-blue-500"
+        );
     }
 }
