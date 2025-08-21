@@ -73,7 +73,6 @@ pub fn Button(
     children: Children,
 ) -> impl IntoView {
     let variant = if matches!(variant, ButtonVariant::Link) && href.is_none() {
-        // Ensure link variant is meaningful; still allow it on buttons but it's mostly for anchors
         ButtonVariant::Link
     } else {
         if let ButtonVariant::Link = variant {
@@ -107,7 +106,6 @@ pub fn Button(
         }
     };
 
-    // If href provided, render as link; otherwise as button element
     match href {
         Some(url) => view! {
             <A href=url attr:class=classes()>

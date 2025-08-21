@@ -1,14 +1,11 @@
 use leptos::prelude::*;
 
-// Tailwind classes based on shadcn/ui Table
-// https://ui.shadcn.com/docs/components/table
-
 fn tbl() -> &'static str {
     "w-full caption-bottom text-sm"
 }
 
 fn thead_cls() -> &'static str {
-    "[&_tr]:border-b"
+    "[&_tr]:border-b *:cursor-pointer"
 }
 
 fn tbody_cls() -> &'static str {
@@ -47,7 +44,6 @@ pub fn Table(#[prop(into, optional)] class: Option<String>, children: Children) 
     };
 
     view! {
-        // Wrap in overflow container similar to shadcn react example
         <div class="w-full overflow-auto">
             <table class=classes()>{children()}</table>
         </div>

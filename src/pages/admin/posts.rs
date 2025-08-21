@@ -27,7 +27,6 @@ fn NewPostDialog() -> impl IntoView {
         async move { create_post(title_val, user_id).await }
     });
 
-    // Navigate on success
     Effect::new({
         let navigate = navigate.clone();
         move |_| {
@@ -89,6 +88,11 @@ pub fn AdminPostsPage() -> impl IntoView {
         })
     };
 
+    let delete_action = Action::new(move |post_id: &i32| {
+        let id = *post_id;
+        async move { delete_post(id.to_owned()).await }
+    });
+
     let reload = RwSignal::new(0u32);
 
     let posts_and_total_resource = Resource::new(
@@ -143,8 +147,9 @@ pub fn AdminPostsPage() -> impl IntoView {
                                                 <TableCell>{status}</TableCell>
                                                 <TableCell class="whitespace-nowrap text-xs text-stone-600">{created}</TableCell>
                                                 <TableCell class="whitespace-nowrap text-xs text-stone-600">{updated}</TableCell>
-                                                <TableCell class="text-right">
-                                                    <Button href=format!("/admin/posts/{}/edit", post_id) variant=ButtonVariant::Outline>Edit</Button>
+                                                <TableCell class="text-right gap-2 flex flex-row-reverse">
+                                                    <Button variant=ButtonVariant::Outline class="border-destructive!" on_click=Callback::new(move |_| { delete_action.dispatch(post_id); })>Delete</Button>
+                                                    <Button variant=ButtonVariant::Outline class="border-primary!" href=format!("/admin/posts/{}", post_id)>Edit</Button>
                                                 </TableCell>
                                             </TableRow>
                                         }
@@ -228,7 +233,7 @@ fn AdminPostItem(post: PostTO, reload: RwSignal<u32>) -> impl IntoView {
                         <div class="text-sm text-stone-500">Slug: {slug.clone()} - Status: {move || status.get()} - Created: {created.clone()} - Updated: {updated.clone()}</div>
                     </div>
                     <div class="flex gap-2">
-                        <Button href=format!("/admin/posts/{}/edit", post_id) variant=ButtonVariant::Outline>Edit</Button>
+                        <Button href=format!("/admin/posts/{}", post_id) variant=ButtonVariant::Outline>Edit</Button>
                         <Button variant=ButtonVariant::Destructive on_click=Callback::new(move |_| { delete_action.dispatch(()); })>Delete</Button>
                     </div>
                 </div>

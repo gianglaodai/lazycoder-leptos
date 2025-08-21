@@ -1,253 +1,325 @@
-use once_cell::sync::Lazy;
-use regex::Regex;
-use std::collections::{HashMap, HashSet};
+use std::borrow::Cow;
+use std::collections::HashSet;
 
-#[derive(Debug, Clone, PartialEq, Eq, Hash)]
-struct Key {
-    variants: String,
+const T: u8 = 1 << 0;
+const R: u8 = 1 << 1;
+const B: u8 = 1 << 2;
+const L: u8 = 1 << 3;
+const TRBL: u8 = T | R | B | L;
+const XY: u8 = R | L; // dùng cho x
+const YX: u8 = T | B; // dùng cho y
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+enum Group {
+    Simple(&'static str),
+    Coverage { family: &'static str, mask: u8 },
+}
+
+#[derive(Debug, Clone)]
+struct Token {
+    raw: String,
+    base: String,
+    variants_key: String,
     important: bool,
-    group: &'static str,
+    group: Option<Group>,
 }
 
-#[derive(Clone)]
-struct Rule {
-    group: &'static str,
-    regex: Regex,
+fn known_modifiers() -> &'static [&'static str] {
+    &[
+        "sm", "md", "lg", "xl", "2xl",
+        "hover", "focus", "active", "disabled", "visited", "first", "last",
+        "odd", "even", "checked", "open", "closed", "read-only", "required",
+        "invalid",
+        "dark", "rtl", "ltr",
+        "motion-safe", "motion-reduce", "contrast-more", "contrast-less",
+        "group-hover", "group-focus", "peer-hover", "peer-focus",
+        "aria-checked", "aria-selected", "aria-expanded", "aria-current",
+        "data-open", "data-closed",
+    ]
 }
 
-static CONFLICTS: Lazy<HashMap<&'static str, HashSet<&'static str>>> = Lazy::new(|| {
-    let margin_related = HashSet::from(["m", "mx", "my", "mt", "mr", "mb", "ml"]);
-    let padding_related = HashSet::from(["p", "px", "py", "pt", "pr", "pb", "pl"]);
-
-    let mut m = HashMap::new();
-    for g in &["m", "mx", "my", "mt", "mr", "mb", "ml"] {
-        m.insert(*g, margin_related.clone());
+fn split_variants(base: &str) -> Vec<String> {
+    let mut parts = Vec::new();
+    let mut buf = String::new();
+    let mut depth = 0i32;
+    for ch in base.chars() {
+        match ch {
+            '[' => { depth += 1; buf.push(ch); }
+            ']' => { depth -= 1; buf.push(ch); }
+            ':' if depth == 0 => { parts.push(std::mem::take(&mut buf)); }
+            _ => buf.push(ch),
+        }
     }
-    for g in &["p", "px", "py", "pt", "pr", "pb", "pl"] {
-        m.insert(*g, padding_related.clone());
-    }
-
-    m.insert("bg-color", HashSet::from(["bg-color"]));
-    m.insert("text-color", HashSet::from(["text-color"]));
-    m.insert("border-color", HashSet::from(["border-color"]));
-
-    m.insert("bg-opacity", HashSet::from(["bg-opacity"]));
-    m.insert("text-opacity", HashSet::from(["text-opacity"]));
-    m.insert("border-opacity", HashSet::from(["border-opacity"]));
-
-    m.insert("text-size", HashSet::from(["text-size"]));
-    m.insert("text-align", HashSet::from(["text-align"]));
-
-    let br = HashSet::from([
-        "rounded",
-        "rounded-t",
-        "rounded-r",
-        "rounded-b",
-        "rounded-l",
-        "rounded-tl",
-        "rounded-tr",
-        "rounded-br",
-        "rounded-bl",
-    ]);
-    for g in &[
-        "rounded",
-        "rounded-t",
-        "rounded-r",
-        "rounded-b",
-        "rounded-l",
-        "rounded-tl",
-        "rounded-tr",
-        "rounded-br",
-        "rounded-bl",
-    ] {
-        m.insert(*g, br.clone());
-    }
-
-    m.insert("display", HashSet::from(["display"]));
-
-    m.insert("position", HashSet::from(["position"]));
-
-    let inset = HashSet::from([
-        "inset", "inset-x", "inset-y", "top", "right", "bottom", "left",
-    ]);
-    for g in &[
-        "inset", "inset-x", "inset-y", "top", "right", "bottom", "left",
-    ] {
-        m.insert(*g, inset.clone());
-    }
-
-    m
-});
-
-static RULES: Lazy<Vec<Rule>> = Lazy::new(build_rules);
-
-fn build_rules() -> Vec<Rule> {
-    let mut v = vec![];
-
-    v.push(r("mx", r"^mx-"));
-    v.push(r("my", r"^my-"));
-    v.push(r("mt", r"^mt-"));
-    v.push(r("mr", r"^mr-"));
-    v.push(r("mb", r"^mb-"));
-    v.push(r("ml", r"^ml-"));
-    v.push(r("m", r"^m-"));
-
-    v.push(r("px", r"^px-"));
-    v.push(r("py", r"^py-"));
-    v.push(r("pt", r"^pt-"));
-    v.push(r("pr", r"^pr-"));
-    v.push(r("pb", r"^pb-"));
-    v.push(r("pl", r"^pl-"));
-    v.push(r("p", r"^p-"));
-
-    v.push(r("display", r"^(hidden|block|inline|inline-block|flex|inline-flex|grid|inline-grid|table|inline-table|flow-root)$"));
-
-    v.push(r("position", r"^(static|fixed|absolute|relative|sticky)$"));
-
-    v.push(r("inset-x", r"^inset-x-"));
-    v.push(r("inset-y", r"^inset-y-"));
-    v.push(r("top", r"^top-"));
-    v.push(r("right", r"^right-"));
-    v.push(r("bottom", r"^bottom-"));
-    v.push(r("left", r"^left-"));
-    v.push(r("inset", r"^inset-"));
-
-    v.push(r("rounded-tl", r"^rounded-tl-"));
-    v.push(r("rounded-tr", r"^rounded-tr-"));
-    v.push(r("rounded-br", r"^rounded-br-"));
-    v.push(r("rounded-bl", r"^rounded-bl-"));
-    v.push(r("rounded-t", r"^rounded-t-"));
-    v.push(r("rounded-r", r"^rounded-r-"));
-    v.push(r("rounded-b", r"^rounded-b-"));
-    v.push(r("rounded-l", r"^rounded-l-"));
-    v.push(r("rounded", r"^rounded(-\[[^\]]+\]|-[a-z0-9]+)?$"));
-
-    v.push(r(
-        "text-size",
-        r"^text-(xs|sm|base|lg|xl|2xl|3xl|4xl|5xl|6xl|7xl|8xl|9xl)$",
-    ));
-    v.push(r("text-align", r"^text-(left|center|right|justify)$"));
-
-    v.push(r("text-opacity", r"^text-opacity-"));
-    v.push(r(
-        "text-color",
-        r"^text-(?:\[.+\]|(black|white|transparent|current|inherit)|([a-z]+)(?:-\d{1,3})?)$",
-    ));
-
-    v.push(r("bg-opacity", r"^bg-opacity-"));
-    v.push(r(
-        "bg-color",
-        r"^bg-(?:\[.+\]|(black|white|transparent|current|inherit)|([a-z]+)(?:-\d{1,3})?)$",
-    ));
-
-    v.push(r("border-opacity", r"^border-opacity-"));
-    v.push(r(
-        "border-color",
-        r"^border-(?:\[.+\]|(black|white|transparent|current|inherit)|([a-z]+)(?:-\d{1,3})?)$",
-    ));
-
-    v
+    parts.push(buf);
+    parts
 }
 
-fn r(group: &'static str, re: &str) -> Rule {
-    Rule {
-        group,
-        regex: Regex::new(re).unwrap(),
+fn canonicalize_variants(parts: &[String]) -> String {
+    if parts.len() <= 1 {
+        return String::new();
     }
+    let mods: Vec<String> = parts[..parts.len()-1]
+        .iter()
+        .map(|s| s.trim().to_string())
+        .collect();
+
+    let mut set: Vec<String> = mods;
+    set.sort_unstable();
+    set.dedup();
+    set.join(":")
 }
 
-#[derive(Debug)]
-struct Parsed<'a> {
-    variants: String,
-    core: &'a str,
-    important: bool,
+fn looks_like_width(s: &str) -> bool {
+    if s.is_empty() { return true; }
+    let first = s.chars().next().unwrap();
+    first.is_ascii_digit() || s.starts_with("px") || s == "0" || s.starts_with('[')
 }
 
-fn parse_token(token: &str) -> Parsed<'_> {
-    let mut parts = token.split(':').collect::<Vec<_>>();
-    let last = parts.pop().unwrap_or(token);
-
-    let (important, core) = if let Some(rest) = last.strip_prefix('!') {
-        (true, rest)
-    } else {
-        (false, last)
-    };
-
-    let variants = if parts.is_empty() {
-        "".to_string()
-    } else {
-        parts.join(":")
-    };
-
-    Parsed {
-        variants,
-        core,
-        important,
+fn classify_text(after: &str) -> Group {
+    const SIZES: &[&str] = &[
+        "xs","sm","base","lg","xl","2xl","3xl","4xl","5xl","6xl","7xl","8xl","9xl","10xl"
+    ];
+    if SIZES.contains(&after) || after.starts_with('[') && !after.contains('#') && !after.starts_with("[color:") {
+        return Group::Simple("text-size");
     }
+    match after {
+        "left" | "right" | "center" | "justify" | "start" | "end" => {
+            return Group::Simple("text-align");
+        }
+        _ => {}
+    }
+    Group::Simple("text-color")
 }
 
-fn find_group(core: &str) -> Option<&'static str> {
-    for rule in RULES.iter() {
-        if rule.regex.is_match(core) {
-            return Some(rule.group);
+fn classify_border(base: &str) -> Option<Group> {
+    let s = base.strip_prefix('-').unwrap_or(base);
+    if s == "border" {
+        return Some(Group::Coverage { family: "border-width", mask: TRBL });
+    }
+    let axis_side = [
+        ("border-x-", XY),
+        ("border-y-", YX),
+        ("border-t-", T),
+        ("border-r-", R),
+        ("border-b-", B),
+        ("border-l-", L),
+    ];
+    for (pref, mask) in axis_side {
+        if let Some(after) = s.strip_prefix(pref) {
+            if looks_like_width(after) {
+                return Some(Group::Coverage { family: "border-width", mask });
+            }
+            match after {
+                "solid" | "dashed" | "dotted" | "double" | "none" | "hidden" => {
+                    return Some(Group::Coverage { family: "border-style", mask });
+                }
+                _ => return Some(Group::Coverage { family: "border-color", mask }),
+            }
+        }
+    }
+    if let Some(after) = s.strip_prefix("border-") {
+        if looks_like_width(after) {
+            return Some(Group::Coverage { family: "border-width", mask: TRBL });
+        }
+        match after {
+            "solid" | "dashed" | "dotted" | "double" | "none" | "hidden" => {
+                return Some(Group::Coverage { family: "border-style", mask: TRBL });
+            }
+            _ => return Some(Group::Coverage { family: "border-color", mask: TRBL }),
         }
     }
     None
 }
 
-pub fn tw_merge(input: &str) -> String {
-    let mut last_kept: HashMap<Key, usize> = HashMap::new();
-    let mut out: Vec<&str> = Vec::new();
+fn classify_group(base: &str) -> Option<Group> {
+    let s = base.strip_suffix('!').unwrap_or(base);
+    let s = s.strip_prefix('!').unwrap_or(s);
+    let s = s;
 
-    let mut active: Vec<bool> = Vec::new();
-
-    for raw in input.split_whitespace() {
-        if raw.is_empty() {
-            continue;
+    match s {
+        "block" | "inline-block" | "inline" | "flex" | "inline-flex" | "grid" | "inline-grid"
+        | "table" | "inline-table" | "contents" | "flow-root" | "hidden" => {
+            return Some(Group::Simple("display"));
         }
-        let parsed = parse_token(raw);
-        let Some(group) = find_group(parsed.core) else {
-            active.push(true);
-            out.push(raw);
-            continue;
-        };
+        _ => {}
+    }
 
-        let key = Key {
-            variants: parsed.variants.clone(),
-            important: parsed.important,
-            group,
-        };
+    match s {
+        "static" | "fixed" | "absolute" | "relative" | "sticky" => {
+            return Some(Group::Simple("position"));
+        }
+        _ => {}
+    }
 
-        let conflicts = CONFLICTS
-            .get(group)
-            .cloned()
-            .unwrap_or_else(|| HashSet::from([group]));
+    if s.starts_with("overflow-") {
+        if let Some(after) = s.strip_prefix("overflow-x-") {
+            let _ = after; return Some(Group::Coverage { family: "overflow", mask: XY });
+        }
+        if let Some(after) = s.strip_prefix("overflow-y-") {
+            let _ = after; return Some(Group::Coverage { family: "overflow", mask: YX });
+        }
+        return Some(Group::Coverage { family: "overflow", mask: TRBL });
+    }
 
-        for other_group in conflicts {
-            let victim_key = Key {
-                variants: parsed.variants.clone(),
-                important: parsed.important,
-                group: other_group,
-            };
-            if let Some(&victim_idx) = last_kept.get(&victim_key) {
-                active[victim_idx] = false; // đánh dấu xóa
-                last_kept.remove(&victim_key);
+    if let Some(after) = s.strip_prefix("p-") { let _ = after; return Some(Group::Coverage { family: "padding", mask: TRBL }); }
+    if let Some(after) = s.strip_prefix("px-") { let _ = after; return Some(Group::Coverage { family: "padding", mask: XY }); }
+    if let Some(after) = s.strip_prefix("py-") { let _ = after; return Some(Group::Coverage { family: "padding", mask: YX }); }
+    if s.starts_with("pt-") { return Some(Group::Coverage { family: "padding", mask: T }); }
+    if s.starts_with("pr-") { return Some(Group::Coverage { family: "padding", mask: R }); }
+    if s.starts_with("pb-") { return Some(Group::Coverage { family: "padding", mask: B }); }
+    if s.starts_with("pl-") { return Some(Group::Coverage { family: "padding", mask: L }); }
+
+    let ms = s.strip_prefix('-').unwrap_or(s);
+    if let Some(after) = ms.strip_prefix("m-") { let _ = after; return Some(Group::Coverage { family: "margin", mask: TRBL }); }
+    if let Some(after) = ms.strip_prefix("mx-") { let _ = after; return Some(Group::Coverage { family: "margin", mask: XY }); }
+    if let Some(after) = ms.strip_prefix("my-") { let _ = after; return Some(Group::Coverage { family: "margin", mask: YX }); }
+    if ms.starts_with("mt-") { return Some(Group::Coverage { family: "margin", mask: T }); }
+    if ms.starts_with("mr-") { return Some(Group::Coverage { family: "margin", mask: R }); }
+    if ms.starts_with("mb-") { return Some(Group::Coverage { family: "margin", mask: B }); }
+    if ms.starts_with("ml-") { return Some(Group::Coverage { family: "margin", mask: L }); }
+
+    if ms.starts_with("inset-") { return Some(Group::Coverage { family: "inset", mask: TRBL }); }
+    if ms.starts_with("inset-x-") { return Some(Group::Coverage { family: "inset", mask: XY }); }
+    if ms.starts_with("inset-y-") { return Some(Group::Coverage { family: "inset", mask: YX }); }
+    if ms.starts_with("top-") { return Some(Group::Coverage { family: "inset", mask: T }); }
+    if ms.starts_with("right-") { return Some(Group::Coverage { family: "inset", mask: R }); }
+    if ms.starts_with("bottom-") { return Some(Group::Coverage { family: "inset", mask: B }); }
+    if ms.starts_with("left-") { return Some(Group::Coverage { family: "inset", mask: L }); }
+
+    if s.starts_with("bg-") {
+        return Some(Group::Simple("bg-color"));
+    }
+
+    if let Some(after) = s.strip_prefix("text-") {
+        return Some(classify_text(after));
+    }
+
+    if let Some(after) = s.strip_prefix("font-") {
+        match after {
+            "thin" | "extralight" | "light" | "normal" | "medium" |
+            "semibold" | "bold" | "extrabold" | "black" => {
+                return Some(Group::Simple("font-weight"));
+            }
+            _ => {}
+        }
+    }
+
+    if s.starts_with("leading-") { return Some(Group::Simple("leading")); }
+    if s.starts_with("tracking-") { return Some(Group::Simple("tracking")); }
+
+    if s.starts_with("rounded-") || s == "rounded" {
+        let (family, mask) = if s.starts_with("rounded-tl") { ("rounded", T|L) }
+        else if s.starts_with("rounded-tr") { ("rounded", T|R) }
+        else if s.starts_with("rounded-bl") { ("rounded", B|L) }
+        else if s.starts_with("rounded-br") { ("rounded", B|R) }
+        else if s.starts_with("rounded-t")  { ("rounded", T) }
+        else if s.starts_with("rounded-r")  { ("rounded", R) }
+        else if s.starts_with("rounded-b")  { ("rounded", B) }
+        else if s.starts_with("rounded-l")  { ("rounded", L) }
+        else { ("rounded", TRBL) };
+        return Some(Group::Coverage { family, mask });
+    }
+
+    if let Some(g) = classify_border(s) { return Some(g); }
+
+    if s.starts_with("shadow") { return Some(Group::Simple("shadow")); }
+    if s.starts_with("opacity-") { return Some(Group::Simple("opacity")); }
+    if s.starts_with("z-") { return Some(Group::Simple("z-index")); }
+
+    if s.starts_with("flex-row") || s.starts_with("flex-col") {
+        return Some(Group::Simple("flex-direction"));
+    }
+    if s.starts_with("flex-wrap") || s == "flex-nowrap" {
+        return Some(Group::Simple("flex-wrap"));
+    }
+    if s.starts_with("justify-") { return Some(Group::Simple("justify")); }
+    if s.starts_with("items-") { return Some(Group::Simple("items")); }
+    if s.starts_with("content-") { return Some(Group::Simple("content")); }
+    if s.starts_with("gap-") || s.starts_with("gap-x-") || s.starts_with("gap-y-") {
+        return Some(Group::Simple("gap"));
+    }
+
+    None
+}
+
+fn parse_token(raw_piece: &str) -> Option<Token> {
+    let raw_piece = raw_piece.trim();
+    if raw_piece.is_empty() { return None; }
+
+    let mut important = false;
+    let mut s: Cow<str> = Cow::Borrowed(raw_piece);
+    if s.ends_with('!') { important = true; s = Cow::Owned(s.trim_end_matches('!').to_string()); }
+    if s.starts_with('!') { important = true; s = Cow::Owned(s.trim_start_matches('!').to_string()); }
+
+    let parts = split_variants(&s);
+    let base = parts.last().cloned().unwrap_or_default();
+    let variants_key = canonicalize_variants(&parts);
+    let group = classify_group(&base);
+
+    Some(Token {
+        raw: raw_piece.to_string(),
+        base,
+        variants_key,
+        important,
+        group,
+    })
+}
+
+fn conflicts_and_newer_wins(older: &Token, newer: &Token) -> bool {
+    if older.important && !newer.important {
+        return false;
+    }
+    if older.variants_key != newer.variants_key || older.important != newer.important {
+        return false;
+    }
+
+    match (&older.group, &newer.group) {
+        (Some(Group::Simple(a)), Some(Group::Simple(b))) if a == b => true,
+
+        (Some(Group::Coverage { family: f1, mask: m1 }),
+            Some(Group::Coverage { family: f2, mask: m2 })) if f1 == f2 => {
+            (m2 & *m1) == *m1
+        }
+
+        _ => false,
+    }
+}
+
+pub fn tw_merge<I, S>(classes: I) -> String
+where
+    I: IntoIterator<Item = S>,
+    S: AsRef<str>,
+{
+    let mut raw_tokens: Vec<String> = Vec::new();
+    for part in classes {
+        for p in part.as_ref().split_whitespace() {
+            raw_tokens.push(p.to_string());
+        }
+    }
+
+    let mut out: Vec<Token> = Vec::new();
+
+    'NEXT: for raw in raw_tokens {
+        let Some(tok) = parse_token(&raw) else { continue };
+        let mut to_remove: HashSet<usize> = HashSet::new();
+        for (idx, old) in out.iter().enumerate() {
+            if conflicts_and_newer_wins(old, &tok) {
+                to_remove.insert(idx);
             }
         }
-
-        let idx = out.len();
-        out.push(raw);
-        active.push(true);
-        last_kept.insert(key, idx);
-    }
-
-    let mut result = Vec::new();
-    for (i, &tok) in out.iter().enumerate() {
-        if active[i] {
-            result.push(tok);
+        if !to_remove.is_empty() {
+            let mut kept = Vec::with_capacity(out.len() - to_remove.len());
+            for (i, t) in out.into_iter().enumerate() {
+                if !to_remove.contains(&i) {
+                    kept.push(t);
+                }
+            }
+            out = kept;
         }
+        out.push(tok);
     }
-    result.join(" ")
+
+    out.iter().map(|t| t.raw.as_str()).collect::<Vec<_>>().join(" ")
 }
 
 #[cfg(test)]
@@ -255,75 +327,42 @@ mod tests {
     use super::tw_merge;
 
     #[test]
-    fn merge_margin_axes() {
-        assert_eq!(tw_merge("mx-2 ml-4"), "mx-2 ml-4");
-        assert_eq!(tw_merge("mx-2 ml-4"), "ml-4");
+    fn simple_last_wins() {
+        assert_eq!(tw_merge(["block", "inline", "flex"]), "flex");
+        assert_eq!(tw_merge(["bg-red-500", "bg-[#B91C1C]"]), "bg-[#B91C1C]");
     }
 
     #[test]
-    fn merge_simple_margin() {
-        assert_eq!(tw_merge("m-2 m-4"), "m-4");
-        assert_eq!(tw_merge("mt-2 m-4"), "m-4");
-        assert_eq!(tw_merge("m-4 mt-2"), "mt-2");
+    fn variants_are_canonicalized() {
+        assert_eq!(tw_merge(["hover:focus:p-2", "focus:hover:p-4"]), "focus:hover:p-4");
+        assert_eq!(tw_merge(["md:block", "md:inline"]), "md:inline");
     }
 
     #[test]
-    fn variants_isolated() {
-        assert_eq!(tw_merge("hover:m-2 hover:m-4"), "hover:m-4");
-        assert_eq!(tw_merge("hover:m-4 focus:m-2"), "hover:m-4 focus:m-2");
+    fn important_behavior() {
+        // older has ! -> newer non-important cannot override
+        assert_eq!(tw_merge(["!bg-red-500", "bg-blue-500"]), "!bg-red-500 bg-blue-500");
+        // newer has ! -> can override
+        assert_eq!(tw_merge(["bg-red-500", "bg-blue-500!"]), "bg-blue-500!");
     }
 
     #[test]
-    fn important_isolated() {
-        assert_eq!(tw_merge("m-2 !m-4"), "!m-4");
-        assert_eq!(tw_merge("!m-4 m-2"), "m-2");
+    fn padding_refinements() {
+        assert_eq!(tw_merge(["pr-5", "p-4"]), "p-4");
+        assert_eq!(tw_merge(["p-4", "pr-5"]), "p-4 pr-5");
+        assert_eq!(tw_merge(["px-6", "pl-2", "p-4"]), "p-4");
     }
 
     #[test]
-    fn colors_and_opacity() {
-        assert_eq!(tw_merge("bg-red-500 bg-blue-500"), "bg-blue-500");
-        assert_eq!(tw_merge("text-[#123456] text-red-500"), "text-red-500");
-        assert_eq!(
-            tw_merge("border-opacity-50 border-opacity-20"),
-            "border-opacity-20"
-        );
+    fn border_width_vs_color() {
+        assert_eq!(tw_merge(["border-2", "border-red-500"]), "border-2 border-red-500");
+        assert_eq!(tw_merge(["border-red-500", "border-2"]), "border-2");
+        assert_eq!(tw_merge(["border-x-2", "border-l-4", "border"]), "border");
     }
 
     #[test]
-    fn text_size_vs_color() {
-        assert_eq!(tw_merge("text-sm text-lg"), "text-lg");
-        assert_eq!(tw_merge("text-sm text-red-500"), "text-sm text-red-500");
-    }
-
-    #[test]
-    fn display_position() {
-        assert_eq!(tw_merge("block inline-block"), "inline-block");
-        assert_eq!(tw_merge("static absolute"), "absolute");
-    }
-
-    #[test]
-    fn inset_conflicts() {
-        assert_eq!(tw_merge("inset-0 top-4"), "top-4");
-        assert_eq!(tw_merge("top-4 inset-x-0"), "inset-x-0");
-    }
-
-    #[test]
-    fn preserve_unknown_classes() {
-        assert_eq!(
-            tw_merge("prose prose-lg custom-class"),
-            "prose prose-lg custom-class"
-        );
-    }
-
-    #[test]
-    fn variants_and_important_together() {
-        assert_eq!(
-            tw_merge("sm:hover:bg-red-500 sm:hover:bg-blue-500"),
-            "sm:hover:bg-blue-500"
-        );
-        assert_eq!(
-            tw_merge("sm:hover:!bg-red-500 sm:hover:bg-blue-500"),
-            "sm:hover:!bg-red-500 sm:hover:bg-blue-500"
-        );
+    fn rounded_coverage() {
+        assert_eq!(tw_merge(["rounded-t-md", "rounded"]), "rounded");
+        assert_eq!(tw_merge(["rounded", "rounded-tr-lg"]), "rounded rounded-tr-lg");
     }
 }

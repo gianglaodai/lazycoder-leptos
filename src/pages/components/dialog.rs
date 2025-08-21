@@ -8,13 +8,11 @@ pub struct DialogContext {
 }
 
 fn overlay_classes() -> &'static str {
-    // Simplified shadcn overlay styles
     "fixed inset-0 z-50 bg-black/80"
 }
 
 fn content_classes() -> &'static str {
-    // Simplified shadcn content styles
-    "fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 border bg-white p-6 shadow-lg rounded-lg focus:outline-none"
+    "fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 border bg-background p-6 shadow-lg rounded-lg focus:outline-none"
 }
 
 fn header_classes() -> &'static str {
@@ -58,7 +56,6 @@ pub fn Dialog(
         set_open: setter,
     });
 
-    // Render children directly; actual placement of overlay/content handled inside DialogContent
     view! { {children()} }
 }
 
@@ -80,13 +77,11 @@ pub fn DialogOverlay() -> impl IntoView {
     let ctx = expect_context::<DialogContext>();
     let on_click = move |_| ctx.set_open.run(false);
 
-    // FIX: closure đọc signal bên trong
     let classes = move || {
         let hidden = if ctx.open.get() { "" } else { "hidden" };
         format!("{} {}", overlay_classes(), hidden)
     };
 
-    // FIX: truyền closure, không gọi hàm
     view! { <div class=classes on:click=on_click></div> }
 }
 
@@ -98,8 +93,6 @@ pub fn DialogContent(
     let ctx = expect_context::<DialogContext>();
     let node_ref: NodeRef<Div> = NodeRef::new();
 
-    // Close on Escape key when open
-    // FIX: dùng get_untracked trong listener (không cần tracking)
     let _key_listener = window_event_listener(leptos::ev::keydown, move |ev| {
         if ctx.open.get_untracked() {
             if ev.key() == "Escape" {
@@ -108,13 +101,11 @@ pub fn DialogContent(
         }
     });
 
-    // Close on outside click
     let on_backdrop_click = move |_| ctx.set_open.run(false);
     let stop = move |ev: leptos::ev::MouseEvent| ev.stop_propagation();
 
     let extra = class.unwrap_or_default();
 
-    // FIX: closure đọc (có thể phụ thuộc signal khác trong tương lai)
     let classes = move || {
         if extra.is_empty() {
             content_classes().to_string()
@@ -123,17 +114,14 @@ pub fn DialogContent(
         }
     };
 
-    // FIX: closure đọc signal
     let root_classes = move || {
         let hidden = if ctx.open.get() { "" } else { "hidden" };
         format!("{} {}", "fixed inset-0 z-50", hidden)
     };
 
     view! {
-        // FIX: truyền closure, không gọi
         <div class=root_classes on:click=on_backdrop_click>
             <div class=overlay_classes()></div>
-            // FIX: truyền closure, không gọi; on:click handler vẫn OK
             <div node_ref=node_ref class=classes role="dialog" aria-modal="true" on:click=stop>
                 {children()}
             </div>
