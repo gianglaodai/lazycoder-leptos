@@ -13,7 +13,6 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
 use time::format_description;
-use tokio::join;
 
 #[component]
 fn NewPostDialog() -> impl IntoView {
@@ -98,7 +97,7 @@ pub fn AdminPostsPage() -> impl IntoView {
         |(first_result, max_results, _)| async move {
             let fut_posts = load_post_infos(first_result, max_results);
             let fut_count = count_post_infos();
-            let (posts_res, total_res) = join!(fut_posts, fut_count);
+            let (posts_res, total_res) = futures::join!(fut_posts, fut_count);
             match (posts_res, total_res) {
                 (Ok(posts), Ok(total)) => Ok((posts, total)),
                 (Err(e), _) => Err(e),
