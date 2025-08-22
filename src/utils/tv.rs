@@ -1,4 +1,4 @@
-use crate::utils::tw::tw_merge;
+use crate::utils::tw_merge::tw_merge;
 use std::collections::HashMap;
 
 #[derive(Clone, Debug)]
@@ -110,6 +110,18 @@ impl Tv {
         let slots_defined = self.cfg.slots.as_ref();
 
         let mut acc: HashMap<String, Vec<String>> = HashMap::new();
+
+        // Nếu có slots, thêm class cơ bản của từng slot vào accumulator trước
+        if let Some(slots) = slots_defined {
+            for (slot, base_cls) in slots {
+                if !base_cls.is_empty() {
+                    acc.entry(slot.clone()).or_default().push(base_cls.clone());
+                } else {
+                    // đảm bảo có key cho slot để giữ thứ tự và hợp nhất sau này
+                    acc.entry(slot.clone()).or_default();
+                }
+            }
+        }
 
         match &self.cfg.base {
             VariantClass::All(s) => {

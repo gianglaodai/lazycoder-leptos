@@ -1,6 +1,8 @@
 use leptos::html::Div;
 use leptos::prelude::*;
 
+use crate::pages::components::button::{Button, ButtonIntent, ButtonSize, ButtonVariant};
+
 #[derive(Clone)]
 pub struct DialogContext {
     pub open: Signal<bool>,
@@ -60,15 +62,24 @@ pub fn Dialog(
 }
 
 #[component]
-pub fn DialogTrigger(children: Children) -> impl IntoView {
+pub fn DialogTrigger(
+    #[prop(into, optional)] class: Option<String>,
+    #[prop(optional)] variant: Option<ButtonVariant>,
+    #[prop(optional)] intent: Option<ButtonIntent>,
+    #[prop(optional)] size: Option<ButtonSize>,
+    children: Children,
+) -> impl IntoView {
     let ctx = expect_context::<DialogContext>();
     view! {
-        <button
-            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2 border border-input bg-background hover:bg-accent hover:text-accent-foreground"
-            on:click=move |_| { ctx.set_open.run(true); }
+        <Button
+            class=class.clone().unwrap_or_default()
+            variant=variant.unwrap_or(ButtonVariant::Outline)
+            intent=intent.unwrap_or_default()
+            size=size.unwrap_or(ButtonSize::Default)
+            on_click=Callback::new(move |_| { ctx.set_open.run(true); })
         >
             {children()}
-        </button>
+        </Button>
     }
 }
 
@@ -150,14 +161,23 @@ pub fn DialogDescription(children: Children) -> impl IntoView {
 }
 
 #[component]
-pub fn DialogClose(children: Children) -> impl IntoView {
+pub fn DialogClose(
+    #[prop(into, optional)] class: Option<String>,
+    #[prop(optional)] variant: Option<ButtonVariant>,
+    #[prop(optional)] intent: Option<ButtonIntent>,
+    #[prop(optional)] size: Option<ButtonSize>,
+    children: Children,
+) -> impl IntoView {
     let ctx = expect_context::<DialogContext>();
     view! {
-        <button
-            class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2 bg-secondary text-secondary-foreground hover:bg-secondary/80"
-            on:click=move |_| { ctx.set_open.run(false); }
+        <Button
+            class=class.clone().unwrap_or_default()
+            variant=variant.unwrap_or(ButtonVariant::Secondary)
+            intent=intent.unwrap_or_default()
+            size=size.unwrap_or(ButtonSize::Default)
+            on_click=Callback::new(move |_| { ctx.set_open.run(false); })
         >
             {children()}
-        </button>
+        </Button>
     }
 }

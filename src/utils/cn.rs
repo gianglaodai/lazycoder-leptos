@@ -1,11 +1,11 @@
 use crate::utils::clsx::ToClass;
-use crate::utils::tw::tw_merge;
+use crate::utils::tw_merge::tw_merge;
 
 #[macro_export]
 macro_rules! cn {
     ( $( $x:expr ),* $(,)? ) => {{
         let s = $crate::clsx![ $( $x ),* ];
-        $crate::tw_merge::tw_merge([s])
+        $crate::utils::tw_merge::tw_merge([s])
     }};
 }
 

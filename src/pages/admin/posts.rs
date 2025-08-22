@@ -1,5 +1,5 @@
 use crate::pages::admin::guard::AdminGuard;
-use crate::pages::components::button::ButtonVariant;
+use crate::pages::components::button::{ButtonVariant, ButtonIntent};
 use crate::pages::components::{
     Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader,
     DialogTitle, DialogTrigger, Input, Paginator, Table, TableBody, TableCaption, TableCell,
@@ -57,13 +57,15 @@ fn NewPostDialog() -> impl IntoView {
                 </div>
                 <DialogFooter>
                     <DialogClose>Cancel</DialogClose>
-                    <button
-                        class="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 disabled:pointer-events-none disabled:opacity-50 h-9 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90"
-                        disabled=Signal::derive(move || disabled.get())
-                        on:click=move |_| { if !disabled.get() { create_action.dispatch(title.get()); } }
+                    <Button
+                        variant=ButtonVariant::Outline
+                        intent=ButtonIntent::Primary
+                        disabled_signal=disabled
+                        loading_signal=create_action.pending().into()
+                        on_click=Callback::new(move |_| { if !disabled.get() { create_action.dispatch(title.get()); } })
                     >
                         {move || if create_action.pending().get() { "Creating...".to_string() } else { "Create".to_string() }}
-                    </button>
+                    </Button>
                 </DialogFooter>
             </DialogContent>
         </Dialog>
@@ -84,7 +86,7 @@ pub fn AdminPostsPage() -> impl IntoView {
         query.with(|q| {
             q.get("max_results")
                 .and_then(|p| p.parse::<i32>().ok())
-                .unwrap_or(10)
+                .unwrap_or(5)
         })
     };
 
@@ -148,8 +150,8 @@ pub fn AdminPostsPage() -> impl IntoView {
                                                 <TableCell class="whitespace-nowrap text-xs text-stone-600">{created}</TableCell>
                                                 <TableCell class="whitespace-nowrap text-xs text-stone-600">{updated}</TableCell>
                                                 <TableCell class="text-right gap-2 flex flex-row-reverse">
-                                                    <Button variant=ButtonVariant::Outline class="border-destructive!" on_click=Callback::new(move |_| { delete_action.dispatch(post_id); })>Delete</Button>
-                                                    <Button variant=ButtonVariant::Outline class="border-primary!" href=format!("/admin/posts/{}", post_id)>Edit</Button>
+                                                    <Button variant=ButtonVariant::Outline intent=ButtonIntent::Destructive on_click=Callback::new(move |_| { delete_action.dispatch(post_id); })>Delete</Button>
+                                                    <Button variant=ButtonVariant::Outline intent=ButtonIntent::Primary href=format!("/admin/posts/{}", post_id)>Edit</Button>
                                                 </TableCell>
                                             </TableRow>
                                         }
@@ -162,7 +164,7 @@ pub fn AdminPostsPage() -> impl IntoView {
                                     first_result=first_result()
                                     total_entities=total as i64
                                     max_results=max_results() as i64
-                                    max_visible_pages=7
+                                    max_visible_pages=3
                                 />
                             </div>
                         }.into_any(),
@@ -233,8 +235,8 @@ fn AdminPostItem(post: PostTO, reload: RwSignal<u32>) -> impl IntoView {
                         <div class="text-sm text-stone-500">Slug: {slug.clone()} - Status: {move || status.get()} - Created: {created.clone()} - Updated: {updated.clone()}</div>
                     </div>
                     <div class="flex gap-2">
-                        <Button href=format!("/admin/posts/{}", post_id) variant=ButtonVariant::Outline>Edit</Button>
-                        <Button variant=ButtonVariant::Destructive on_click=Callback::new(move |_| { delete_action.dispatch(()); })>Delete</Button>
+                        <Button href=format!("/admin/posts/{}", post_id) variant=ButtonVariant::Outline intent=ButtonIntent::Primary>Edit</Button>
+                        <Button variant=ButtonVariant::Outline intent=ButtonIntent::Destructive on_click=Callback::new(move |_| { delete_action.dispatch(()); })>Delete</Button>
                     </div>
                 </div>
             </div>

@@ -35,17 +35,9 @@ fn caption_cls() -> &'static str {
 #[component]
 pub fn Table(#[prop(into, optional)] class: Option<String>, children: Children) -> impl IntoView {
     let class = class.unwrap_or_default();
-    let classes = move || {
-        if class.is_empty() {
-            tbl().to_string()
-        } else {
-            format!("{} {}", tbl(), class)
-        }
-    };
-
     view! {
         <div class="w-full overflow-auto">
-            <table class=classes()>{children()}</table>
+            <table class=move || crate::cn!(tbl(), class.clone())>{children()}</table>
         </div>
     }
 }
@@ -56,15 +48,7 @@ pub fn TableHeader(
     children: Children,
 ) -> impl IntoView {
     let class = class.unwrap_or_default();
-    let classes = move || {
-        if class.is_empty() {
-            thead_cls().to_string()
-        } else {
-            format!("{} {}", thead_cls(), class)
-        }
-    };
-
-    view! { <thead class=classes()>{children()}</thead> }
+    view! { <thead class=move || crate::cn!(thead_cls(), class.clone())>{children()}</thead> }
 }
 
 #[component]
@@ -73,15 +57,7 @@ pub fn TableBody(
     children: Children,
 ) -> impl IntoView {
     let class = class.unwrap_or_default();
-    let classes = move || {
-        if class.is_empty() {
-            tbody_cls().to_string()
-        } else {
-            format!("{} {}", tbody_cls(), class)
-        }
-    };
-
-    view! { <tbody class=classes()>{children()}</tbody> }
+    view! { <tbody class=move || crate::cn!(tbody_cls(), class.clone())>{children()}</tbody> }
 }
 
 #[component]
@@ -90,15 +66,7 @@ pub fn TableFooter(
     children: Children,
 ) -> impl IntoView {
     let class = class.unwrap_or_default();
-    let classes = move || {
-        if class.is_empty() {
-            tfoot_cls().to_string()
-        } else {
-            format!("{} {}", tfoot_cls(), class)
-        }
-    };
-
-    view! { <tfoot class=classes()>{children()}</tfoot> }
+    view! { <tfoot class=move || crate::cn!(tfoot_cls(), class.clone())>{children()}</tfoot> }
 }
 
 #[component]
@@ -107,15 +75,7 @@ pub fn TableRow(
     children: Children,
 ) -> impl IntoView {
     let class = class.unwrap_or_default();
-    let classes = move || {
-        if class.is_empty() {
-            tr_cls().to_string()
-        } else {
-            format!("{} {}", tr_cls(), class)
-        }
-    };
-
-    view! { <tr class=classes()>{children()}</tr> }
+    view! { <tr class=move || crate::cn!(tr_cls(), class.clone())>{children()}</tr> }
 }
 
 #[component]
@@ -124,15 +84,7 @@ pub fn TableHead(
     children: Children,
 ) -> impl IntoView {
     let class = class.unwrap_or_default();
-    let classes = move || {
-        if class.is_empty() {
-            th_cls().to_string()
-        } else {
-            format!("{} {}", th_cls(), class)
-        }
-    };
-
-    view! { <th class=classes()>{children()}</th> }
+    view! { <th class=move || crate::cn!(th_cls(), class.clone())>{children()}</th> }
 }
 
 #[component]
@@ -141,15 +93,7 @@ pub fn TableCell(
     children: Children,
 ) -> impl IntoView {
     let class = class.unwrap_or_default();
-    let classes = move || {
-        if class.is_empty() {
-            td_cls().to_string()
-        } else {
-            format!("{} {}", td_cls(), class)
-        }
-    };
-
-    view! { <td class=classes()>{children()}</td> }
+    view! { <td class=move || crate::cn!(td_cls(), class.clone())>{children()}</td> }
 }
 
 #[component]
@@ -158,13 +102,5 @@ pub fn TableCaption(
     children: Children,
 ) -> impl IntoView {
     let class = class.unwrap_or_default();
-    let classes = move || {
-        if class.is_empty() {
-            caption_cls().to_string()
-        } else {
-            format!("{} {}", caption_cls(), class)
-        }
-    };
-
-    view! { <caption class=classes()>{children()}</caption> }
+    view! { <caption class=move || crate::cn!(caption_cls(), class.clone())>{children()}</caption> }
 }

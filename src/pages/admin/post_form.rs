@@ -1,5 +1,5 @@
 use crate::pages::admin::guard::AdminGuard;
-use crate::pages::components::button::ButtonVariant;
+use crate::pages::components::button::{ButtonIntent, ButtonVariant};
 use crate::pages::components::Button;
 use crate::pages::components::Input;
 use crate::pages::components::MarkdownEditor;
@@ -80,7 +80,7 @@ pub fn AdminPostForm(
                     </div>
                     <div class="flex gap-2">
                         <Button href=cancel_href.clone() variant=ButtonVariant::Outline>Cancel</Button>
-                        <Button on_click=Callback::new(move |_| submit())>{submit_label.clone()}</Button>
+                        <Button variant=ButtonVariant::Outline intent=ButtonIntent::Primary on_click=Callback::new(move |_| submit())>{submit_label.clone()}</Button>
                     </div>
                 </div>
             </div>

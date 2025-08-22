@@ -1,9 +1,21 @@
 use leptos::ev;
 use leptos::prelude::*;
+use std::collections::HashMap;
 
-fn base_classes() -> &'static str {
-    // Based on shadcn/ui textarea styles
-    "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50"
+use crate::utils::tv::{Tv, TvConfig, TvProps, TvResult, VariantClass};
+
+fn textarea_tv() -> Tv {
+    let base = VariantClass::All(
+        "flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50".to_string(),
+    );
+    let cfg = TvConfig {
+        base,
+        variants: HashMap::new(),
+        default_variants: HashMap::new(),
+        compound_variants: vec![],
+        slots: None,
+    };
+    Tv::new(cfg)
 }
 
 #[component]
@@ -19,18 +31,13 @@ pub fn Textarea(
     #[prop(optional)] on_input: Option<Callback<ev::Event, ()>>,
     #[prop(optional)] on_blur: Option<Callback<ev::FocusEvent, ()>>,
 ) -> impl IntoView {
-    let class = class.unwrap_or_default();
-    let classes = move || {
-        if class.is_empty() {
-            base_classes().to_string()
-        } else {
-            format!("{} {}", base_classes(), class)
-        }
-    };
+    let tv = textarea_tv();
+    let props = TvProps { variants: HashMap::new(), class: class.clone(), slot_classes: HashMap::new() };
+    let classes = match tv.build(&props) { TvResult::Single(s) => s, TvResult::Slots(_) => String::new() };
 
     view! {
         <textarea
-            class=classes()
+            class=classes
             id=id
             name=name
             disabled=disabled

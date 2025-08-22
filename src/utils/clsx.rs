@@ -1,19 +1,38 @@
+use std::borrow::Cow;
+
 pub trait ToClass {
     fn to_class(self, out: &mut Vec<String>);
 }
 
 impl ToClass for &str {
     fn to_class(self, out: &mut Vec<String>) {
-        if !self.trim().is_empty() {
-            out.push(self.to_string());
+        let s = self.trim();
+        if !s.is_empty() {
+            out.push(s.to_string());
         }
     }
 }
 
 impl ToClass for String {
     fn to_class(self, out: &mut Vec<String>) {
-        if !self.trim().is_empty() {
-            out.push(self);
+        let s = self.trim().to_string();
+        if !s.is_empty() {
+            out.push(s);
+        }
+    }
+}
+
+impl ToClass for &String {
+    fn to_class(self, out: &mut Vec<String>) {
+        self.as_str().to_class(out);
+    }
+}
+
+impl<'a> ToClass for Cow<'a, str> {
+    fn to_class(self, out: &mut Vec<String>) {
+        let s = self.trim();
+        if !s.is_empty() {
+            out.push(s.to_string());
         }
     }
 }
@@ -22,6 +41,14 @@ impl<T: ToClass> ToClass for Option<T> {
     fn to_class(self, out: &mut Vec<String>) {
         if let Some(v) = self {
             v.to_class(out);
+        }
+    }
+}
+
+impl<'a, T: ToClass + Clone> ToClass for &'a Option<T> {
+    fn to_class(self, out: &mut Vec<String>) {
+        if let Some(v) = self {
+            v.clone().to_class(out);
         }
     }
 }
@@ -42,20 +69,28 @@ impl<'a, T: ToClass + Clone> ToClass for &'a [T] {
     }
 }
 
-impl ToClass for (bool, &str) {
+impl<T: ToClass, const N: usize> ToClass for [T; N] {
     fn to_class(self, out: &mut Vec<String>) {
-        let (cond, s) = self;
-        if cond {
-            s.to_class(out);
+        for v in self {
+            v.to_class(out);
         }
     }
 }
 
-impl ToClass for (bool, String) {
+impl<T: ToClass> ToClass for (bool, T) {
     fn to_class(self, out: &mut Vec<String>) {
-        let (cond, s) = self;
+        let (cond, val) = self;
         if cond {
-            s.to_class(out);
+            val.to_class(out);
+        }
+    }
+}
+
+impl<T: ToClass> ToClass for (T, bool) {
+    fn to_class(self, out: &mut Vec<String>) {
+        let (val, cond) = self;
+        if cond {
+            val.to_class(out);
         }
     }
 }
@@ -63,8 +98,8 @@ impl ToClass for (bool, String) {
 #[macro_export]
 macro_rules! clsx {
     ( $( $x:expr ),* $(,)? ) => {{
-        let mut out = Vec::new();
-        $( $crate::clsx::ToClass::to_class($x, &mut out); )*
+        let mut out: ::std::vec::Vec<::std::string::String> = ::std::vec::Vec::new();
+        $( $crate::utils::clsx::ToClass::to_class($x, &mut out); )*
         out.join(" ")
     }};
 }
