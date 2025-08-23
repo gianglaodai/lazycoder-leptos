@@ -247,7 +247,7 @@ pub fn Button(
         ButtonVariant::Link => "link",
         _ => "default",
     };
-    let mut tone = match variant {
+    let tone = match variant {
         ButtonVariant::Primary => "primary",
         ButtonVariant::Destructive => "destructive",
         ButtonVariant::Secondary => "secondary",

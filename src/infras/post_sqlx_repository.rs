@@ -1,5 +1,6 @@
 #![cfg(feature = "ssr")]
 
+use std::future::Future;
 use crate::business::error::CoreError;
 use crate::business::filter::Filter;
 use crate::business::post_service::{Post, PostCreate, PostRepository, PostStatus};
@@ -81,6 +82,9 @@ impl ViewRepository<Post> for PostSqlxRepository {
 impl Repository<Post, PostCreate> for PostSqlxRepository {
     async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
         SqlxRepository::delete_by_id(self, id).await
+    }
+    async fn delete_by_ids(&self, ids: Vec<i32>) -> Result<u64, CoreError> {
+        SqlxRepository::delete_by_ids(self, ids).await
     }
 
     async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {

@@ -891,7 +891,7 @@ where
 
     let mut out: Vec<Token> = Vec::new();
 
-    'NEXT: for raw in raw_tokens {
+    for raw in raw_tokens {
         let Some(tok) = parse_token(&raw) else {
             continue;
         };

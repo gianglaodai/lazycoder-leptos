@@ -481,6 +481,26 @@ where
         Ok(result.rows_affected())
     }
 
+    async fn delete_by_ids(&self, ids: Vec<i32>) -> Result<u64, CoreError> {
+        if ids.is_empty() {
+            return Ok(0);
+        }
+
+        let mut builder = QueryBuilder::<Postgres>::new(format!(
+            "DELETE FROM {} WHERE id IN ",
+            self.get_table_name()
+        ));
+
+        // Follow the same convention used in filter IN/NOT IN: use tuples for values
+        builder.push_tuples(ids, |mut b, id| {
+            b.push_bind(id);
+        });
+
+        let query = builder.build();
+        let result = query.execute(self.get_pool()).await?;
+        Ok(result.rows_affected())
+    }
+
     async fn delete_by_uid(&self, uid: Uuid) -> Result<u64, CoreError> {
         let result = sqlx::query(&format!(
             "DELETE FROM {} WHERE uid = $1",

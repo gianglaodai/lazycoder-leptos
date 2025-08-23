@@ -26,6 +26,7 @@ pub trait ViewRepository<T> {
 
 pub trait Repository<T, C: Creatable<Entity = T>>: ViewRepository<T> {
     fn delete_by_id(&self, id: i32) -> impl Future<Output = Result<u64, CoreError>>;
+    fn delete_by_ids(&self, ids: Vec<i32>) -> impl Future<Output = Result<u64, CoreError>>;
     fn delete_by_uid(&self, uid: String) -> impl Future<Output = Result<u64, CoreError>>;
     fn create(&self, entity_create: &C) -> impl Future<Output = Result<T, CoreError>>;
     fn update(&self, entity: &T) -> impl Future<Output = Result<T, CoreError>>;

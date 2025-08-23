@@ -125,6 +125,9 @@ impl<R: PostRepository> PostService<R> {
     pub async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
         self.post_repository.delete_by_id(id).await
     }
+    pub async fn delete_by_ids(&self, ids: Vec<i32>) -> Result<u64, CoreError> {
+        self.post_repository.delete_by_ids(ids).await
+    }
     pub async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
         self.post_repository.delete_by_uid(uid).await
     }

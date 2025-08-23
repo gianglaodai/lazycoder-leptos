@@ -105,10 +105,9 @@ pub fn DialogContent(
     let node_ref: NodeRef<Div> = NodeRef::new();
 
     let _key_listener = window_event_listener(leptos::ev::keydown, move |ev| {
-        if ctx.open.get_untracked() {
-            if ev.key() == "Escape" {
-                ctx.set_open.run(false);
-            }
+        if ev.key() == "Escape" {
+            // No need to read reactive state here; just close if Escape is pressed
+            ctx.set_open.run(false);
         }
     });
 

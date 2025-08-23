@@ -78,6 +78,10 @@ impl Repository<User, UserCreate> for UserSqlxRepository {
         SqlxRepository::delete_by_id(self, id).await
     }
 
+    async fn delete_by_ids(&self, ids: Vec<i32>) -> Result<u64, CoreError> {
+        SqlxRepository::delete_by_ids(self, ids).await
+    }
+
     async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
         SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }

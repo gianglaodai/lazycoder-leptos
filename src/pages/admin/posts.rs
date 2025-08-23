@@ -1,18 +1,16 @@
 use crate::pages::admin::guard::AdminGuard;
 use crate::pages::components::button::{ButtonIntent, ButtonVariant};
 use crate::pages::components::{
-    Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader,
-    DialogTitle, DialogTrigger, Input, Paginator, Table, TableBody, TableCaption, TableCell,
-    TableHead, TableHeader, TableRow,
+    Button, DataTable, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter,
+    DialogHeader, DialogTitle, DialogTrigger, Input,
 };
 use crate::pages::rest::auth_api::UserTO;
 use crate::pages::rest::post_api::{create_post, delete_post, update_post, PostTO};
-use crate::pages::rest::post_info_api::{
-    count_post_infos, load_post_infos, PostInfoTOGetterSetter,
-};
+use crate::pages::rest::post_info_api::{count_post_infos, load_post_infos};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
+use std::collections::HashMap;
 use time::format_description;
 
 #[component]
@@ -113,6 +111,31 @@ pub fn AdminPostsPage() -> impl IntoView {
         },
     );
 
+    Effect::new({
+        let reload = reload.clone();
+        move |_| {
+            if let Some(Ok(_)) = delete_action.value().get() {
+                reload.update(|v| *v += 1);
+            }
+        }
+    });
+
+    let navigate = use_navigate();
+    let on_edit = Callback::new(move |row: HashMap<String, String>| {
+        if let Some(id_str) = row.get("id") {
+            if let Ok(id) = id_str.parse::<i32>() {
+                navigate(&format!("/admin/posts/{}", id), Default::default());
+            }
+        }
+    });
+    let delete_action = delete_action.clone();
+    let on_delete = Callback::new(move |row: HashMap<String, String>| {
+        if let Some(id_str) = row.get("id") {
+            if let Ok(id) = id_str.parse::<i32>() {
+                delete_action.dispatch(id);
+            }
+        }
+    });
     view! {
         <AdminGuard>
             <div class="container-page py-10 font-serif">
@@ -124,51 +147,44 @@ pub fn AdminPostsPage() -> impl IntoView {
                 <Suspense fallback=move || view! {<div class="text-center py-8">Loading posts...</div>}>
                     {move || match posts_and_total_resource.get() {
                         Some(Ok((posts, total))) => view! {
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Title</TableHead>
-                                        <TableHead>Slug</TableHead>
-                                        <TableHead>Status</TableHead>
-                                        <TableHead>Created</TableHead>
-                                        <TableHead>Updated</TableHead>
-                                        <TableHead class="text-right">Actions</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {posts.into_iter().map(|post| {
-                                        let format = format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]").unwrap();
-                                        let created = post.created_at.format(&format).unwrap_or_else(|_| "".to_string());
-                                        let updated = post.updated_at.format(&format).unwrap_or_else(|_| "".to_string());
-                                        let post_id = post.id;
-                                        let slug = post.slug.clone();
-                                        let title = post.title.clone();
-                                        let status = post.status.clone();
-                                        view! {
-                                            <TableRow>
-                                                <TableCell>{<crate::pages::rest::post_info_api::PostInfoTO as PostInfoTOGetterSetter<String>>::get(&post, &"title".to_string()).map(|s| s.to_string()).unwrap_or_default()}</TableCell>
-                                                <TableCell class="font-mono text-xs">{slug}</TableCell>
-                                                <TableCell>{status}</TableCell>
-                                                <TableCell class="whitespace-nowrap text-xs text-stone-600">{created}</TableCell>
-                                                <TableCell class="whitespace-nowrap text-xs text-stone-600">{updated}</TableCell>
-                                                <TableCell class="text-right gap-2 flex flex-row-reverse">
-                                                    <Button variant=ButtonVariant::Outline intent=ButtonIntent::Destructive on_click=Callback::new(move |_| { delete_action.dispatch(post_id); })>Delete</Button>
-                                                    <Button variant=ButtonVariant::Outline intent=ButtonIntent::Primary href=format!("/admin/posts/{}", post_id)>Edit</Button>
-                                                </TableCell>
-                                            </TableRow>
-                                        }
-                                    }).collect_view()}
-                                </TableBody>
-                                <TableCaption>A list of your posts.</TableCaption>
-                            </Table>
-                            <div class="mt-6">
-                                <Paginator
-                                    first_result=first_result()
-                                    total_entities=total as i64
-                                    max_results=max_results() as i64
-                                    max_visible_pages=3
-                                />
-                            </div>
+                            {
+                                let field_definitions = vec![
+                                    ("id".to_string(), "ID".to_string()),
+                                    ("uid".to_string(), "UID".to_string()),
+                                    ("title".to_string(), "Title".to_string()),
+                                    ("slug".to_string(), "Slug".to_string()),
+                                    ("status".to_string(), "Status".to_string()),
+                                    ("created_at".to_string(), "Created".to_string()),
+                                    ("updated_at".to_string(), "Updated".to_string()),
+                                ];
+                                let rows: Vec<HashMap<String, String>> = posts
+                                    .into_iter()
+                                    .map(|p| {
+                                        p
+                                        .to_field_map()
+                                        .into_iter()
+                                        .map(|(k, v)| (k.to_string(), v))
+                                        .collect()
+                                    })
+                                    .collect();
+                                {
+                                    view! {
+                                        <DataTable
+                                            field_definitions=field_definitions.clone()
+                                            rows=rows
+                                            total_entities=total as i64
+                                            first_result=first_result()
+                                            max_results=max_results() as i64
+                                            max_visible_pages=3
+                                            editable=true
+                                            deletable=true
+                                            on_edit=on_edit
+                                            on_delete=on_delete
+                                            caption="A list of your posts.".to_string()
+                                        />
+                                    }
+                                }
+                            }
                         }.into_any(),
                         Some(Err(e)) => view! {
                             <div class="text-red-600">Error loading posts: {e.to_string()}</div>

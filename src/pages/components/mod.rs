@@ -1,4 +1,5 @@
 pub mod button;
+pub mod data_table;
 pub mod dialog;
 pub mod footer;
 pub mod input;
@@ -10,9 +11,11 @@ mod paginator;
 pub mod select;
 pub mod table;
 pub mod textarea;
+pub mod checkbox;
 
 // Re-export components for easier importing
 pub use button::Button;
+pub use data_table::DataTable;
 pub use dialog::{
     Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader,
     DialogOverlay, DialogTitle, DialogTrigger,
@@ -32,3 +35,4 @@ pub use table::{
     Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow,
 };
 pub use textarea::Textarea;
+pub use checkbox::Checkbox;
