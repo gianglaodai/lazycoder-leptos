@@ -1,5 +1,5 @@
 use crate::pages::admin::guard::AdminGuard;
-use crate::pages::components::button::{ButtonVariant, ButtonIntent};
+use crate::pages::components::button::{ButtonIntent, ButtonVariant};
 use crate::pages::components::{
     Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader,
     DialogTitle, DialogTrigger, Input, Paginator, Table, TableBody, TableCaption, TableCell,
@@ -7,7 +7,9 @@ use crate::pages::components::{
 };
 use crate::pages::rest::auth_api::UserTO;
 use crate::pages::rest::post_api::{create_post, delete_post, update_post, PostTO};
-use crate::pages::rest::post_info_api::{count_post_infos, load_post_infos};
+use crate::pages::rest::post_info_api::{
+    count_post_infos, load_post_infos, PostInfoTOGetterSetter,
+};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
@@ -144,7 +146,7 @@ pub fn AdminPostsPage() -> impl IntoView {
                                         let status = post.status.clone();
                                         view! {
                                             <TableRow>
-                                                <TableCell>{title}</TableCell>
+                                                <TableCell>{<crate::pages::rest::post_info_api::PostInfoTO as PostInfoTOGetterSetter<String>>::get(&post, &"title".to_string()).map(|s| s.to_string()).unwrap_or_default()}</TableCell>
                                                 <TableCell class="font-mono text-xs">{slug}</TableCell>
                                                 <TableCell>{status}</TableCell>
                                                 <TableCell class="whitespace-nowrap text-xs text-stone-600">{created}</TableCell>

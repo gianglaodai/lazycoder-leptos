@@ -32,6 +32,9 @@ paste = "1.0"
 once_cell = "1.21.3"
 regex = "1.11.1"
 futures = "0.3.31"
+quote = "1.0.40"
+syn = { version = "2.0.104", features = ["full", "extra-traits"] }
+field_accessor_derive = { path = "field_accessor_derive" }
 
 [features]
 csr = ["leptos/csr"]

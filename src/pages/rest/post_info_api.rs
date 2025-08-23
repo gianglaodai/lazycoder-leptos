@@ -34,7 +34,7 @@ impl From<PostInfo> for PostInfoTO {
     }
 }
 
-#[server(name=LoadPostInfos,prefix="/load", endpoint="/posts-info")]
+#[server(name=LoadPostInfos,prefix="/load", endpoint="/posts/info")]
 pub async fn load_post_infos(
     first_result: i64,
     max_results: i32,
@@ -66,7 +66,7 @@ pub async fn load_post_infos(
     result
 }
 
-#[server(name=CountPostInfos,prefix="/load", endpoint="/posts-info/count")]
+#[server(name=CountPostInfos,prefix="/load", endpoint="/posts/count/info")]
 pub async fn count_post_infos() -> Result<i64, ServerFnError> {
     use crate::state::AppState;
     use leptos_actix::extract;
@@ -79,7 +79,7 @@ pub async fn count_post_infos() -> Result<i64, ServerFnError> {
         .map_err(|e| ServerFnError::ServerError(e.to_string()))
 }
 
-#[server(name=LoadPostInfoById, prefix="/load", endpoint="/posts-info/get")]
+#[server(name=LoadPostInfoById, prefix="/load", endpoint="/posts/id/info")]
 pub async fn load_post_info_by_id(id: i32) -> Result<PostInfoTO, ServerFnError> {
     use crate::state::AppState;
     use leptos_actix::extract;

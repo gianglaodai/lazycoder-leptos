@@ -32,8 +32,15 @@ pub fn Textarea(
     #[prop(optional)] on_blur: Option<Callback<ev::FocusEvent, ()>>,
 ) -> impl IntoView {
     let tv = textarea_tv();
-    let props = TvProps { variants: HashMap::new(), class: class.clone(), slot_classes: HashMap::new() };
-    let classes = match tv.build(&props) { TvResult::Single(s) => s, TvResult::Slots(_) => String::new() };
+    let props = TvProps {
+        variants: HashMap::new(),
+        class: class.clone(),
+        slot_classes: HashMap::new(),
+    };
+    let classes = match tv.build(&props) {
+        TvResult::Single(s) => s,
+        TvResult::Slots(_) => String::new(),
+    };
 
     view! {
         <textarea

@@ -3,7 +3,9 @@ use leptos::prelude::*;
 use leptos_router::components::A;
 use std::collections::HashMap;
 
-use crate::utils::tv::{CompoundVariant, Tv, TvConfig, TvProps, TvResult, VariantClass, VariantDef};
+use crate::utils::tv::{
+    CompoundVariant, Tv, TvConfig, TvProps, TvResult, VariantClass, VariantDef,
+};
 
 #[derive(Clone, Copy, PartialEq, Eq)]
 pub enum ButtonVariant {
@@ -61,24 +63,24 @@ fn button_tv() -> Tv {
 
     // appearance
     let mut appearance = VariantDef::new();
-    appearance
-        .values
-        .insert(
-            "default".into(),
-            VariantClass::All("bg-primary text-primary-foreground hover:bg-primary/90".into()),
-        );
+    appearance.values.insert(
+        "default".into(),
+        VariantClass::All("bg-primary text-primary-foreground hover:bg-primary/90".into()),
+    );
     appearance.values.insert(
         "outline".into(),
         VariantClass::All(
             "border border-input bg-background text-foreground hover:bg-accent hover:text-accent-foreground".into(),
         ),
     );
-    appearance
-        .values
-        .insert("ghost".into(), VariantClass::All("hover:bg-accent hover:text-accent-foreground".into()));
-    appearance
-        .values
-        .insert("link".into(), VariantClass::All("text-primary underline-offset-4 hover:underline".into()));
+    appearance.values.insert(
+        "ghost".into(),
+        VariantClass::All("hover:bg-accent hover:text-accent-foreground".into()),
+    );
+    appearance.values.insert(
+        "link".into(),
+        VariantClass::All("text-primary underline-offset-4 hover:underline".into()),
+    );
     variants.insert("appearance".into(), appearance);
 
     // intent (tone)
@@ -100,17 +102,15 @@ fn button_tv() -> Tv {
 
     // size
     let mut size = VariantDef::new();
-    size
-        .values
+    size.values
         .insert("default".into(), VariantClass::All("h-9 px-4 py-2".into()));
-    size
-        .values
+    size.values
         .insert("sm".into(), VariantClass::All("h-8 rounded-md px-3".into()));
-    size
-        .values
-        .insert("lg".into(), VariantClass::All("h-10 rounded-md px-8".into()));
-    size
-        .values
+    size.values.insert(
+        "lg".into(),
+        VariantClass::All("h-10 rounded-md px-8".into()),
+    );
+    size.values
         .insert("icon".into(), VariantClass::All("h-9 w-9".into()));
     variants.insert("size".into(), size);
 
@@ -149,7 +149,8 @@ fn button_tv() -> Tv {
             ("intent".into(), "destructive".into()),
         ]),
         class: VariantClass::All(
-            "border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive".into(),
+            "border-destructive text-destructive hover:bg-destructive/10 hover:text-destructive"
+                .into(),
         ),
     });
     // outline + secondary

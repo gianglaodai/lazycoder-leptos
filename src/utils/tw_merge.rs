@@ -400,11 +400,16 @@ fn classify_group(base: &str) -> Option<Group> {
             return Some(Group::Simple("bg-repeat"));
         }
         // Size
-        if matches!(after, "auto" | "cover" | "contain") || after.starts_with("[length") || after.starts_with("[size") {
+        if matches!(after, "auto" | "cover" | "contain")
+            || after.starts_with("[length")
+            || after.starts_with("[size")
+        {
             return Some(Group::Simple("bg-size"));
         }
         // Position or arbitrary value discrimination
-        if matches!(after, "center" | "top" | "bottom" | "left" | "right") || after.starts_with("[position") {
+        if matches!(after, "center" | "top" | "bottom" | "left" | "right")
+            || after.starts_with("[position")
+        {
             return Some(Group::Simple("bg-position"));
         }
         if after.starts_with('[') {
@@ -440,30 +445,46 @@ fn classify_group(base: &str) -> Option<Group> {
         if after.starts_with("gradient-to-") {
             return Some(Group::Simple("bg-gradient"));
         }
-        if after == "none" { return Some(Group::Simple("bg-image")); }
+        if after == "none" {
+            return Some(Group::Simple("bg-image"));
+        }
         // Colors (default)
         return Some(Group::Simple("bg-color"));
     }
     // Gradient color stops
-    if s.starts_with("from-") { return Some(Group::Simple("from")); }
-    if s.starts_with("via-") { return Some(Group::Simple("via")); }
-    if s.starts_with("to-") { return Some(Group::Simple("to")); }
+    if s.starts_with("from-") {
+        return Some(Group::Simple("from"));
+    }
+    if s.starts_with("via-") {
+        return Some(Group::Simple("via"));
+    }
+    if s.starts_with("to-") {
+        return Some(Group::Simple("to"));
+    }
 
     // Text
-    if let Some(after) = s.strip_prefix("text-") { return Some(classify_text(after)); }
+    if let Some(after) = s.strip_prefix("text-") {
+        return Some(classify_text(after));
+    }
     // Font weight
     if let Some(after) = s.strip_prefix("font-") {
         match after {
-            "thin" | "extralight" | "light" | "normal" | "medium" | "semibold" | "bold" | "extrabold" | "black" => {
+            "thin" | "extralight" | "light" | "normal" | "medium" | "semibold" | "bold"
+            | "extrabold" | "black" => {
                 return Some(Group::Simple("font-weight"));
             }
             _ => {}
         }
     }
     // Font style
-    if s == "italic" || s == "not-italic" { return Some(Group::Simple("font-style")); }
+    if s == "italic" || s == "not-italic" {
+        return Some(Group::Simple("font-style"));
+    }
     // Text decoration basics
-    if matches!(s, "underline" | "overline" | "line-through" | "no-underline") {
+    if matches!(
+        s,
+        "underline" | "overline" | "line-through" | "no-underline"
+    ) {
         return Some(Group::Simple("text-decoration"));
     }
     // Text transform
@@ -471,12 +492,22 @@ fn classify_group(base: &str) -> Option<Group> {
         return Some(Group::Simple("text-transform"));
     }
     // Leading/Tracking
-    if s.starts_with("leading-") { return Some(Group::Simple("leading")); }
-    if s.starts_with("tracking-") { return Some(Group::Simple("tracking")); }
+    if s.starts_with("leading-") {
+        return Some(Group::Simple("leading"));
+    }
+    if s.starts_with("tracking-") {
+        return Some(Group::Simple("tracking"));
+    }
     // Whitespace, break, truncate
-    if s.starts_with("whitespace-") { return Some(Group::Simple("whitespace")); }
-    if s.starts_with("break-") { return Some(Group::Simple("break")); }
-    if matches!(s, "truncate" | "text-ellipsis" | "text-clip") { return Some(Group::Simple("truncate")); }
+    if s.starts_with("whitespace-") {
+        return Some(Group::Simple("whitespace"));
+    }
+    if s.starts_with("break-") {
+        return Some(Group::Simple("break"));
+    }
+    if matches!(s, "truncate" | "text-ellipsis" | "text-clip") {
+        return Some(Group::Simple("truncate"));
+    }
 
     // Rounding
     if s.starts_with("rounded-") || s == "rounded" {
@@ -503,124 +534,270 @@ fn classify_group(base: &str) -> Option<Group> {
     }
 
     // Borders
-    if let Some(g) = classify_border(s) { return Some(g); }
+    if let Some(g) = classify_border(s) {
+        return Some(g);
+    }
 
     // Shadows/opacity/z-index
-    if s.starts_with("shadow") { return Some(Group::Simple("shadow")); }
-    if s.starts_with("opacity-") { return Some(Group::Simple("opacity")); }
-    if s.starts_with("z-") { return Some(Group::Simple("z-index")); }
+    if s.starts_with("shadow") {
+        return Some(Group::Simple("shadow"));
+    }
+    if s.starts_with("opacity-") {
+        return Some(Group::Simple("opacity"));
+    }
+    if s.starts_with("z-") {
+        return Some(Group::Simple("z-index"));
+    }
 
     // Flexbox & Grid alignment
-    if s.starts_with("flex-row") || s.starts_with("flex-col") { return Some(Group::Simple("flex-direction")); }
-    if s.starts_with("flex-wrap") || s == "flex-nowrap" { return Some(Group::Simple("flex-wrap")); }
-    if s.starts_with("justify-") { return Some(Group::Simple("justify")); }
-    if s.starts_with("items-") { return Some(Group::Simple("items")); }
-    if s.starts_with("content-") { return Some(Group::Simple("content")); }
-    if s.starts_with("justify-items-") { return Some(Group::Simple("justify-items")); }
-    if s.starts_with("justify-self-") { return Some(Group::Simple("justify-self")); }
-    if s.starts_with("self-") { return Some(Group::Simple("self")); }
-    if s.starts_with("place-items-") { return Some(Group::Simple("place-items")); }
-    if s.starts_with("place-content-") { return Some(Group::Simple("place-content")); }
-    if s.starts_with("place-self-") { return Some(Group::Simple("place-self")); }
+    if s.starts_with("flex-row") || s.starts_with("flex-col") {
+        return Some(Group::Simple("flex-direction"));
+    }
+    if s.starts_with("flex-wrap") || s == "flex-nowrap" {
+        return Some(Group::Simple("flex-wrap"));
+    }
+    if s.starts_with("justify-") {
+        return Some(Group::Simple("justify"));
+    }
+    if s.starts_with("items-") {
+        return Some(Group::Simple("items"));
+    }
+    if s.starts_with("content-") {
+        return Some(Group::Simple("content"));
+    }
+    if s.starts_with("justify-items-") {
+        return Some(Group::Simple("justify-items"));
+    }
+    if s.starts_with("justify-self-") {
+        return Some(Group::Simple("justify-self"));
+    }
+    if s.starts_with("self-") {
+        return Some(Group::Simple("self"));
+    }
+    if s.starts_with("place-items-") {
+        return Some(Group::Simple("place-items"));
+    }
+    if s.starts_with("place-content-") {
+        return Some(Group::Simple("place-content"));
+    }
+    if s.starts_with("place-self-") {
+        return Some(Group::Simple("place-self"));
+    }
 
     // Gap
-    if s.starts_with("gap-") || s.starts_with("gap-x-") || s.starts_with("gap-y-") { return Some(Group::Simple("gap")); }
+    if s.starts_with("gap-") || s.starts_with("gap-x-") || s.starts_with("gap-y-") {
+        return Some(Group::Simple("gap"));
+    }
 
     // Sizing
-    if s.starts_with("w-") { return Some(Group::Simple("width")); }
-    if s.starts_with("h-") { return Some(Group::Simple("height")); }
-    if s.starts_with("min-w-") { return Some(Group::Simple("min-width")); }
-    if s.starts_with("min-h-") { return Some(Group::Simple("min-height")); }
-    if s.starts_with("max-w-") { return Some(Group::Simple("max-width")); }
-    if s.starts_with("max-h-") { return Some(Group::Simple("max-height")); }
+    if s.starts_with("w-") {
+        return Some(Group::Simple("width"));
+    }
+    if s.starts_with("h-") {
+        return Some(Group::Simple("height"));
+    }
+    if s.starts_with("min-w-") {
+        return Some(Group::Simple("min-width"));
+    }
+    if s.starts_with("min-h-") {
+        return Some(Group::Simple("min-height"));
+    }
+    if s.starts_with("max-w-") {
+        return Some(Group::Simple("max-width"));
+    }
+    if s.starts_with("max-h-") {
+        return Some(Group::Simple("max-height"));
+    }
 
     // Flex sizing
-    if s == "grow" || s == "grow-0" { return Some(Group::Simple("flex-grow")); }
-    if s == "shrink" || s == "shrink-0" { return Some(Group::Simple("flex-shrink")); }
-    if s.starts_with("basis-") { return Some(Group::Simple("flex-basis")); }
-    if s.starts_with("order-") { return Some(Group::Simple("order")); }
+    if s == "grow" || s == "grow-0" {
+        return Some(Group::Simple("flex-grow"));
+    }
+    if s == "shrink" || s == "shrink-0" {
+        return Some(Group::Simple("flex-shrink"));
+    }
+    if s.starts_with("basis-") {
+        return Some(Group::Simple("flex-basis"));
+    }
+    if s.starts_with("order-") {
+        return Some(Group::Simple("order"));
+    }
 
     // Grid
-    if s.starts_with("grid-cols-") { return Some(Group::Simple("grid-cols")); }
-    if s.starts_with("grid-rows-") { return Some(Group::Simple("grid-rows")); }
-    if s.starts_with("grid-flow-") { return Some(Group::Simple("grid-flow")); }
-    if s.starts_with("col-span-") || s.starts_with("col-start-") || s.starts_with("col-end-") { return Some(Group::Simple("col")); }
-    if s.starts_with("row-span-") || s.starts_with("row-start-") || s.starts_with("row-end-") { return Some(Group::Simple("row")); }
+    if s.starts_with("grid-cols-") {
+        return Some(Group::Simple("grid-cols"));
+    }
+    if s.starts_with("grid-rows-") {
+        return Some(Group::Simple("grid-rows"));
+    }
+    if s.starts_with("grid-flow-") {
+        return Some(Group::Simple("grid-flow"));
+    }
+    if s.starts_with("col-span-") || s.starts_with("col-start-") || s.starts_with("col-end-") {
+        return Some(Group::Simple("col"));
+    }
+    if s.starts_with("row-span-") || s.starts_with("row-start-") || s.starts_with("row-end-") {
+        return Some(Group::Simple("row"));
+    }
 
     // Object fit/position
     if s.starts_with("object-") {
-        if matches!(s, "object-contain" | "object-cover" | "object-fill" | "object-none" | "object-scale-down") {
+        if matches!(
+            s,
+            "object-contain" | "object-cover" | "object-fill" | "object-none" | "object-scale-down"
+        ) {
             return Some(Group::Simple("object-fit"));
         }
         return Some(Group::Simple("object-position"));
     }
 
     // Aspect ratio
-    if s.starts_with("aspect-") { return Some(Group::Simple("aspect-ratio")); }
+    if s.starts_with("aspect-") {
+        return Some(Group::Simple("aspect-ratio"));
+    }
 
     // Ring & outline
     if s == "ring" || s.starts_with("ring-") {
-        if s == "ring-inset" { return Some(Group::Simple("ring-inset")); }
+        if s == "ring-inset" {
+            return Some(Group::Simple("ring-inset"));
+        }
         if s.starts_with("ring-offset-") {
-            if s.starts_with("ring-offset-") && (s == "ring-offset" || s.starts_with("ring-offset-0") || s.starts_with("ring-offset-")) {
+            if s.starts_with("ring-offset-")
+                && (s == "ring-offset"
+                    || s.starts_with("ring-offset-0")
+                    || s.starts_with("ring-offset-"))
+            {
                 // differentiate width vs color by next piece
             }
         }
         // ring-offset-width
-        if s == "ring-offset" || s.starts_with("ring-offset-0") || s.strip_prefix("ring-offset-").map_or(false, |a| looks_like_width(a)) {
+        if s == "ring-offset"
+            || s.starts_with("ring-offset-0")
+            || s.strip_prefix("ring-offset-")
+                .map_or(false, |a| looks_like_width(a))
+        {
             return Some(Group::Simple("ring-offset-width"));
         }
         // ring-offset-color
-        if s.starts_with("ring-offset-") { return Some(Group::Simple("ring-offset-color")); }
+        if s.starts_with("ring-offset-") {
+            return Some(Group::Simple("ring-offset-color"));
+        }
         // ring width
-        if s == "ring" || s.strip_prefix("ring-").map_or(false, |a| looks_like_width(a)) {
+        if s == "ring"
+            || s.strip_prefix("ring-")
+                .map_or(false, |a| looks_like_width(a))
+        {
             return Some(Group::Simple("ring-width"));
         }
         // ring color
         return Some(Group::Simple("ring-color"));
     }
-    if s == "outline" || s.starts_with("outline-") { return Some(Group::Simple("outline")); }
+    if s == "outline" || s.starts_with("outline-") {
+        return Some(Group::Simple("outline"));
+    }
 
     // Divide & Space
-    if s.starts_with("divide-x") { return Some(Group::Simple("divide-x")); }
-    if s.starts_with("divide-y") { return Some(Group::Simple("divide-y")); }
-    if s.starts_with("divide-") { return Some(Group::Simple("divide")); }
-    if s.starts_with("space-x-") { return Some(Group::Simple("space-x")); }
-    if s.starts_with("space-y-") { return Some(Group::Simple("space-y")); }
+    if s.starts_with("divide-x") {
+        return Some(Group::Simple("divide-x"));
+    }
+    if s.starts_with("divide-y") {
+        return Some(Group::Simple("divide-y"));
+    }
+    if s.starts_with("divide-") {
+        return Some(Group::Simple("divide"));
+    }
+    if s.starts_with("space-x-") {
+        return Some(Group::Simple("space-x"));
+    }
+    if s.starts_with("space-y-") {
+        return Some(Group::Simple("space-y"));
+    }
 
     // Transforms
-    if s == "transform" || s == "transform-gpu" || s == "transform-none" { return Some(Group::Simple("transform")); }
+    if s == "transform" || s == "transform-gpu" || s == "transform-none" {
+        return Some(Group::Simple("transform"));
+    }
     if s.starts_with("translate-") || s.starts_with("-translate-") {
         let t = s.strip_prefix('-').unwrap_or(s);
-        if t.starts_with("translate-x-") { return Some(Group::Coverage { family: "translate", mask: XY }); }
-        if t.starts_with("translate-y-") { return Some(Group::Coverage { family: "translate", mask: YX }); }
+        if t.starts_with("translate-x-") {
+            return Some(Group::Coverage {
+                family: "translate",
+                mask: XY,
+            });
+        }
+        if t.starts_with("translate-y-") {
+            return Some(Group::Coverage {
+                family: "translate",
+                mask: YX,
+            });
+        }
     }
     if s.starts_with("scale-") {
-        if s.starts_with("scale-x-") { return Some(Group::Coverage { family: "scale", mask: XY }); }
-        if s.starts_with("scale-y-") { return Some(Group::Coverage { family: "scale", mask: YX }); }
+        if s.starts_with("scale-x-") {
+            return Some(Group::Coverage {
+                family: "scale",
+                mask: XY,
+            });
+        }
+        if s.starts_with("scale-y-") {
+            return Some(Group::Coverage {
+                family: "scale",
+                mask: YX,
+            });
+        }
         return Some(Group::Simple("scale"));
     }
-    if s.starts_with("rotate-") { return Some(Group::Simple("rotate")); }
+    if s.starts_with("rotate-") {
+        return Some(Group::Simple("rotate"));
+    }
     if s.starts_with("skew-") {
-        if s.starts_with("skew-x-") { return Some(Group::Coverage { family: "skew", mask: XY }); }
-        if s.starts_with("skew-y-") { return Some(Group::Coverage { family: "skew", mask: YX }); }
+        if s.starts_with("skew-x-") {
+            return Some(Group::Coverage {
+                family: "skew",
+                mask: XY,
+            });
+        }
+        if s.starts_with("skew-y-") {
+            return Some(Group::Coverage {
+                family: "skew",
+                mask: YX,
+            });
+        }
         return Some(Group::Simple("skew"));
     }
 
     // Transitions & animation
-    if s == "transition" || s.starts_with("transition-") { return Some(Group::Simple("transition")); }
-    if s.starts_with("duration-") { return Some(Group::Simple("duration")); }
-    if s.starts_with("delay-") { return Some(Group::Simple("delay")); }
-    if s.starts_with("ease-") { return Some(Group::Simple("ease")); }
-    if s.starts_with("animate-") { return Some(Group::Simple("animation")); }
+    if s == "transition" || s.starts_with("transition-") {
+        return Some(Group::Simple("transition"));
+    }
+    if s.starts_with("duration-") {
+        return Some(Group::Simple("duration"));
+    }
+    if s.starts_with("delay-") {
+        return Some(Group::Simple("delay"));
+    }
+    if s.starts_with("ease-") {
+        return Some(Group::Simple("ease"));
+    }
+    if s.starts_with("animate-") {
+        return Some(Group::Simple("animation"));
+    }
 
     // Interactivity
-    if s.starts_with("cursor-") { return Some(Group::Simple("cursor")); }
-    if s.starts_with("pointer-events-") { return Some(Group::Simple("pointer-events")); }
-    if s.starts_with("select-") { return Some(Group::Simple("user-select")); }
+    if s.starts_with("cursor-") {
+        return Some(Group::Simple("cursor"));
+    }
+    if s.starts_with("pointer-events-") {
+        return Some(Group::Simple("pointer-events"));
+    }
+    if s.starts_with("select-") {
+        return Some(Group::Simple("user-select"));
+    }
 
     // Accessibility
-    if s == "sr-only" || s == "not-sr-only" { return Some(Group::Simple("sr")); }
+    if s == "sr-only" || s == "not-sr-only" {
+        return Some(Group::Simple("sr"));
+    }
 
     None
 }
@@ -672,15 +849,29 @@ fn conflicts_and_newer_wins(older: &Token, newer: &Token) -> bool {
 
         // Coverage groups: same family; newer covers older's mask fully
         (
-            Some(Group::Coverage { family: f1, mask: m1 }),
-            Some(Group::Coverage { family: f2, mask: m2 }),
+            Some(Group::Coverage {
+                family: f1,
+                mask: m1,
+            }),
+            Some(Group::Coverage {
+                family: f2,
+                mask: m2,
+            }),
         ) if f1 == f2 => (m2 & *m1) == *m1,
 
         // Special cross-family: border-width overrides border-color/border-style when mask covers
         (
-            Some(Group::Coverage { family: of, mask: om }),
-            Some(Group::Coverage { family: nf, mask: nm }),
-        ) if *nf == "border-width" && (*of == "border-color" || *of == "border-style") => (nm & *om) == *om,
+            Some(Group::Coverage {
+                family: of,
+                mask: om,
+            }),
+            Some(Group::Coverage {
+                family: nf,
+                mask: nm,
+            }),
+        ) if *nf == "border-width" && (*of == "border-color" || *of == "border-style") => {
+            (nm & *om) == *om
+        }
 
         _ => false,
     }
@@ -790,12 +981,18 @@ mod tests {
         assert_eq!(tw_merge(["w-4", "w-6"]), "w-6");
         assert_eq!(tw_merge(["h-10", "md:h-8", "h-8"]), "md:h-8 h-8");
         // background color vs repeat shouldn't conflict
-        assert_eq!(tw_merge(["bg-red-500", "bg-no-repeat", "bg-blue-500"]), "bg-no-repeat bg-blue-500");
+        assert_eq!(
+            tw_merge(["bg-red-500", "bg-no-repeat", "bg-blue-500"]),
+            "bg-no-repeat bg-blue-500"
+        );
         // ring width and color
         assert_eq!(tw_merge(["ring", "ring-2"]), "ring-2");
         assert_eq!(tw_merge(["ring-red-500", "ring-blue-500"]), "ring-blue-500");
         // translate axis coverage
-        assert_eq!(tw_merge(["translate-x-2", "translate-x-4"]), "translate-x-4");
+        assert_eq!(
+            tw_merge(["translate-x-2", "translate-x-4"]),
+            "translate-x-4"
+        );
         // gradient stops
         assert_eq!(tw_merge(["from-red-500", "from-blue-500"]), "from-blue-500");
     }

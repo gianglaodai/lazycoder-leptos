@@ -19,7 +19,8 @@ macro_rules! define_to_with_common_fields_fe {
 macro_rules! define_readonly_to_with_common_fields_fe {
     ($name:ident { $($field:tt)* }) => {
         paste::paste! {
-            #[derive(serde::Deserialize, serde::Serialize, Debug, Clone)]
+            use field_accessor_derive::FieldAccessor;
+            #[derive(serde::Deserialize, serde::Serialize, Debug, Clone, FieldAccessor)]
             pub struct [<$name TO>] {
                 pub id: i32,
                 pub uid: String,

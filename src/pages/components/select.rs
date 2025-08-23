@@ -12,7 +12,9 @@ pub enum SelectSize {
 }
 
 impl Default for SelectSize {
-    fn default() -> Self { SelectSize::Default }
+    fn default() -> Self {
+        SelectSize::Default
+    }
 }
 
 fn select_tv() -> Tv {
@@ -23,15 +25,24 @@ fn select_tv() -> Tv {
     let mut variants: HashMap<String, VariantDef> = HashMap::new();
 
     let mut size = VariantDef::new();
-    size.values.insert("default".into(), VariantClass::All("h-9".into()));
-    size.values.insert("sm".into(), VariantClass::All("h-8".into()));
-    size.values.insert("lg".into(), VariantClass::All("h-10".into()));
+    size.values
+        .insert("default".into(), VariantClass::All("h-9".into()));
+    size.values
+        .insert("sm".into(), VariantClass::All("h-8".into()));
+    size.values
+        .insert("lg".into(), VariantClass::All("h-10".into()));
     variants.insert("size".into(), size);
 
     let mut defaults = HashMap::new();
     defaults.insert("size".into(), "default".into());
 
-    let cfg = TvConfig { base, variants, default_variants: defaults, compound_variants: vec![], slots: None };
+    let cfg = TvConfig {
+        base,
+        variants,
+        default_variants: defaults,
+        compound_variants: vec![],
+        slots: None,
+    };
     Tv::new(cfg)
 }
 
@@ -52,11 +63,23 @@ pub fn Select(
     let mut vmap: HashMap<String, String> = HashMap::new();
     vmap.insert(
         "size".into(),
-        match size { SelectSize::Default => "default", SelectSize::Sm => "sm", SelectSize::Lg => "lg" }.into(),
+        match size {
+            SelectSize::Default => "default",
+            SelectSize::Sm => "sm",
+            SelectSize::Lg => "lg",
+        }
+        .into(),
     );
 
-    let props = TvProps { variants: vmap, class: class.clone(), slot_classes: HashMap::new() };
-    let classes = match tv.build(&props) { TvResult::Single(s) => s, TvResult::Slots(_) => String::new() };
+    let props = TvProps {
+        variants: vmap,
+        class: class.clone(),
+        slot_classes: HashMap::new(),
+    };
+    let classes = match tv.build(&props) {
+        TvResult::Single(s) => s,
+        TvResult::Slots(_) => String::new(),
+    };
 
     view! {
         <select
