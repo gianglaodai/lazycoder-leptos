@@ -48,6 +48,11 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
     fn get_searchable_columns(&self) -> Vec<&str>;
     fn get_pool(&self) -> &PgPool;
 
+    /// List of columns that are stored as textual types (e.g., text/varchar)
+    /// This is used to avoid type-mismatch when a numeric-looking literal is provided for a string column.
+    /// Default: empty list.
+    fn get_string_columns(&self) -> Vec<&str> { vec![] }
+
     fn from_orm(orm: Self::Orm) -> Self::Entity;
     async fn find_many(
         &self,
@@ -252,9 +257,35 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
         operator: FilterOperator,
         value: FilterValue,
     ) {
-        builder.push(format!("{} ", field));
-
-        Self::handle_operator(builder, operator, value);
+        let is_string_col = self.get_string_columns().contains(&field);
+        // For textual columns, ensure we compare as text and bind a string value to avoid type mismatches
+        if is_string_col {
+            // Render column cast to text for safe comparisons
+            builder.push(format!("{}::text ", field));
+            // Coerce value to string for EQ/NE/LIKE/NOT LIKE operators
+            let coerced = match value {
+                FilterValue::String(s) => FilterValue::String(s),
+                FilterValue::Int(v) => FilterValue::String(v.to_string()),
+                FilterValue::Float(v) => FilterValue::String(v.to_string()),
+                FilterValue::Bool(v) => FilterValue::String(v.to_string()),
+                FilterValue::Date(v) => FilterValue::String(v.to_string()),
+                FilterValue::DateTime(v) => FilterValue::String(v.to_string()),
+                FilterValue::Time(v) => FilterValue::String(v.to_string()),
+                FilterValue::IntRange(a,b) => FilterValue::String(format!("{}..{}", a,b)),
+                FilterValue::FloatRange(a,b) => FilterValue::String(format!("{}..{}", a,b)),
+                FilterValue::ListInt(vs) => FilterValue::ListString(vs.into_iter().map(|v| v.to_string()).collect()),
+                FilterValue::ListFloat(vs) => FilterValue::ListString(vs.into_iter().map(|v| v.to_string()).collect()),
+                FilterValue::ListString(vs) => FilterValue::ListString(vs),
+                FilterValue::DateRange(a,b) => FilterValue::String(format!("{}..{}", a, b)),
+                FilterValue::DateTimeRange(a,b) => FilterValue::String(format!("{}..{}", a, b)),
+                FilterValue::TimeRange(a,b) => FilterValue::String(format!("{}..{}", a, b)),
+            };
+            Self::handle_operator(builder, operator, coerced);
+        } else {
+            // Default behavior for non-text columns
+            builder.push(format!("{} ", field));
+            Self::handle_operator(builder, operator, value);
+        }
     }
 
     fn build_attribute_filter(

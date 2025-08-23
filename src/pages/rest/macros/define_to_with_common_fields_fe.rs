@@ -32,7 +32,8 @@ impl AsCell for i32 {
 }
 impl AsCell for time::OffsetDateTime {
     fn as_cell(&self) -> String {
-        let fmt = time::macros::format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
+        let fmt =
+            time::macros::format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
         self.format(&fmt).unwrap_or_else(|_| self.to_string())
     }
 }
@@ -66,6 +67,10 @@ macro_rules! define_readonly_to_with_common_fields_fe {
             }
 
             impl [<$name TO>] {
+                pub fn columns() -> Vec<&'static str> {
+                    vec!["id", "uid", "version", "created_at", "updated_at", $(stringify!($fname),)*]
+                }
+
                 pub fn to_field_map(&self) -> std::collections::HashMap<&'static str, String> {
                     use crate::pages::rest::macros::define_to_with_common_fields_fe::AsCell;
                     let mut m = std::collections::HashMap::new();

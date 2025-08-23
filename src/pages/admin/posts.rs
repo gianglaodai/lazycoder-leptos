@@ -3,6 +3,7 @@ use crate::pages::components::button::{ButtonIntent, ButtonVariant};
 use crate::pages::components::{
     Button, DataTable, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter,
     DialogHeader, DialogTitle, DialogTrigger, Input,
+    Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage,
 };
 use crate::pages::rest::auth_api::UserTO;
 use crate::pages::rest::post_api::{create_post, delete_post, update_post, PostTO};
@@ -43,6 +44,15 @@ fn NewPostDialog() -> impl IntoView {
     let disabled =
         Signal::derive(move || title.get().trim().is_empty() || create_action.pending().get());
 
+    // Map error String -> Option<String> for FormField context
+    let error_sig: Signal<Option<String>> = Signal::derive({
+        let error = error.clone();
+        move || {
+            let e = error.get();
+            if e.is_empty() { None } else { Some(e) }
+        }
+    });
+
     view! {
         <Dialog>
             <DialogTrigger>New Post</DialogTrigger>
@@ -51,10 +61,22 @@ fn NewPostDialog() -> impl IntoView {
                     <DialogTitle>New Post</DialogTitle>
                     <DialogDescription>Enter a title to create a new post. You can edit details afterward.</DialogDescription>
                 </DialogHeader>
-                <div class="space-y-2">
-                    <Input placeholder="Title" value=title on_input=Callback::new(move |ev: leptos::ev::Event| title.set(event_target_value(&ev))) />
-                    {move || if !error.get().is_empty() { view!{ <div class="text-sm text-red-600">{error.get()}</div> }.into_any() } else { view!{<div/>}.into_any() }}
-                </div>
+                <Form prevent_default=true on_submit=Callback::new({
+                    let disabled = disabled.clone();
+                    let create_action = create_action.clone();
+                    let title = title.clone();
+                    move |_| { if !disabled.get() { create_action.dispatch(title.get()); } }
+                })>
+                    <FormField name="title".to_string() error=error_sig>
+                        <FormItem>
+                            <FormLabel>Title</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Title" value=title on_input=Callback::new(move |ev: leptos::ev::Event| title.set(event_target_value(&ev))) />
+                            </FormControl>
+                            <FormMessage>{move || error.get()}</FormMessage>
+                        </FormItem>
+                    </FormField>
+                </Form>
                 <DialogFooter>
                     <DialogClose>Cancel</DialogClose>
                     <Button

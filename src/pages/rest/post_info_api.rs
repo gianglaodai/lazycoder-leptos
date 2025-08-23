@@ -2,6 +2,7 @@ use crate::business::post_service::PostInfo;
 use crate::define_readonly_to_with_common_fields_fe;
 use leptos::prelude::ServerFnError;
 use leptos::*;
+use crate::business::error::CoreError;
 
 define_readonly_to_with_common_fields_fe!(PostInfo {
     pub slug: String,
@@ -62,7 +63,7 @@ pub async fn load_post_infos(
                 .map(PostInfoTO::from)
                 .collect::<Vec<PostInfoTO>>()
         })
-        .map_err(|e| ServerFnError::ServerError(e.to_string()));
+        .map_err(|e| ServerFnError::ServerError(e.to_json()));
     result
 }
 
@@ -76,7 +77,7 @@ pub async fn count_post_infos() -> Result<i64, ServerFnError> {
         .post_info_service
         .count(vec![])
         .await
-        .map_err(|e| ServerFnError::ServerError(e.to_string()))
+        .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
 #[server(name=LoadPostInfoById, prefix="/load", endpoint="/posts/id/info")]
@@ -88,7 +89,7 @@ pub async fn load_post_info_by_id(id: i32) -> Result<PostInfoTO, ServerFnError> 
     let result = state.post_info_service.get_by_id(id).await;
     match result {
         Ok(Some(p)) => Ok(PostInfoTO::from(p)),
-        Ok(None) => Err(ServerFnError::ServerError("Not Found".to_string())),
-        Err(e) => Err(ServerFnError::ServerError(e.to_string())),
+        Ok(None) => Err(ServerFnError::ServerError(CoreError::not_found("error.post_not_found").to_json())),
+        Err(e) => Err(ServerFnError::ServerError(e.to_json())),
     }
 }

@@ -12,6 +12,13 @@ pub mod select;
 pub mod table;
 pub mod textarea;
 pub mod checkbox;
+pub mod popover;
+pub mod calendar;
+pub mod date_picker;
+pub mod time_picker;
+pub mod datetime_picker;
+pub mod label;
+pub mod form;
 
 // Re-export components for easier importing
 pub use button::Button;
@@ -36,3 +43,10 @@ pub use table::{
 };
 pub use textarea::Textarea;
 pub use checkbox::Checkbox;
+pub use popover::{Popover, PopoverContent, PopoverTrigger};
+pub use calendar::Calendar;
+pub use date_picker::DatePicker;
+pub use time_picker::TimePicker;
+pub use datetime_picker::DateTimePicker;
+pub use label::Label;
+pub use form::{use_form_field, Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage};

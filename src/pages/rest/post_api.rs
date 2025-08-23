@@ -1,3 +1,4 @@
+use crate::business::error::CoreError;
 use crate::business::post_service::{Post, PostStatus};
 use crate::define_to_with_common_fields_fe;
 use leptos::prelude::ServerFnError;
@@ -68,7 +69,7 @@ pub async fn load_posts(first_result: i64, max_results: i32) -> Result<Vec<PostT
         )
         .await
         .map(|posts| posts.into_iter().map(PostTO::from).collect::<Vec<PostTO>>())
-        .map_err(|e| ServerFnError::ServerError(e.to_string()));
+        .map_err(|e| ServerFnError::ServerError(e.to_json()));
     result
 }
 #[server(name=CountPosts,prefix="/load", endpoint="/posts/count")]
@@ -81,7 +82,7 @@ pub async fn count_posts() -> Result<i64, ServerFnError> {
         .post_service
         .count(vec![])
         .await
-        .map_err(|e| ServerFnError::ServerError(e.to_string()))
+        .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
 fn slugify(input: &str) -> String {
@@ -125,12 +126,13 @@ pub async fn create_post(title: String, user_id: i32) -> Result<PostTO, ServerFn
     // Guard: require ADMIN role from server session
     let req: actix_web::HttpRequest = extract().await?;
     let session = req.get_session();
-    let role: Option<String> = session
-        .get("role")
-        .map_err(|e| ServerFnError::new(e.to_string()))?;
+    let role: Option<String> = match session.get("role") {
+        Ok(v) => v,
+        Err(_) => return Err(ServerFnError::ServerError(CoreError::unauthorized("error.missing_session").to_json())),
+    };
     match role.as_deref() {
         Some("ADMIN") => {}
-        _ => return Err(ServerFnError::new("Forbidden")),
+        _ => return Err(ServerFnError::ServerError(CoreError::forbidden("error.forbidden").to_json())),
     }
 
     let state: actix_web::web::Data<AppState> = extract().await?;
@@ -147,7 +149,8 @@ pub async fn create_post(title: String, user_id: i32) -> Result<PostTO, ServerFn
         .create(&create)
         .await
         .map(PostTO::from)
-        .map_err(|e| ServerFnError::ServerError(e.to_string()))
+        .map_err(|e| e.to_json())
+        .map_err(ServerFnError::ServerError)
 }
 
 #[server(name=UpdatePost, prefix="/load", endpoint="/posts/update")]
@@ -159,12 +162,13 @@ pub async fn update_post(post: PostTO) -> Result<PostTO, ServerFnError> {
     // Guard: require ADMIN role from server session
     let req: actix_web::HttpRequest = extract().await?;
     let session = req.get_session();
-    let role: Option<String> = session
-        .get("role")
-        .map_err(|e| ServerFnError::new(e.to_string()))?;
+    let role: Option<String> = match session.get("role") {
+        Ok(v) => v,
+        Err(_) => return Err(ServerFnError::ServerError(CoreError::unauthorized("error.missing_session").to_json())),
+    };
     match role.as_deref() {
         Some("ADMIN") => {}
-        _ => return Err(ServerFnError::new("Forbidden")),
+        _ => return Err(ServerFnError::ServerError(CoreError::forbidden("error.forbidden").to_json())),
     }
 
     let state: actix_web::web::Data<AppState> = extract().await?;
@@ -174,7 +178,8 @@ pub async fn update_post(post: PostTO) -> Result<PostTO, ServerFnError> {
         .update(&entity)
         .await
         .map(PostTO::from)
-        .map_err(|e| ServerFnError::ServerError(e.to_string()))
+        .map_err(|e| e.to_json())
+        .map_err(ServerFnError::ServerError)
 }
 
 #[server(name=DeletePost, prefix="/load", endpoint="/posts/delete")]
@@ -186,12 +191,13 @@ pub async fn delete_post(id: i32) -> Result<u64, ServerFnError> {
     // Guard: require ADMIN role from server session
     let req: actix_web::HttpRequest = extract().await?;
     let session = req.get_session();
-    let role: Option<String> = session
-        .get("role")
-        .map_err(|e| ServerFnError::new(e.to_string()))?;
+    let role: Option<String> = match session.get("role") {
+        Ok(v) => v,
+        Err(_) => return Err(ServerFnError::ServerError(CoreError::unauthorized("error.missing_session").to_json())),
+    };
     match role.as_deref() {
         Some("ADMIN") => {}
-        _ => return Err(ServerFnError::new("Forbidden")),
+        _ => return Err(ServerFnError::ServerError(CoreError::forbidden("error.forbidden").to_json())),
     }
 
     let state: actix_web::web::Data<AppState> = extract().await?;
@@ -199,7 +205,8 @@ pub async fn delete_post(id: i32) -> Result<u64, ServerFnError> {
         .post_service
         .delete_by_id(id)
         .await
-        .map_err(|e| ServerFnError::ServerError(e.to_string()))
+        .map_err(|e| e.to_json())
+        .map_err(ServerFnError::ServerError)
 }
 
 #[server(name=LoadPostById, prefix="/load", endpoint="/posts/get")]
@@ -211,7 +218,7 @@ pub async fn load_post_by_id(id: i32) -> Result<PostTO, ServerFnError> {
     let result = state.post_service.get_by_id(id).await;
     match result {
         Ok(Some(p)) => Ok(PostTO::from(p)),
-        Ok(None) => Err(ServerFnError::ServerError("Not Found".to_string())),
-        Err(e) => Err(ServerFnError::ServerError(e.to_string())),
+        Ok(None) => Err(ServerFnError::ServerError(CoreError::not_found("error.post_not_found").to_json())),
+        Err(e) => Err(ServerFnError::ServerError(e.to_json())),
     }
 }

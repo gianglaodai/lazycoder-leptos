@@ -1,5 +1,5 @@
-use leptos::prelude::*;
 use leptos::html;
+use leptos::prelude::*;
 use leptos::web_sys;
 use wasm_bindgen::JsCast;
 
@@ -11,9 +11,9 @@ fn checkbox_cls() -> &'static str {
 #[component]
 pub fn Checkbox(
     // Controlled checked state
-    #[prop(optional, into)] checked: MaybeSignal<bool>,
+    #[prop(optional, into)] checked: Signal<bool>,
     // Optional visual indeterminate state (for header select-all)
-    #[prop(optional, into)] indeterminate: MaybeSignal<bool>,
+    #[prop(optional, into)] indeterminate: Signal<bool>,
     #[prop(optional)] disabled: bool,
     #[prop(into, optional)] class: Option<String>,
     // Callback with new checked value
@@ -32,7 +32,9 @@ pub fn Checkbox(
     });
 
     let on_input = move |ev: web_sys::Event| {
-        let target = ev.target().and_then(|t| t.dyn_into::<web_sys::HtmlInputElement>().ok());
+        let target = ev
+            .target()
+            .and_then(|t| t.dyn_into::<web_sys::HtmlInputElement>().ok());
         if let (Some(cb), Some(input)) = (on_change.clone(), target) {
             cb.run(input.checked());
         }

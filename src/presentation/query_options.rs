@@ -8,6 +8,41 @@ use time::format_description::well_known::Rfc3339;
 use time::macros::format_description;
 use time::{Date, OffsetDateTime, Time};
 
+#[derive(Debug, Clone, Copy)]
+pub enum ValueDataType {
+    String,
+    Int,
+    Float,
+    Bool,
+    Date,
+    DateTime,
+    Time,
+}
+
+impl ValueDataType {
+    fn from_code(code_str: &str) -> Result<Self, CoreError> {
+        let code: u8 = code_str.parse().map_err(|_| {
+            CoreError::UnprocessableEntity(
+                "error.filters.invalid.datatype".into(),
+                HashMap::from([("datatype".into(), code_str.into())]),
+            )
+        })?;
+        match code {
+            0 => Ok(ValueDataType::String),
+            1 => Ok(ValueDataType::Int),
+            2 => Ok(ValueDataType::Float),
+            3 => Ok(ValueDataType::Bool),
+            4 => Ok(ValueDataType::Date),
+            5 => Ok(ValueDataType::DateTime),
+            6 => Ok(ValueDataType::Time),
+            _ => Err(CoreError::UnprocessableEntity(
+                "error.filters.invalid.datatype".into(),
+                HashMap::from([("datatype".into(), code_str.into())]),
+            )),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize)]
 pub struct QueryOptions {
     pub first_result: Option<i32>,
@@ -73,6 +108,7 @@ impl QueryOptions {
         let key = parts[0].to_string();
         let operator_str = parts[1];
         let value_str_opt = parts.get(2).copied();
+        let dtype_opt = parts.get(3).copied();
 
         let operator = match operator_str {
             "=" | "eq" | "" => FilterOperator::Equal,
@@ -101,8 +137,21 @@ impl QueryOptions {
         let value = match operator {
             FilterOperator::IsNull | FilterOperator::NotNull => FilterValue::Bool(true),
             _ => {
-                let value_str = value_str_opt.unwrap();
-                match Self::parse_value(value_str, &operator) {
+                let value_str = value_str_opt.ok_or_else(|| {
+                    CoreError::UnprocessableEntity(
+                        "error.filters.invalid.format",
+                        HashMap::from([("filter".to_string(), raw.to_string())]),
+                    )
+                })?;
+                let dtype = dtype_opt
+                    .ok_or_else(|| {
+                        CoreError::UnprocessableEntity(
+                            "error.filters.missing.datatype".into(),
+                            HashMap::from([("filter".into(), raw.into())]),
+                        )
+                    })
+                    .and_then(ValueDataType::from_code)?;
+                match Self::parse_value(value_str, &operator, dtype) {
                     Ok(v) => v,
                     Err(_e) => {
                         return Err(CoreError::UnprocessableEntity(
@@ -132,26 +181,49 @@ impl QueryOptions {
         })
     }
 
-    fn parse_value(value_str: &str, operator: &FilterOperator) -> Result<FilterValue, CoreError> {
+    fn parse_value(
+        value_str: &str,
+        operator: &FilterOperator,
+        data_type: ValueDataType,
+    ) -> Result<FilterValue, CoreError> {
         match operator {
             FilterOperator::In | FilterOperator::NotIn => {
                 let items: Vec<&str> = value_str.split('|').collect();
-                if let Ok(int_list) = items
-                    .iter()
-                    .map(|s| s.parse::<i32>())
-                    .collect::<Result<Vec<_>, _>>()
-                {
-                    Ok(FilterValue::ListInt(int_list))
-                } else if let Ok(float_list) = items
-                    .iter()
-                    .map(|s| s.parse::<f64>())
-                    .collect::<Result<Vec<_>, _>>()
-                {
-                    Ok(FilterValue::ListFloat(float_list))
-                } else {
-                    Ok(FilterValue::ListString(
-                        items.iter().map(|s| s.to_string()).collect(),
-                    ))
+                match data_type {
+                    ValueDataType::Int => {
+                        let parsed = items
+                            .iter()
+                            .map(|s| s.parse::<i32>())
+                            .collect::<Result<Vec<_>, _>>()
+                            .map_err(|_| {
+                                CoreError::UnprocessableEntity(
+                                    "error.invalid.list.value".into(),
+                                    HashMap::from([("value".into(), value_str.into())]),
+                                )
+                            })?;
+                        Ok(FilterValue::ListInt(parsed))
+                    }
+                    ValueDataType::Float => {
+                        let parsed = items
+                            .iter()
+                            .map(|s| s.parse::<f64>())
+                            .collect::<Result<Vec<_>, _>>()
+                            .map_err(|_| {
+                                CoreError::UnprocessableEntity(
+                                    "error.invalid.list.value".into(),
+                                    HashMap::from([("value".into(), value_str.into())]),
+                                )
+                            })?;
+                        Ok(FilterValue::ListFloat(parsed))
+                    }
+                    ValueDataType::String => Ok(FilterValue::ListString(
+                        items.into_iter().map(|s| s.to_string()).collect(),
+                    )),
+                    // Not supported list datatypes in current FilterValue
+                    _ => Err(CoreError::UnprocessableEntity(
+                        "error.invalid.list.datatype".into(),
+                        HashMap::from([("value".into(), value_str.into())]),
+                    )),
                 }
             }
             FilterOperator::Between | FilterOperator::NotBetween => {
@@ -163,60 +235,168 @@ impl QueryOptions {
                     ));
                 }
                 let (start, end) = (items[0], items[1]);
-
-                if let (Ok(s), Ok(e)) = (start.parse::<i32>(), end.parse::<i32>()) {
-                    Ok(FilterValue::IntRange(s, e))
-                } else if let (Ok(s), Ok(e)) = (start.parse::<f64>(), end.parse::<f64>()) {
-                    Ok(FilterValue::FloatRange(s, e))
-                } else if let (Ok(s), Ok(e)) = (
-                    Date::parse(start, format_description!("[year]-[month]-[day]")),
-                    Date::parse(end, format_description!("[year]-[month]-[day]")),
-                ) {
-                    Ok(FilterValue::DateRange(s, e))
-                } else if let (Ok(s), Ok(e)) = (
-                    OffsetDateTime::parse(start, &Rfc3339),
-                    OffsetDateTime::parse(end, &Rfc3339),
-                ) {
-                    Ok(FilterValue::DateTimeRange(s, e))
-                } else if let (Ok(s), Ok(e)) = (
-                    Time::parse(start, format_description!("[hour]:[minute]:[second]")),
-                    Time::parse(end, format_description!("[hour]:[minute]:[second]")),
-                ) {
-                    Ok(FilterValue::TimeRange(s, e))
-                } else {
-                    Err(CoreError::UnprocessableEntity(
-                        "error.invalid.range.value".into(),
+                match data_type {
+                    ValueDataType::Int => {
+                        let s = start.parse::<i32>().map_err(|_| {
+                            CoreError::UnprocessableEntity(
+                                "error.invalid.range.value".into(),
+                                HashMap::from([("value".into(), value_str.into())]),
+                            )
+                        })?;
+                        let e = end.parse::<i32>().map_err(|_| {
+                            CoreError::UnprocessableEntity(
+                                "error.invalid.range.value".into(),
+                                HashMap::from([("value".into(), value_str.into())]),
+                            )
+                        })?;
+                        Ok(FilterValue::IntRange(s, e))
+                    }
+                    ValueDataType::Float => {
+                        let s = start.parse::<f64>().map_err(|_| {
+                            CoreError::UnprocessableEntity(
+                                "error.invalid.range.value".into(),
+                                HashMap::from([("value".into(), value_str.into())]),
+                            )
+                        })?;
+                        let e = end.parse::<f64>().map_err(|_| {
+                            CoreError::UnprocessableEntity(
+                                "error.invalid.range.value".into(),
+                                HashMap::from([("value".into(), value_str.into())]),
+                            )
+                        })?;
+                        Ok(FilterValue::FloatRange(s, e))
+                    }
+                    ValueDataType::Date => {
+                        let s = Date::parse(start, format_description!("[year]-[month]-[day]"))
+                            .map_err(|_| {
+                                CoreError::UnprocessableEntity(
+                                    "error.invalid.range.value".into(),
+                                    HashMap::from([("value".into(), value_str.into())]),
+                                )
+                            })?;
+                        let e = Date::parse(end, format_description!("[year]-[month]-[day]"))
+                            .map_err(|_| {
+                                CoreError::UnprocessableEntity(
+                                    "error.invalid.range.value".into(),
+                                    HashMap::from([("value".into(), value_str.into())]),
+                                )
+                            })?;
+                        Ok(FilterValue::DateRange(s, e))
+                    }
+                    ValueDataType::DateTime => {
+                        let s = OffsetDateTime::parse(start, &Rfc3339).map_err(|_| {
+                            CoreError::UnprocessableEntity(
+                                "error.invalid.range.value".into(),
+                                HashMap::from([("value".into(), value_str.into())]),
+                            )
+                        })?;
+                        let e = OffsetDateTime::parse(end, &Rfc3339).map_err(|_| {
+                            CoreError::UnprocessableEntity(
+                                "error.invalid.range.value".into(),
+                                HashMap::from([("value".into(), value_str.into())]),
+                            )
+                        })?;
+                        Ok(FilterValue::DateTimeRange(s, e))
+                    }
+                    ValueDataType::Time => {
+                        let s = Time::parse(start, format_description!("[hour]:[minute]:[second]"))
+                            .map_err(|_| {
+                                CoreError::UnprocessableEntity(
+                                    "error.invalid.range.value".into(),
+                                    HashMap::from([("value".into(), value_str.into())]),
+                                )
+                            })?;
+                        let e = Time::parse(end, format_description!("[hour]:[minute]:[second]"))
+                            .map_err(|_| {
+                            CoreError::UnprocessableEntity(
+                                "error.invalid.range.value".into(),
+                                HashMap::from([("value".into(), value_str.into())]),
+                            )
+                        })?;
+                        Ok(FilterValue::TimeRange(s, e))
+                    }
+                    _ => Err(CoreError::UnprocessableEntity(
+                        "error.invalid.range.datatype".into(),
                         HashMap::from([("value".into(), value_str.into())]),
-                    ))
+                    )),
                 }
             }
-            FilterOperator::Is => {
-                if let Ok(b) = value_str.parse::<bool>() {
+            FilterOperator::Is => match data_type {
+                ValueDataType::Bool => {
+                    let b = value_str.parse::<bool>().map_err(|_| {
+                        CoreError::UnprocessableEntity(
+                            "error.invalid.bool.value".into(),
+                            HashMap::from([("value".into(), value_str.into())]),
+                        )
+                    })?;
                     Ok(FilterValue::Bool(b))
-                } else {
-                    Err(CoreError::UnprocessableEntity(
-                        "error.invalid.bool.value".into(),
-                        HashMap::from([("value".into(), value_str.into())]),
-                    ))
                 }
-            }
+                _ => Err(CoreError::UnprocessableEntity(
+                    "error.invalid.bool.datatype".into(),
+                    HashMap::from([("value".into(), value_str.into())]),
+                )),
+            },
             _ => {
-                if let Ok(i) = value_str.parse::<i32>() {
-                    Ok(FilterValue::Int(i))
-                } else if let Ok(f) = value_str.parse::<f64>() {
-                    Ok(FilterValue::Float(f))
-                } else if let Ok(d) =
-                    Date::parse(value_str, format_description!("[year]-[month]-[day]"))
-                {
-                    Ok(FilterValue::Date(d))
-                } else if let Ok(dt) = OffsetDateTime::parse(value_str, &Rfc3339) {
-                    Ok(FilterValue::DateTime(dt))
-                } else if let Ok(t) =
-                    Time::parse(value_str, format_description!("[hour]:[minute]:[second]"))
-                {
-                    Ok(FilterValue::Time(t))
-                } else {
-                    Ok(FilterValue::String(value_str.into()))
+                // Single value based on dtype
+                match data_type {
+                    ValueDataType::Int => {
+                        let v = value_str.parse::<i32>().map_err(|_| {
+                            CoreError::UnprocessableEntity(
+                                "error.invalid.int.value".into(),
+                                HashMap::from([("value".into(), value_str.into())]),
+                            )
+                        })?;
+                        Ok(FilterValue::Int(v))
+                    }
+                    ValueDataType::Float => {
+                        let v = value_str.parse::<f64>().map_err(|_| {
+                            CoreError::UnprocessableEntity(
+                                "error.invalid.float.value".into(),
+                                HashMap::from([("value".into(), value_str.into())]),
+                            )
+                        })?;
+                        Ok(FilterValue::Float(v))
+                    }
+                    ValueDataType::String => Ok(FilterValue::String(value_str.into())),
+                    ValueDataType::Bool => {
+                        let v = value_str.parse::<bool>().map_err(|_| {
+                            CoreError::UnprocessableEntity(
+                                "error.invalid.bool.value".into(),
+                                HashMap::from([("value".into(), value_str.into())]),
+                            )
+                        })?;
+                        Ok(FilterValue::Bool(v))
+                    }
+                    ValueDataType::Date => {
+                        let v = Date::parse(value_str, format_description!("[year]-[month]-[day]"))
+                            .map_err(|_| {
+                                CoreError::UnprocessableEntity(
+                                    "error.invalid.date.value".into(),
+                                    HashMap::from([("value".into(), value_str.into())]),
+                                )
+                            })?;
+                        Ok(FilterValue::Date(v))
+                    }
+                    ValueDataType::DateTime => {
+                        let v = OffsetDateTime::parse(value_str, &Rfc3339).map_err(|_| {
+                            CoreError::UnprocessableEntity(
+                                "error.invalid.datetime.value".into(),
+                                HashMap::from([("value".into(), value_str.into())]),
+                            )
+                        })?;
+                        Ok(FilterValue::DateTime(v))
+                    }
+                    ValueDataType::Time => {
+                        let v =
+                            Time::parse(value_str, format_description!("[hour]:[minute]:[second]"))
+                                .map_err(|_| {
+                                    CoreError::UnprocessableEntity(
+                                        "error.invalid.time.value".into(),
+                                        HashMap::from([("value".into(), value_str.into())]),
+                                    )
+                                })?;
+                        Ok(FilterValue::Time(v))
+                    }
                 }
             }
         }
@@ -234,31 +414,40 @@ mod tests {
     #[test]
     fn test_parse_single_value() {
         assert_eq!(
-            QueryOptions::parse_value("42", &FilterOperator::Equal).unwrap(),
+            QueryOptions::parse_value("42", &FilterOperator::Equal, ValueDataType::Int).unwrap(),
             FilterValue::Int(42)
         );
         assert_eq!(
-            QueryOptions::parse_value("3.14", &FilterOperator::Equal).unwrap(),
+            QueryOptions::parse_value("3.14", &FilterOperator::Equal, ValueDataType::Float)
+                .unwrap(),
             FilterValue::Float(3.14)
         );
         assert_eq!(
-            QueryOptions::parse_value("true", &FilterOperator::Equal).unwrap(),
+            QueryOptions::parse_value("true", &FilterOperator::Equal, ValueDataType::String)
+                .unwrap(),
             FilterValue::String("true".to_string())
         );
         assert_eq!(
-            QueryOptions::parse_value("true", &FilterOperator::Is).unwrap(),
+            QueryOptions::parse_value("true", &FilterOperator::Is, ValueDataType::Bool).unwrap(),
             FilterValue::Bool(true)
         );
         assert_eq!(
-            QueryOptions::parse_value("2025-07-16", &FilterOperator::Equal).unwrap(),
+            QueryOptions::parse_value("2025-07-16", &FilterOperator::Equal, ValueDataType::Date)
+                .unwrap(),
             FilterValue::Date(Date::from_calendar_date(2025, Month::July, 16).unwrap())
         );
         assert_eq!(
-            QueryOptions::parse_value("2025-07-16T15:30:01Z", &FilterOperator::Equal).unwrap(),
+            QueryOptions::parse_value(
+                "2025-07-16T15:30:01Z",
+                &FilterOperator::Equal,
+                ValueDataType::DateTime
+            )
+            .unwrap(),
             FilterValue::DateTime(datetime!(2025-07-16 15:30:01 UTC))
         );
         assert_eq!(
-            QueryOptions::parse_value("15:30:01", &FilterOperator::Equal).unwrap(),
+            QueryOptions::parse_value("15:30:01", &FilterOperator::Equal, ValueDataType::Time)
+                .unwrap(),
             FilterValue::Time(time!(15:30:01))
         );
     }
@@ -266,15 +455,22 @@ mod tests {
     #[test]
     fn test_parse_range_values() {
         assert_eq!(
-            QueryOptions::parse_value("42|50", &FilterOperator::Between).unwrap(),
+            QueryOptions::parse_value("42|50", &FilterOperator::Between, ValueDataType::Int)
+                .unwrap(),
             FilterValue::IntRange(42, 50)
         );
         assert_eq!(
-            QueryOptions::parse_value("3.14|4.14", &FilterOperator::Between).unwrap(),
+            QueryOptions::parse_value("3.14|4.14", &FilterOperator::Between, ValueDataType::Float)
+                .unwrap(),
             FilterValue::FloatRange(3.14, 4.14)
         );
         assert_eq!(
-            QueryOptions::parse_value("2025-07-16|2025-07-18", &FilterOperator::Between).unwrap(),
+            QueryOptions::parse_value(
+                "2025-07-16|2025-07-18",
+                &FilterOperator::Between,
+                ValueDataType::Date
+            )
+            .unwrap(),
             FilterValue::DateRange(
                 Date::from_calendar_date(2025, Month::July, 16).unwrap(),
                 Date::from_calendar_date(2025, Month::July, 18).unwrap()
@@ -283,7 +479,8 @@ mod tests {
         assert_eq!(
             QueryOptions::parse_value(
                 "2025-07-16T15:30:01Z|2025-07-18T15:30:11Z",
-                &FilterOperator::NotBetween
+                &FilterOperator::NotBetween,
+                ValueDataType::DateTime
             )
             .unwrap(),
             FilterValue::DateTimeRange(
@@ -292,7 +489,12 @@ mod tests {
             )
         );
         assert_eq!(
-            QueryOptions::parse_value("15:30:01|23:10:11", &FilterOperator::NotBetween).unwrap(),
+            QueryOptions::parse_value(
+                "15:30:01|23:10:11",
+                &FilterOperator::NotBetween,
+                ValueDataType::Time
+            )
+            .unwrap(),
             FilterValue::TimeRange(time!(15:30:01), time!(23:10:11))
         );
     }
@@ -300,22 +502,24 @@ mod tests {
     #[test]
     fn test_parse_list_values() {
         assert_eq!(
-            QueryOptions::parse_value("42|50", &FilterOperator::In).unwrap(),
+            QueryOptions::parse_value("42|50", &FilterOperator::In, ValueDataType::Int).unwrap(),
             FilterValue::ListInt(vec![42, 50])
         );
         assert_eq!(
-            QueryOptions::parse_value("3.14|4.14", &FilterOperator::In).unwrap(),
+            QueryOptions::parse_value("3.14|4.14", &FilterOperator::In, ValueDataType::Float)
+                .unwrap(),
             FilterValue::ListFloat(vec![3.14, 4.14])
         );
         assert_eq!(
-            QueryOptions::parse_value("abc|xyz|rst", &FilterOperator::NotIn).unwrap(),
+            QueryOptions::parse_value("abc|xyz|rst", &FilterOperator::NotIn, ValueDataType::String)
+                .unwrap(),
             FilterValue::ListString(vec!["abc".into(), "xyz".into(), "rst".into()])
         );
     }
 
     #[test]
     fn test_parse_single_filter() {
-        let f = QueryOptions::parse_single_filter("age:=:32", true).unwrap();
+        let f = QueryOptions::parse_single_filter("age:=:32:1", true).unwrap();
         assert_eq!(
             f,
             Filter::Property {
@@ -324,7 +528,7 @@ mod tests {
                 value: FilterValue::Int(32)
             }
         );
-        let f = QueryOptions::parse_single_filter("age:is:true", false).unwrap();
+        let f = QueryOptions::parse_single_filter("age:is:true:3", false).unwrap();
         assert_eq!(
             f,
             Filter::Attribute {
@@ -333,7 +537,7 @@ mod tests {
                 value: FilterValue::Bool(true)
             }
         );
-        let f = QueryOptions::parse_single_filter("status:in:active|pending|done", true).unwrap();
+        let f = QueryOptions::parse_single_filter("status:in:active|pending|done:0", true).unwrap();
         assert_eq!(
             f,
             Filter::Property {
@@ -346,8 +550,9 @@ mod tests {
                 ])
             }
         );
-        let f = QueryOptions::parse_single_filter("create_at:between:2025-01-01|2025-12-31", false)
-            .unwrap();
+        let f =
+            QueryOptions::parse_single_filter("create_at:between:2025-01-01|2025-12-31:4", false)
+                .unwrap();
         assert_eq!(
             f,
             Filter::Attribute {
@@ -376,8 +581,8 @@ mod tests {
             sort: Some("+name|-age".into_owned()),
             first_result: Some(0),
             max_results: Some(5),
-            a_filters: Some(vec!["p_name:=:giang".to_owned()]),
-            p_filters: Some(vec!["name:=:hoang".to_owned(), "age:<=:5".to_owned()]),
+            a_filters: Some(vec!["p_name:=:giang:0".to_owned()]),
+            p_filters: Some(vec!["name:=:hoang:0".to_owned(), "age:<=:5:1".to_owned()]),
             search: Some("abc xyz".to_owned()),
         };
         assert_eq!(
@@ -403,5 +608,20 @@ mod tests {
                 }
             ]
         );
+    }
+}
+
+
+impl ValueDataType {
+    pub fn to_code(self) -> u8 {
+        match self {
+            ValueDataType::String => 0,
+            ValueDataType::Int => 1,
+            ValueDataType::Float => 2,
+            ValueDataType::Bool => 3,
+            ValueDataType::Date => 4,
+            ValueDataType::DateTime => 5,
+            ValueDataType::Time => 6,
+        }
     }
 }
