@@ -290,7 +290,14 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
             Self::handle_operator(builder, operator, coerced);
         } else {
             // Default behavior for non-text columns
-            builder.push(format!("{} ", field));
+            // If we're comparing a datetime for equality, align both sides to second precision
+            let use_trunc = matches!(operator, FilterOperator::Equal | FilterOperator::NotEqual)
+                && matches!(value, FilterValue::DateTime(_));
+            if use_trunc {
+                builder.push(format!("date_trunc('second', {}::timestamptz) ", field));
+            } else {
+                builder.push(format!("{} ", field));
+            }
             Self::handle_operator(builder, operator, value);
         }
     }
@@ -319,7 +326,14 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
             FilterValue::Time(_) | FilterValue::TimeRange(_, _) => "time_value",
         };
 
-        builder.push(format!(" AND av.{} ", value_column));
+        // If comparing datetime equality on attribute value, align to seconds on the column side
+        let use_trunc_attr = matches!(operator, FilterOperator::Equal | FilterOperator::NotEqual)
+            && matches!(value, FilterValue::DateTime(_));
+        if use_trunc_attr && value_column == "datetime_value" {
+            builder.push(" AND date_trunc('second', av.datetime_value::timestamptz) ");
+        } else {
+            builder.push(format!(" AND av.{} ", value_column));
+        }
         Self::handle_operator(builder, operator, value);
     }
 
@@ -337,7 +351,7 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
                     FilterValue::Bool(v) => builder.push_bind(v),
                     FilterValue::Float(v) => builder.push_bind(v),
                     FilterValue::Date(v) => builder.push_bind(v),
-                    FilterValue::DateTime(v) => builder.push_bind(v),
+                    FilterValue::DateTime(v) => builder.push("date_trunc('second', ").push_bind(v).push("::timestamptz)"),
                     FilterValue::Time(v) => builder.push_bind(v),
                     _ => unimplemented!("Equal not supported for this value type"),
                 }
@@ -351,7 +365,7 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
                     FilterValue::Bool(v) => builder.push_bind(v),
                     FilterValue::Float(v) => builder.push_bind(v),
                     FilterValue::Date(v) => builder.push_bind(v),
-                    FilterValue::DateTime(v) => builder.push_bind(v),
+                    FilterValue::DateTime(v) => builder.push("date_trunc('second', ").push_bind(v).push("::timestamptz)"),
                     FilterValue::Time(v) => builder.push_bind(v),
                     _ => unimplemented!("NotEqual not supported for this value type"),
                 }
