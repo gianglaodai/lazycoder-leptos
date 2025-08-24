@@ -30,6 +30,30 @@ Of course, you should explore around the project structure, but the best place t
 `cargo leptos watch`  
 By default, you can access your local project at `http://localhost:3000`
 
+## Testing
+
+Use cargo-leptos to run tests across the appropriate targets:
+
+- Run tests: `cargo leptos test`
+- Alternatively, via package script: `npm test`
+- Run SSR-targeted tests explicitly: `cargo leptos test --bin-features ssr --lib-features hydrate --bin-default-features false --lib-default-features false` (or `npm run test:ssr`)
+
+Note: This replaces plain `cargo test`. If you only want to run library/unit tests for the hydration (wasm) target, cargo-leptos handles that automatically. If you encounter SSR compilation issues during cargo-leptos test, run plain `cargo test` for quick local unit checks and open an issue to track SSR test configuration.
+
+## Running with SSR features
+
+cargo-leptos requires a subcommand (e.g., serve, watch, build, test). The top‑level flag form `cargo leptos --features=ssr` is not accepted by cargo-leptos and will fail with "unexpected argument '--features'".
+
+Instead, either rely on the project defaults defined in Cargo.toml [package.metadata.leptos] (bin-features = ["ssr"], lib-features = ["hydrate"]) or pass features to a specific subcommand, for example:
+
+- Serve with SSR: `cargo leptos serve --bin-features ssr --lib-features hydrate --bin-default-features false --lib-default-features false`
+- Watch with SSR: `cargo leptos watch --bin-features ssr --lib-features hydrate --bin-default-features false --lib-default-features false`
+
+You can also use the npm scripts added for convenience:
+
+- `npm run serve:ssr`
+- `npm run watch:ssr`
+
 ## Installing Additional Tools
 
 By default, `cargo-leptos` uses `nightly` Rust, `cargo-generate`, and `sass`. If you run into any trouble, you may need to install one or more of these tools.

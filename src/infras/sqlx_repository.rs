@@ -51,7 +51,9 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
     /// List of columns that are stored as textual types (e.g., text/varchar)
     /// This is used to avoid type-mismatch when a numeric-looking literal is provided for a string column.
     /// Default: empty list.
-    fn get_string_columns(&self) -> Vec<&str> { vec![] }
+    fn get_string_columns(&self) -> Vec<&str> {
+        vec![]
+    }
 
     fn from_orm(orm: Self::Orm) -> Self::Entity;
     async fn find_many(
@@ -63,6 +65,7 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
     ) -> Result<Vec<Self::Entity>, CoreError> {
         let mut query_builder =
             self.build_find_many_query(sort_criteria, first_result, max_results, filters, false);
+        log::info!("{}", query_builder.sql());
         let result = query_builder
             .build_query_as::<Self::Orm>()
             .fetch_all(self.get_pool())
@@ -200,7 +203,7 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
                     query_builder.push("coalesce(").push(col).push(", '')");
                 }
                 query_builder
-                    .push(")) @@ to_tsquery('simple', unaccent(")
+                    .push(")) @@ plainto_tsquery('simple', unaccent(")
                     .push_bind(
                         keyword
                             .split_whitespace()
@@ -217,7 +220,7 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
                         .push(self.get_table_name()).push(".id")
                         .push(" AND av.entity_type = ")
                         .push_bind(self.get_table_name())
-                        .push(" AND to_tsvector('simple', unaccent(coalesce(av.string_value, ''))) @@ to_tsquery('simple', unaccent(")
+                        .push(" AND to_tsvector('simple', unaccent(coalesce(av.string_value, ''))) @@ plainto_tsquery('simple', unaccent(")
                         .push_bind(keyword.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>().join(" | "))
                         .push("))))");
                 }
@@ -271,14 +274,18 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
                 FilterValue::Date(v) => FilterValue::String(v.to_string()),
                 FilterValue::DateTime(v) => FilterValue::String(v.to_string()),
                 FilterValue::Time(v) => FilterValue::String(v.to_string()),
-                FilterValue::IntRange(a,b) => FilterValue::String(format!("{}..{}", a,b)),
-                FilterValue::FloatRange(a,b) => FilterValue::String(format!("{}..{}", a,b)),
-                FilterValue::ListInt(vs) => FilterValue::ListString(vs.into_iter().map(|v| v.to_string()).collect()),
-                FilterValue::ListFloat(vs) => FilterValue::ListString(vs.into_iter().map(|v| v.to_string()).collect()),
+                FilterValue::IntRange(a, b) => FilterValue::String(format!("{}..{}", a, b)),
+                FilterValue::FloatRange(a, b) => FilterValue::String(format!("{}..{}", a, b)),
+                FilterValue::ListInt(vs) => {
+                    FilterValue::ListString(vs.into_iter().map(|v| v.to_string()).collect())
+                }
+                FilterValue::ListFloat(vs) => {
+                    FilterValue::ListString(vs.into_iter().map(|v| v.to_string()).collect())
+                }
                 FilterValue::ListString(vs) => FilterValue::ListString(vs),
-                FilterValue::DateRange(a,b) => FilterValue::String(format!("{}..{}", a, b)),
-                FilterValue::DateTimeRange(a,b) => FilterValue::String(format!("{}..{}", a, b)),
-                FilterValue::TimeRange(a,b) => FilterValue::String(format!("{}..{}", a, b)),
+                FilterValue::DateRange(a, b) => FilterValue::String(format!("{}..{}", a, b)),
+                FilterValue::DateTimeRange(a, b) => FilterValue::String(format!("{}..{}", a, b)),
+                FilterValue::TimeRange(a, b) => FilterValue::String(format!("{}..{}", a, b)),
             };
             Self::handle_operator(builder, operator, coerced);
         } else {
@@ -351,12 +358,12 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
             }
 
             FilterOperator::Like => match value {
-                FilterValue::String(v) => builder.push("LIKE ").push_bind(v),
+                FilterValue::String(v) => builder.push("LIKE ").push_bind(format!("%{}%", v)),
                 _ => unimplemented!("Like only supports string"),
             },
 
             FilterOperator::NotLike => match value {
-                FilterValue::String(v) => builder.push("NOT LIKE ").push_bind(v),
+                FilterValue::String(v) => builder.push("NOT LIKE ").push_bind(format!("%{}%", v)),
                 _ => unimplemented!("NotLike only supports string"),
             },
 

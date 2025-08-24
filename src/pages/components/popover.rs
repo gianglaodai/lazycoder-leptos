@@ -104,7 +104,9 @@ pub fn PopoverContent(
     let _click_listener = {
         let ctx = ctx.clone();
         window_event_listener(leptos::ev::mousedown, move |ev: leptos::ev::MouseEvent| {
-            if !ctx.open.get_untracked() { return; }
+            if !ctx.open.get_untracked() {
+                return;
+            }
             if let Some(container_div) = ctx.container.get_untracked() {
                 if let Some(target) = ev.target() {
                     if let Ok(target_el) = target.dyn_into::<web_sys::Element>() {
@@ -120,16 +122,20 @@ pub fn PopoverContent(
 
     let extra = class.unwrap_or_default();
 
-    let panel_classes = move || crate::cn!(
-        content_base_classes(),
-        extra.clone(),
-        // position classes: below & centered to trigger
-        "absolute left-1/2 top-full mt-2 -translate-x-1/2"
-    );
+    let panel_classes = move || {
+        crate::cn!(
+            content_base_classes(),
+            extra.clone(),
+            // position classes: below & centered to trigger
+            "absolute left-1/2 top-full mt-2 -translate-x-1/2"
+        )
+    };
 
     let classes = move || {
         let mut s = panel_classes();
-        if !ctx.open.get() { s.push_str(" hidden"); }
+        if !ctx.open.get() {
+            s.push_str(" hidden");
+        }
         s
     };
 

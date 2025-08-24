@@ -1,23 +1,14 @@
 use crate::business::error::CoreError;
 use crate::business::filter::{Filter, FilterOperator, FilterValue};
 use crate::business::sort::SortCriterion;
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::str::FromStr;
 use time::format_description::well_known::Rfc3339;
 use time::macros::format_description;
 use time::{Date, OffsetDateTime, Time};
 
-#[derive(Debug, Clone, Copy)]
-pub enum ValueDataType {
-    String,
-    Int,
-    Float,
-    Bool,
-    Date,
-    DateTime,
-    Time,
-}
+use crate::value_data_type::ValueDataType;
 
 impl ValueDataType {
     fn from_code(code_str: &str) -> Result<Self, CoreError> {
@@ -43,7 +34,29 @@ impl ValueDataType {
     }
 }
 
-#[derive(Debug, Deserialize)]
+// Helper to deserialize either a single string or a list of strings into Option<Vec<String>>
+use serde::de::{Deserializer as _, MapAccess, Visitor};
+use serde::Deserializer as SerdeDeserializer;
+
+#[derive(Deserialize)]
+#[serde(untagged)]
+enum StringOrVec {
+    One(String),
+    Many(Vec<String>),
+}
+
+fn deserialize_opt_string_or_seq<'de, D>(deserializer: D) -> Result<Option<Vec<String>>, D::Error>
+where
+    D: SerdeDeserializer<'de>,
+{
+    let opt = Option::<StringOrVec>::deserialize(deserializer)?;
+    Ok(opt.map(|v| match v {
+        StringOrVec::One(s) => vec![s],
+        StringOrVec::Many(v) => v,
+    }))
+}
+
+#[derive(Debug, Serialize, Clone, Eq, PartialEq)]
 pub struct QueryOptions {
     pub first_result: Option<i32>,
     pub max_results: Option<i32>,
@@ -51,6 +64,91 @@ pub struct QueryOptions {
     pub p_filters: Option<Vec<String>>,
     pub a_filters: Option<Vec<String>>,
     pub search: Option<String>,
+}
+
+impl<'de> Deserialize<'de> for QueryOptions {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: SerdeDeserializer<'de>,
+    {
+        struct QueryOptionsVisitor;
+        impl<'de> Visitor<'de> for QueryOptionsVisitor {
+            type Value = QueryOptions;
+            fn expecting(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+                write!(f, "a query options map")
+            }
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            where
+                A: MapAccess<'de>,
+            {
+                let mut first_result: Option<i32> = None;
+                let mut max_results: Option<i32> = None;
+                let mut sort: Option<String> = None;
+                let mut search: Option<String> = None;
+                let mut p_filters: Option<Vec<String>> = None;
+                let mut a_filters: Option<Vec<String>> = None;
+
+                while let Some(key) = map.next_key::<String>()? {
+                    match key.as_str() {
+                        "first_result" => {
+                            // take last occurrence if multiple
+                            first_result = Some(map.next_value()?);
+                        }
+                        "max_results" => {
+                            max_results = Some(map.next_value()?);
+                        }
+                        "sort" => {
+                            sort = Some(map.next_value()?);
+                        }
+                        "search" => {
+                            search = Some(map.next_value()?);
+                        }
+                        "p_filters" => {
+                            let v: StringOrVec = map.next_value()?;
+                            let entry = p_filters.get_or_insert_with(Vec::new);
+                            match v {
+                                StringOrVec::One(s) => entry.push(s),
+                                StringOrVec::Many(mut vs) => entry.append(&mut vs),
+                            }
+                        }
+                        "a_filters" => {
+                            let v: StringOrVec = map.next_value()?;
+                            let entry = a_filters.get_or_insert_with(Vec::new);
+                            match v {
+                                StringOrVec::One(s) => entry.push(s),
+                                StringOrVec::Many(mut vs) => entry.append(&mut vs),
+                            }
+                        }
+                        // Accept bracket-style repeated fields like p_filters[] if any
+                        "p_filters[]" => {
+                            let s: String = map.next_value()?;
+                            let entry = p_filters.get_or_insert_with(Vec::new);
+                            entry.push(s);
+                        }
+                        "a_filters[]" => {
+                            let s: String = map.next_value()?;
+                            let entry = a_filters.get_or_insert_with(Vec::new);
+                            entry.push(s);
+                        }
+                        _ => {
+                            // Ignore unknown fields
+                            let _ = map.next_value::<serde::de::IgnoredAny>()?;
+                        }
+                    }
+                }
+
+                Ok(QueryOptions {
+                    first_result,
+                    max_results,
+                    sort,
+                    p_filters,
+                    a_filters,
+                    search,
+                })
+            }
+        }
+        deserializer.deserialize_map(QueryOptionsVisitor)
+    }
 }
 
 impl QueryOptions {
@@ -62,7 +160,10 @@ impl QueryOptions {
                     .filter_map(|item| SortCriterion::from_str(item).ok())
                     .collect::<Vec<_>>()
             })
-            .unwrap_or_default()
+            .unwrap_or(vec![SortCriterion {
+                field: "id".to_string(),
+                ascending: true,
+            }])
     }
 
     pub fn to_filters(&self) -> Vec<Filter> {
@@ -97,7 +198,10 @@ impl QueryOptions {
     fn parse_single_filter(raw: &str, is_property: bool) -> Result<Filter, CoreError> {
         use crate::business::filter::FilterOperator;
 
-        let parts: Vec<&str> = raw.split(":").collect();
+        // Implement split-based parsing per specification:
+        // - If there are exactly 2 parts, it must be a null/not-null operator: key:operator
+        // - Otherwise, take last as datatype, first two as key/operator, and the middle joined by ':' as value
+        let parts: Vec<&str> = raw.split(':').collect();
         if parts.len() < 2 {
             return Err(CoreError::UnprocessableEntity(
                 "error.filters.invalid.format",
@@ -105,10 +209,37 @@ impl QueryOptions {
             ));
         }
 
-        let key = parts[0].to_string();
-        let operator_str = parts[1];
-        let value_str_opt = parts.get(2).copied();
-        let dtype_opt = parts.get(3).copied();
+        let (key, operator_str, value_str_opt, dtype_opt): (String, &str, Option<String>, Option<&str>) = if parts.len() == 2 {
+            let key = parts[0].to_string();
+            let operator_str = parts[1];
+            if operator_str == "=null" || operator_str == "is_null" || operator_str == "!null" || operator_str == "not_null" {
+                (key, operator_str, None, None)
+            } else {
+                return Err(CoreError::UnprocessableEntity(
+                    "error.filters.invalid.format",
+                    HashMap::from([("filter".to_string(), raw.to_string())]),
+                ));
+            }
+        } else if parts.len() >= 4 {
+            let key = parts[0].to_string();
+            let operator_str = parts[1];
+            let dtype_str = parts.last().copied();
+            let value_joined = parts[2..parts.len() - 1].join(":");
+            (key, operator_str, Some(value_joined), dtype_str)
+        } else {
+            // len() == 3 -> treat as missing datatype; otherwise invalid format
+            if parts.len() == 3 {
+                return Err(CoreError::UnprocessableEntity(
+                    "error.filters.missing.datatype".into(),
+                    HashMap::from([( "filter".into(), raw.into() )]),
+                ));
+            } else {
+                return Err(CoreError::UnprocessableEntity(
+                    "error.filters.invalid.format",
+                    HashMap::from([("filter".to_string(), raw.to_string())]),
+                ));
+            }
+        };
 
         let operator = match operator_str {
             "=" | "eq" | "" => FilterOperator::Equal,
@@ -137,7 +268,7 @@ impl QueryOptions {
         let value = match operator {
             FilterOperator::IsNull | FilterOperator::NotNull => FilterValue::Bool(true),
             _ => {
-                let value_str = value_str_opt.ok_or_else(|| {
+                let value_str = value_str_opt.as_deref().ok_or_else(|| {
                     CoreError::UnprocessableEntity(
                         "error.filters.invalid.format",
                         HashMap::from([("filter".to_string(), raw.to_string())]),
@@ -576,6 +707,60 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_single_filter_datetime() {
+        // Single DateTime equality as property filter
+        let f = QueryOptions::parse_single_filter(
+            "created_at:=:2025-07-16T15:30:01Z:5",
+            true,
+        )
+        .unwrap();
+        assert_eq!(
+            f,
+            Filter::Property {
+                property_name: "created_at".to_string(),
+                operator: FilterOperator::Equal,
+                value: FilterValue::DateTime(datetime!(2025-07-16 15:30:01 UTC))
+            }
+        );
+
+        // DateTime range (between) as attribute filter
+        let f = QueryOptions::parse_single_filter(
+            "created_at:between:2025-07-16T15:30:01Z|2025-07-18T15:30:11Z:5",
+            false,
+        )
+        .unwrap();
+        assert_eq!(
+            f,
+            Filter::Attribute {
+                attr_name: "created_at".to_string(),
+                operator: FilterOperator::Between,
+                value: FilterValue::DateTimeRange(
+                    datetime!(2025-07-16 15:30:01 UTC),
+                    datetime!(2025-07-18 15:30:11 UTC)
+                )
+            }
+        );
+
+        // NotBetween DateTime as property filter
+        let f = QueryOptions::parse_single_filter(
+            "updated_at:!bw:2025-07-16T00:00:00Z|2025-07-17T00:00:00Z:5",
+            true,
+        )
+        .unwrap();
+        assert_eq!(
+            f,
+            Filter::Property {
+                property_name: "updated_at".to_string(),
+                operator: FilterOperator::NotBetween,
+                value: FilterValue::DateTimeRange(
+                    datetime!(2025-07-16 00:00:00 UTC),
+                    datetime!(2025-07-17 00:00:00 UTC)
+                )
+            }
+        );
+    }
+
+    #[test]
     fn test_to_filter() {
         let query = QueryOptions {
             sort: Some("+name|-age".into_owned()),
@@ -608,20 +793,5 @@ mod tests {
                 }
             ]
         );
-    }
-}
-
-
-impl ValueDataType {
-    pub fn to_code(self) -> u8 {
-        match self {
-            ValueDataType::String => 0,
-            ValueDataType::Int => 1,
-            ValueDataType::Float => 2,
-            ValueDataType::Bool => 3,
-            ValueDataType::Date => 4,
-            ValueDataType::DateTime => 5,
-            ValueDataType::Time => 6,
-        }
     }
 }

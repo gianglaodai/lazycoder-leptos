@@ -1,36 +1,22 @@
 use leptos::prelude::*;
-use leptos_router::hooks::{use_navigate, use_query_map};
 
-use crate::pages::components::{Input, Select};
-use crate::presentation::query_options::ValueDataType;
+use crate::pages::components::{DatePicker, DateTimePicker, Input, Select, TimePicker};
+use crate::value_data_type::ValueDataType;
 
 /// ColumnFilter renders operator Select + value Input for a given field
-/// It synchronizes with URL query params and preserves sort/search when updating p_filters
+/// Now a dumb component: parent provides current operator/value signals and change callbacks
 #[component]
 pub fn ColumnFilter(
     field_name: String,
     field_datatype: ValueDataType,
-    max_results: i64,
+    // provided by parent (DataTable)
+    operator: Signal<String>,
+    value: Signal<String>,
+    on_operator_change: Callback<String, ()>,
+    on_value_change: Callback<String, ()>,
     #[prop(into, optional)] class: Option<String>,
 ) -> impl IntoView {
     let class = class.unwrap_or_else(|| "flex items-center gap-1".to_string());
-
-    let query = use_query_map();
-    let navigate = use_navigate();
-
-    // Read helpers from query
-    let current_sort =
-        move || query.with(|q| q.get("sort").map(|s| s.to_string()).unwrap_or_default());
-    let current_search =
-        move || query.with(|q| q.get("search").map(|s| s.to_string()).unwrap_or_default());
-    let current_pfilter_raw = move || {
-        query.with(|q| {
-            q.get("p_filters")
-                .map(|s| s.to_string())
-                .unwrap_or_default()
-        })
-    };
-    // helpers: none; we'll parse directly where needed to avoid move issues
 
     // Operator options by datatype (minimal set for now)
     let op_options = move || -> Vec<(&'static str, &'static str)> {
@@ -44,32 +30,12 @@ pub fn ColumnFilter(
         <div class=class>
             <Select
                 class="h-7 text-xs w-16"
-                value=Signal::derive({
-                    let field_for_op = field_name.clone();
-                    move || {
-                        let raw = current_pfilter_raw();
-                        if raw.is_empty() { return "=".to_string(); }
-                        let parts: Vec<&str> = raw.splitn(4, ':').collect();
-                        if parts.len() >= 2 && parts[0] == field_for_op { parts[1].to_string() } else { "=".to_string() }
-                    }
-                })
+                value=operator
                 on_change=Callback::new({
-                    let navigate5 = navigate.clone();
-                    let field = field_name.clone();
+                    let on_op = on_operator_change.clone();
                     move |ev: leptos::ev::Event| {
                         let op = event_target_value(&ev);
-                        let raw = current_pfilter_raw();
-                        let vcur = if raw.is_empty() { String::new() } else {
-                            let parts: Vec<&str> = raw.splitn(4, ':').collect();
-                            if parts.len() >= 3 && parts[0] == field { parts[2].to_string() } else { String::new() }
-                        };
-                        let mut url = format!("?first_result=0&max_results={}", max_results);
-                        let s = current_sort();
-                        if !s.is_empty() { url.push_str(&format!("&sort={}", s)); }
-                        let q = current_search();
-                        if !q.is_empty() { url.push_str(&format!("&search={}", q)); }
-                        if !vcur.is_empty() { url.push_str(&format!("&p_filters={}:{}:{}:{}", field, op, vcur, field_datatype.to_code())); }
-                        let _ = navigate5(&url, Default::default());
+                        on_op.run(op);
                     }
                 })
             >
@@ -82,40 +48,126 @@ pub fn ColumnFilter(
                     vs.into_view()
                 }}}
             </Select>
-            <Input
-                placeholder="Filter..."
-                class="h-7 text-xs"
-                value=Signal::derive({
-                                    let field_for_val = field_name.clone();
-                                    move || {
-                                        let raw = current_pfilter_raw();
-                                        if raw.is_empty() { return String::new(); }
-                                        let parts: Vec<&str> = raw.splitn(4, ':').collect();
-                                        if parts.len() >= 3 && parts[0] == field_for_val { parts[2].to_string() } else { String::new() }
+            { // render value input based on datatype
+                match field_datatype {
+                    ValueDataType::String => {
+                        view! {
+                            <Input
+                                placeholder="Filter..."
+                                class="h-7 text-xs"
+                                value=value
+                                on_input=Callback::new({
+                                    let on_val = on_value_change.clone();
+                                    move |ev: leptos::ev::Event| {
+                                        on_val.run(event_target_value(&ev));
                                     }
                                 })
-                on_input=Callback::new({
-                    let navigate4 = navigate.clone();
-                    let field = field_name.clone();
-                    move |ev: leptos::ev::Event| {
-                        let v = event_target_value(&ev);
-                        let mut url = format!("?first_result=0&max_results={}", max_results);
-                        let s = current_sort();
-                        if !s.is_empty() { url.push_str(&format!("&sort={}", s)); }
-                        let q = current_search();
-                        if !q.is_empty() { url.push_str(&format!("&search={}", q)); }
-                        if !v.is_empty() {
-                            let raw = current_pfilter_raw();
-                            let op = if raw.is_empty() { "=".to_string() } else {
-                                let parts: Vec<&str> = raw.splitn(4, ':').collect();
-                                if parts.len() >= 2 && parts[0] == field { parts[1].to_string() } else { "=".to_string() }
-                            };
-                            url.push_str(&format!("&p_filters={}:{}:{}:{}", field, op, v, field_datatype.to_code()));
-                        }
-                        let _ = navigate4(&url, Default::default());
+                            />
+                        }.into_any()
                     }
-                })
-            />
+                    ValueDataType::Int => {
+                        view! {
+                            <Input
+                                placeholder="0"
+                                class="h-7 text-xs w-24"
+                                r#type="number"
+                                value=value
+                                on_input=Callback::new({
+                                    let on_val = on_value_change.clone();
+                                    move |ev: leptos::ev::Event| {
+                                        on_val.run(event_target_value(&ev));
+                                    }
+                                })
+                            />
+                        }.into_any()
+                    }
+                    ValueDataType::Float => {
+                        view! {
+                            <Input
+                                placeholder="0.0"
+                                class="h-7 text-xs w-28"
+                                r#type="number"
+                                value=value
+                                on_input=Callback::new({
+                                    let on_val = on_value_change.clone();
+                                    move |ev: leptos::ev::Event| {
+                                        on_val.run(event_target_value(&ev));
+                                    }
+                                })
+                            />
+                        }.into_any()
+                    }
+                    ValueDataType::Bool => {
+                        view! {
+                            <Select
+                                class="h-7 text-xs w-20"
+                                value=value
+                                on_change=Callback::new({
+                                    let on_val = on_value_change.clone();
+                                    move |ev: leptos::ev::Event| {
+                                        on_val.run(event_target_value(&ev));
+                                    }
+                                })
+                            >
+                                <option value="">{""}</option>
+                                <option value="true">{"true"}</option>
+                                <option value="false">{"false"}</option>
+                            </Select>
+                        }.into_any()
+                    }
+                    ValueDataType::Date => {
+                        view! {
+                            <DatePicker
+                                on_change=Callback::new({
+                                    let on_val = on_value_change.clone();
+                                    move |d: time::Date| {
+                                        let v = format!("{:04}-{:02}-{:02}", d.year(), d.month() as u8, d.day());
+                                        on_val.run(v);
+                                    }
+                                })
+                                placeholder="Pick a date"
+                                class="h-7 text-xs"
+                            />
+                        }.into_any()
+                    }
+                    ValueDataType::DateTime => {
+                        view! {
+                            <DateTimePicker
+                                caption_layout=crate::pages::components::calendar::CaptionLayout::Dropdown
+                                on_change=Callback::new({
+                                    let on_val = on_value_change.clone();
+                                    move |dt: time::PrimitiveDateTime| {
+                                        let d = dt.date();
+                                        let t = dt.time();
+                                        let v = format!(
+                                            "{:04}-{:02}-{:02}T{:02}:{:02}:{:02}Z",
+                                            d.year(), d.month() as u8, d.day(), t.hour(), t.minute(), t.second()
+                                        );
+                                        on_val.run(v);
+                                    }
+                                })
+                                placeholder="Pick date & time"
+                                class="h-7 text-xs"
+                            />
+                        }.into_any()
+                    }
+                    ValueDataType::Time => {
+                        view! {
+                            <TimePicker
+                                on_change=Callback::new({
+                                    let on_val = on_value_change.clone();
+                                    move |t: time::Time| {
+                                        let v = format!("{:02}:{:02}:{:02}", t.hour(), t.minute(), t.second());
+                                        on_val.run(v);
+                                    }
+                                })
+                                placeholder="Pick time"
+                                class="h-7 text-xs"
+                            />
+                        }.into_any()
+                    }
+                }
+            }
         </div>
     }
 }

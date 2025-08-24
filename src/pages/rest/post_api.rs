@@ -128,11 +128,19 @@ pub async fn create_post(title: String, user_id: i32) -> Result<PostTO, ServerFn
     let session = req.get_session();
     let role: Option<String> = match session.get("role") {
         Ok(v) => v,
-        Err(_) => return Err(ServerFnError::ServerError(CoreError::unauthorized("error.missing_session").to_json())),
+        Err(_) => {
+            return Err(ServerFnError::ServerError(
+                CoreError::unauthorized("error.missing_session").to_json(),
+            ))
+        }
     };
     match role.as_deref() {
         Some("ADMIN") => {}
-        _ => return Err(ServerFnError::ServerError(CoreError::forbidden("error.forbidden").to_json())),
+        _ => {
+            return Err(ServerFnError::ServerError(
+                CoreError::forbidden("error.forbidden").to_json(),
+            ))
+        }
     }
 
     let state: actix_web::web::Data<AppState> = extract().await?;
@@ -164,11 +172,19 @@ pub async fn update_post(post: PostTO) -> Result<PostTO, ServerFnError> {
     let session = req.get_session();
     let role: Option<String> = match session.get("role") {
         Ok(v) => v,
-        Err(_) => return Err(ServerFnError::ServerError(CoreError::unauthorized("error.missing_session").to_json())),
+        Err(_) => {
+            return Err(ServerFnError::ServerError(
+                CoreError::unauthorized("error.missing_session").to_json(),
+            ))
+        }
     };
     match role.as_deref() {
         Some("ADMIN") => {}
-        _ => return Err(ServerFnError::ServerError(CoreError::forbidden("error.forbidden").to_json())),
+        _ => {
+            return Err(ServerFnError::ServerError(
+                CoreError::forbidden("error.forbidden").to_json(),
+            ))
+        }
     }
 
     let state: actix_web::web::Data<AppState> = extract().await?;
@@ -193,11 +209,19 @@ pub async fn delete_post(id: i32) -> Result<u64, ServerFnError> {
     let session = req.get_session();
     let role: Option<String> = match session.get("role") {
         Ok(v) => v,
-        Err(_) => return Err(ServerFnError::ServerError(CoreError::unauthorized("error.missing_session").to_json())),
+        Err(_) => {
+            return Err(ServerFnError::ServerError(
+                CoreError::unauthorized("error.missing_session").to_json(),
+            ))
+        }
     };
     match role.as_deref() {
         Some("ADMIN") => {}
-        _ => return Err(ServerFnError::ServerError(CoreError::forbidden("error.forbidden").to_json())),
+        _ => {
+            return Err(ServerFnError::ServerError(
+                CoreError::forbidden("error.forbidden").to_json(),
+            ))
+        }
     }
 
     let state: actix_web::web::Data<AppState> = extract().await?;
@@ -218,7 +242,9 @@ pub async fn load_post_by_id(id: i32) -> Result<PostTO, ServerFnError> {
     let result = state.post_service.get_by_id(id).await;
     match result {
         Ok(Some(p)) => Ok(PostTO::from(p)),
-        Ok(None) => Err(ServerFnError::ServerError(CoreError::not_found("error.post_not_found").to_json())),
+        Ok(None) => Err(ServerFnError::ServerError(
+            CoreError::not_found("error.post_not_found").to_json(),
+        )),
         Err(e) => Err(ServerFnError::ServerError(e.to_json())),
     }
 }

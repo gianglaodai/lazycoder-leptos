@@ -1,8 +1,8 @@
 use leptos::prelude::*;
 use time::{Date, PrimitiveDateTime, Time};
 
-use crate::pages::components::button::{Button, ButtonVariant, ButtonSize};
-use crate::pages::components::calendar::Calendar;
+use crate::pages::components::button::{Button, ButtonVariant};
+use crate::pages::components::calendar::{Calendar, CaptionLayout};
 use crate::pages::components::popover::{Popover, PopoverContent, PopoverTrigger};
 
 fn calendar_clock_icon() -> impl IntoView {
@@ -19,7 +19,14 @@ fn calendar_clock_icon() -> impl IntoView {
 }
 
 fn format_datetime(dt: PrimitiveDateTime) -> String {
-    format!("{:04}-{:02}-{:02} {:02}:{:02}", dt.date().year(), dt.date().month() as u8, dt.date().day(), dt.time().hour(), dt.time().minute())
+    format!(
+        "{:04}-{:02}-{:02} {:02}:{:02}",
+        dt.date().year(),
+        dt.date().month() as u8,
+        dt.date().day(),
+        dt.time().hour(),
+        dt.time().minute()
+    )
 }
 
 fn col_container_cls() -> &'static str {
@@ -27,9 +34,13 @@ fn col_container_cls() -> &'static str {
 }
 
 fn item_btn_cls(active: bool) -> String {
-    let base = "w-14 rounded-sm px-2 py-1 text-sm text-left hover:bg-accent hover:text-accent-foreground";
+    let base =
+        "w-14 rounded-sm px-2 py-1 text-sm text-left hover:bg-accent hover:text-accent-foreground";
     if active {
-        crate::cn!(base, "bg-primary text-primary-foreground hover:bg-primary/90")
+        crate::cn!(
+            base,
+            "bg-primary text-primary-foreground hover:bg-primary/90"
+        )
     } else {
         base.to_string()
     }
@@ -44,12 +55,15 @@ pub fn DateTimePicker(
     #[prop(into, optional)] class: Option<String>,
     #[prop(optional, default = 5)] minute_step: u8,
     #[prop(into, optional)] date_disabled: Option<Callback<Date, bool>>,
+    #[prop(optional, default = CaptionLayout::Label)] caption_layout: CaptionLayout,
 ) -> impl IntoView {
     // Internal state: separate date and time selections
     let (sel_sig, set_sel) = match selected {
         Some(sig) => {
             let setter = Callback::new(move |dt: Option<PrimitiveDateTime>| {
-                if let (Some(cb), Some(v)) = (&on_change, dt) { cb.run(v); }
+                if let (Some(cb), Some(v)) = (&on_change, dt) {
+                    cb.run(v);
+                }
             });
             (sig, setter)
         }
@@ -58,7 +72,9 @@ pub fn DateTimePicker(
             let cb = on_change.clone();
             let setter = Callback::new(move |dt: Option<PrimitiveDateTime>| {
                 set.set(dt);
-                if let (Some(cb), Some(v)) = (&cb, dt) { cb.run(v); }
+                if let (Some(cb), Some(v)) = (&cb, dt) {
+                    cb.run(v);
+                }
             });
             (s.into(), setter)
         }
@@ -71,11 +87,9 @@ pub fn DateTimePicker(
     let (time_sig, set_time) = signal::<Option<Time>>(sel_sig.get_untracked().map(|d| d.time()));
 
     // When either part changes, push combined selection
-    let propagate = move || {
-        match (date_sig.get_untracked(), time_sig.get_untracked()) {
-            (Some(d), Some(t)) => set_sel.run(Some(PrimitiveDateTime::new(d, t))),
-            _ => set_sel.run(None),
-        }
+    let propagate = move || match (date_sig.get_untracked(), time_sig.get_untracked()) {
+        (Some(d), Some(t)) => set_sel.run(Some(PrimitiveDateTime::new(d, t))),
+        _ => set_sel.run(None),
     };
 
     let on_select_date = {
@@ -97,14 +111,21 @@ pub fn DateTimePicker(
     };
 
     let placeholder_text = placeholder.unwrap_or_else(|| "Pick date & time".to_string());
-    let trigger_classes = move || crate::cn!(
-        "w-[300px] justify-start text-left font-normal",
-        class.clone().unwrap_or_default()
-    );
+    let class_for_trigger = class.clone();
+    let trigger_classes = move || {
+        crate::cn!(
+            "w-[300px] justify-start text-left font-normal",
+            class_for_trigger.clone().unwrap_or_default()
+        )
+    };
 
     // Build hours/mins just like TimePicker
     let hours: Vec<u8> = (0..=23).collect();
-    let step = if minute_step == 0 { 1 } else { minute_step.min(30) };
+    let step = if minute_step == 0 {
+        1
+    } else {
+        minute_step.min(30)
+    };
     let minutes: Vec<u8> = (0..60).step_by(step as usize).map(|m| m as u8).collect();
 
     let selected_hour = Memo::new(move |_| time_sig.get().map(|t| t.hour()));
@@ -116,62 +137,85 @@ pub fn DateTimePicker(
         Callback::new(move |d: Date| disabled_opt.as_ref().map(|cb| cb.run(d)).unwrap_or(false))
     };
 
+    // Time input text binding (HH:MM:SS)
+    let (time_text, set_time_text) = signal(String::new());
+    create_effect(move |_| {
+        if let Some(t) = time_sig.get() {
+            set_time_text.set(format!("{:02}:{:02}:{:02}", t.hour(), t.minute(), t.second()));
+        } else {
+            set_time_text.set(String::new());
+        }
+    });
+
+    // Parse input "HH:MM" or "HH:MM:SS"
+    fn parse_time_str(s: &str) -> Option<Time> {
+        let parts: Vec<&str> = s.split(':').collect();
+        if parts.len() < 2 { return None; }
+        let h: u8 = parts.get(0)?.parse().ok()?;
+        let m: u8 = parts.get(1)?.parse().ok()?;
+        let sec: u8 = if let Some(p) = parts.get(2) { p.parse().ok()? } else { 0 };
+        Time::from_hms(h, m, sec).ok()
+    }
+
+    let class_for_input = class.clone();
+    let input_classes = move || {
+        crate::cn!(
+            "flex w-full rounded-md border border-input bg-background px-3 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 disabled:cursor-not-allowed disabled:opacity-50 h-9 py-1",
+            "appearance-none [&::-webkit-calendar-picker-indicator]:hidden [&::-webkit-calendar-picker-indicator]:appearance-none",
+            class_for_input.clone().unwrap_or_default()
+        )
+    };
+
+    let date_button_label = move || {
+        match date_sig.get() {
+            Some(d) => format!("{:04}-{:02}-{:02}", d.year(), d.month() as u8, d.day()),
+            None => "Select date".to_string(),
+        }
+    };
+
     view! {
-        <Popover open=open.into() on_open_change=Callback::new(move |v| set_open.set(v))>
-            <PopoverTrigger>
-                <Button variant=ButtonVariant::Outline class=trigger_classes() size=ButtonSize::Default>
-                    {calendar_clock_icon()}
-                    <span class="ml-2">
-                        {move || match sel_sig.get() {
-                            Some(dt) => format_datetime(dt),
-                            None => placeholder_text.clone(),
-                        }}
-                    </span>
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent class="p-0">
-                <div class="p-3">
-                    <Calendar selected=date_sig on_change=on_select_date disabled=disabled_fn />
-                    <div class="mt-3 flex gap-3">
-                        <div>
-                            <div class="mb-2 text-xs text-muted-foreground">{"Hour"}</div>
-                            <div class=col_container_cls()>
-                                {hours.into_iter().map(|h| {
-                                    let is_active = move || selected_hour.get().map(|v| v == h).unwrap_or(false);
-                                    view!{
-                                        <button
-                                            class=move || item_btn_cls(is_active())
-                                            on:click=move |_| {
-                                                let m = selected_min.get().unwrap_or(0);
-                                                let t = Time::from_hms(h, m, 0).unwrap_or(Time::from_hms(0,0,0).unwrap());
-                                                on_select_time.run(t);
-                                            }
-                                        >{format!("{:02}", h)}</button>
-                                    }
-                                }).collect_view()}
-                            </div>
-                        </div>
-                        <div>
-                            <div class="mb-2 text-xs text-muted-foreground">{"Minute"}</div>
-                            <div class=col_container_cls()>
-                                {minutes.into_iter().map(|m| {
-                                    let is_active = move || selected_min.get().map(|v| v == m).unwrap_or(false);
-                                    view!{
-                                        <button
-                                            class=move || item_btn_cls(is_active())
-                                            on:click=move |_| {
-                                                let h = selected_hour.get().unwrap_or(0);
-                                                let t = Time::from_hms(h, m, 0).unwrap_or(Time::from_hms(0,0,0).unwrap());
-                                                on_select_time.run(t);
-                                            }
-                                        >{format!("{:02}", m)}</button>
-                                    }
-                                }).collect_view()}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </PopoverContent>
-        </Popover>
+        <div class="flex gap-4">
+            <div class="flex flex-col gap-3">
+                <crate::pages::components::Label class="px-1">{"Date"}</crate::pages::components::Label>
+                <Popover open=open.into() on_open_change=Callback::new(move |v| set_open.set(v))>
+                    <PopoverTrigger>
+                        {let class_for_button = class.clone();
+                        view!{<Button variant=ButtonVariant::Outline class=crate::cn!("w-32 justify-between font-normal", class_for_button.clone().unwrap_or_default())>
+                            {move || date_button_label()}
+                            <span class="ml-2">{"▾"}</span>
+                        </Button>}}
+                    </PopoverTrigger>
+                    <PopoverContent class="w-auto overflow-hidden p-0">
+                        <Calendar
+                            selected=date_sig
+                            on_change={
+                                let set_open = set_open.clone();
+                                Callback::new(move |d: Date| { set_date.set(Some(d)); propagate(); set_open.set(false); })
+                            }
+                            disabled=disabled_fn
+                            caption_layout=caption_layout
+                            show_navigation=matches!(caption_layout, CaptionLayout::Label)
+                        />
+                    </PopoverContent>
+                </Popover>
+            </div>
+            <div class="flex flex-col gap-3">
+                <crate::pages::components::Label class="px-1">{"Time"}</crate::pages::components::Label>
+                <input
+                    class=input_classes()
+                    r#type="time"
+                    step="1"
+                    placeholder=placeholder_text
+                    prop:value=time_text
+                    on:input=move |ev| {
+                        let v = event_target_value(&ev);
+                        set_time_text.set(v.clone());
+                        if let Some(t) = parse_time_str(&v) {
+                            on_select_time.run(t);
+                        }
+                    }
+                />
+            </div>
+        </div>
     }
 }

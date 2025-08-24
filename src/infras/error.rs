@@ -7,7 +7,10 @@ impl From<sqlx::Error> for CoreError {
         // Log details about the SQLx error for diagnostics
         match &error {
             sqlx::Error::Database(db_err) => {
-                let code = db_err.code().map(|c| c.to_string()).unwrap_or("".to_string());
+                let code = db_err
+                    .code()
+                    .map(|c| c.to_string())
+                    .unwrap_or("".to_string());
                 let constraint = db_err.constraint().unwrap_or("");
                 // message() is human-readable DB message
                 log::error!(

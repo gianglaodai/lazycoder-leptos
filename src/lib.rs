@@ -16,6 +16,7 @@ pub mod routes;
 pub mod state;
 
 pub mod utils;
+pub mod value_data_type;
 
 #[cfg(feature = "hydrate")]
 #[wasm_bindgen::prelude::wasm_bindgen]

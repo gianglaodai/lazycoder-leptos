@@ -3,7 +3,11 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "start": "bunx tailwindcss -i style/tailwind.css -o style/main.css --watch"
+    "start": "bunx tailwindcss -i style/tailwind.css -o style/main.css --watch",
+    "test": "cargo leptos test",
+    "test:ssr": "cargo leptos test --bin-features ssr --lib-features hydrate --bin-default-features false --lib-default-features false",
+    "serve:ssr": "cargo leptos serve --bin-features ssr --lib-features hydrate --bin-default-features false --lib-default-features false",
+    "watch:ssr": "cargo leptos watch --bin-features ssr --lib-features hydrate --bin-default-features false --lib-default-features false"
   },
   "devDependencies": {
     "@tailwindcss/cli": "^4.1.11",

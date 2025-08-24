@@ -1,8 +1,8 @@
+use crate::business::error::CoreError;
 use crate::business::user_service::User;
 use crate::define_to_with_common_fields_fe;
-use leptos::prelude::*;
 use leptos::prelude::ServerFnError;
-use crate::business::error::CoreError;
+use leptos::prelude::*;
 
 define_to_with_common_fields_fe!(User {
     pub username: String,
@@ -69,11 +69,7 @@ pub async fn login(
 
     // Use AuthService to authenticate
     let state: actix_web::web::Data<AppState> = extract().await?;
-    let user = match state
-        .auth_service
-        .login(username_or_email, password)
-        .await
-    {
+    let user = match state.auth_service.login(username_or_email, password).await {
         Ok(u) => UserTO::from(u),
         Err(e) => return Err(ServerFnError::ServerError(e.to_json())),
     };
@@ -84,17 +80,21 @@ pub async fn login(
     let session = req.get_session();
     // Store full user in session so client can avoid extra me() calls
     if let Err(_) = session.insert("user", &user) {
-        return Err(ServerFnError::ServerError(CoreError::unauthorized("error.cant_store_session").to_json()));
+        return Err(ServerFnError::ServerError(
+            CoreError::unauthorized("error.cant_store_session").to_json(),
+        ));
     }
     // Keep role for backward compatibility
     if let Err(_) = session.insert(
-            "role",
-            match role {
-                UserRole::ADMIN => "ADMIN",
-                UserRole::USER => "USER",
-            },
-        ) {
-        return Err(ServerFnError::ServerError(CoreError::unauthorized("error.cant_store_session").to_json()));
+        "role",
+        match role {
+            UserRole::ADMIN => "ADMIN",
+            UserRole::USER => "USER",
+        },
+    ) {
+        return Err(ServerFnError::ServerError(
+            CoreError::unauthorized("error.cant_store_session").to_json(),
+        ));
     }
     session.insert("remember", remember).ok();
     Ok(user)
@@ -109,12 +109,18 @@ pub async fn me() -> Result<UserRole, ServerFnError> {
     let session = req.get_session();
     let role: Option<String> = match session.get("role") {
         Ok(v) => v,
-        Err(_) => return Err(ServerFnError::ServerError(CoreError::unauthorized("error.missing_session").to_json())),
+        Err(_) => {
+            return Err(ServerFnError::ServerError(
+                CoreError::unauthorized("error.missing_session").to_json(),
+            ))
+        }
     };
     match role.as_deref() {
         Some("ADMIN") => Ok(UserRole::ADMIN),
         Some("USER") => Ok(UserRole::USER),
-        _ => Err(ServerFnError::ServerError(CoreError::unauthorized("error.unauthorized").to_json())),
+        _ => Err(ServerFnError::ServerError(
+            CoreError::unauthorized("error.unauthorized").to_json(),
+        )),
     }
 }
 
@@ -127,7 +133,11 @@ pub async fn current_user() -> Result<Option<UserTO>, ServerFnError> {
     let session = req.get_session();
     let user: Option<UserTO> = match session.get("user") {
         Ok(v) => v,
-        Err(_) => return Err(ServerFnError::ServerError(CoreError::unauthorized("error.missing_session").to_json())),
+        Err(_) => {
+            return Err(ServerFnError::ServerError(
+                CoreError::unauthorized("error.missing_session").to_json(),
+            ))
+        }
     };
     Ok(user)
 }

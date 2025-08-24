@@ -1,11 +1,14 @@
 use leptos::prelude::*;
+use leptos::web_sys::window;
+use leptos_router::hooks::{use_navigate, use_query_map};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 
 use crate::pages::components::{
-    button::ButtonIntent, button::ButtonVariant, Button, Checkbox, Input, Paginator, Table,
-    TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow,
+    button::ButtonIntent, button::ButtonVariant, Button, Checkbox, ColumnFilter, Input, Paginator,
+    Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow,
 };
+use crate::value_data_type::ValueDataType;
 
 /// DataTable (shadcn style)
 ///
@@ -15,10 +18,14 @@ use crate::pages::components::{
 /// - Footer with right-aligned pagination
 ///
 /// Props remain compatible with previous implementation for minimal integration changes.
+type FieldName = String;
+type FieldLabel = String;
+type FieldValue = String;
+type Row = HashMap<FieldName, FieldValue>;
 #[component]
 pub fn DataTable(
-    field_definitions: Vec<(String, String)>,
-    rows: Vec<HashMap<String, String>>,
+    field_definitions: Vec<(FieldName, FieldLabel, ValueDataType)>,
+    rows: Vec<Row>,
     total_entities: i64,
     #[prop(optional, default = 0)] first_result: i64,
     #[prop(optional, default = 5)] max_results: i64,
@@ -36,11 +43,11 @@ pub fn DataTable(
     // Prepare header labels and field order
     let headers: Vec<String> = field_definitions
         .iter()
-        .map(|(_, label)| label.clone())
+        .map(|(_, label, _)| label.clone())
         .collect();
     let fields: Vec<String> = field_definitions
         .iter()
-        .map(|(name, _)| name.clone())
+        .map(|(name, _, _)| name.clone())
         .collect();
 
     // Selection state keyed by a unique field (id preferred, else first field)
@@ -66,14 +73,23 @@ pub fn DataTable(
     let any_selected = Memo::new({
         let selected = selected.read_only();
         let row_ids = row_ids.clone();
-        move |_| row_ids.iter().any(|id| id.as_ref().is_some_and(|k| selected.get().contains(k)))
+        move |_| {
+            row_ids
+                .iter()
+                .any(|id| id.as_ref().is_some_and(|k| selected.get().contains(k)))
+        }
     });
     let all_selected = Memo::new({
         let selected = selected.read_only();
         let row_ids = row_ids.clone();
         move |_| {
-            if all_count == 0 { return false; }
-            row_ids.iter().filter_map(|id| id.as_ref()).all(|k| selected.get().contains(k))
+            if all_count == 0 {
+                return false;
+            }
+            row_ids
+                .iter()
+                .filter_map(|id| id.as_ref())
+                .all(|k| selected.get().contains(k))
         }
     });
     let indeterminate = Memo::new({
@@ -97,14 +113,139 @@ pub fn DataTable(
             selected.set(set);
         }) /> </TableHead> }.into_any()
     );
-    // Then data headers
-    header_cells.extend(
-        headers
+
+    // Query handling owned by DataTable
+    let query = use_query_map();
+    let navigate = use_navigate();
+    let current_sort =
+        move || query.with(|q| q.get("sort").map(|s| s.to_string()).unwrap_or_default());
+    let current_search =
+        move || query.with(|q| q.get("search").map(|s| s.to_string()).unwrap_or_default());
+    fn get_query_search_string() -> String {
+        window()
+            .and_then(|w| Some(w.location()))
+            .and_then(|loc| loc.search().ok())
+            .unwrap_or_default()
+    }
+    fn parse_all_pfilters_from_search(search: &str) -> Vec<String> {
+        let qs = search.trim_start_matches('?');
+        qs.split('&')
+            .filter_map(|kv| {
+                let mut it = kv.splitn(2, '=');
+                let k = it.next()?;
+                let v = it.next().unwrap_or("");
+                if k == "p_filters" {
+                    Some(v.to_string())
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+    fn find_field_filter(filters: &[String], field: &str) -> Option<(String, String, String)> {
+        for f in filters {
+            let parts: Vec<&str> = f.splitn(4, ':').collect();
+            if parts.len() >= 3 && parts[0] == field {
+                let op = parts.get(1).copied().unwrap_or("=").to_string();
+                let val = parts.get(2).copied().unwrap_or("").to_string();
+                let dt = parts.get(3).copied().unwrap_or("").to_string();
+                return Some((op, val, dt));
+            }
+        }
+        None
+    }
+    fn build_url_with(
+        max_results: i64,
+        sort: String,
+        search: String,
+        filters: &[String],
+    ) -> String {
+        let mut url = format!("?first_result=0&max_results={}", max_results);
+        if !sort.is_empty() {
+            url.push_str(&format!("&sort={}", sort));
+        }
+        if !search.is_empty() {
+            url.push_str(&format!("&search={}", search));
+        }
+        for f in filters {
+            if !f.is_empty() {
+                url.push_str(&format!("&p_filters={}", f));
+            }
+        }
+        url
+    }
+
+    // Then data headers (with ColumnFilter per header)
+    header_cells.extend({
+        let field_defs = field_definitions.clone();
+        let max_results_copy = max_results;
+        let current_sort_fn = current_sort.clone();
+        let current_search_fn = current_search.clone();
+        let navigate_clone = navigate.clone();
+        field_defs
             .into_iter()
-            .map(|label| view! { <TableHead>{label}</TableHead> }.into_any())
-    );
+            .map(move |(name, label, dtype)| {
+                // derive signals
+                let field_for_sig = name.clone();
+                let op_sig: Signal<String> = Signal::derive({
+                    let field_for_op = field_for_sig.clone();
+                    move || {
+                        let search = get_query_search_string();
+                        let filters = parse_all_pfilters_from_search(&search);
+                        if let Some((op, _v, _)) = find_field_filter(&filters, &field_for_op) { op } else { "=".to_string() }
+                    }
+                });
+                let val_sig: Signal<String> = Signal::derive({
+                    let field_for_val = field_for_sig.clone();
+                    move || {
+                        let search = get_query_search_string();
+                        let filters = parse_all_pfilters_from_search(&search);
+                        if let Some((_op, v, _)) = find_field_filter(&filters, &field_for_val) { v } else { String::new() }
+                    }
+                });
+                let on_op = {
+                    let name = name.clone();
+                    let navigate = navigate_clone.clone();
+                    let current_sort = current_sort_fn.clone();
+                    let current_search = current_search_fn.clone();
+                    Callback::new(move |op: String| {
+                        let search = get_query_search_string();
+                        let mut filters = parse_all_pfilters_from_search(&search);
+                        let vcur = find_field_filter(&filters, &name).map(|(_, v, _)| v).unwrap_or_default();
+                        filters.retain(|f| f.splitn(4, ':').next().unwrap_or("") != name);
+                        if !vcur.is_empty() { filters.push(format!("{}:{}:{}:{}", name, op, vcur, dtype.to_code())); }
+                        let url = build_url_with(max_results_copy, current_sort(), current_search(), &filters);
+                        let _ = navigate(&url, Default::default());
+                    })
+                };
+                let on_val = {
+                    let name = name.clone();
+                    let navigate = navigate_clone.clone();
+                    let current_sort = current_sort_fn.clone();
+                    let current_search = current_search_fn.clone();
+                    Callback::new(move |v: String| {
+                        let search = get_query_search_string();
+                        let mut filters = parse_all_pfilters_from_search(&search);
+                        let op_cur = find_field_filter(&filters, &name).map(|(op, _v, _)| op).unwrap_or("=".to_string());
+                        filters.retain(|f| f.splitn(4, ':').next().unwrap_or("") != name);
+                        if !v.is_empty() { filters.push(format!("{}:{}:{}:{}", name, op_cur, v, dtype.to_code())); }
+                        let url = build_url_with(max_results_copy, current_sort(), current_search(), &filters);
+                        let _ = navigate(&url, Default::default());
+                    })
+                };
+                view! {
+                    <TableHead>
+                        <div class="space-y-1">
+                            <div>{label.clone()}</div>
+                            <ColumnFilter field_name=name.clone() field_datatype=dtype operator=op_sig value=val_sig on_operator_change=on_op on_value_change=on_val class="mt-1" />
+                        </div>
+                    </TableHead>
+                }.into_any()
+            })
+    });
     if editable || deletable {
-        header_cells.push(view! { <TableHead class="text-right">{"Action"}</TableHead> }.into_any());
+        header_cells
+            .push(view! { <TableHead class="text-right">{"Action"}</TableHead> }.into_any());
     }
 
     // Build body rows
@@ -197,7 +338,7 @@ pub fn DataTable(
                         // clear selection
                         selected.set(HashSet::new());
                     })>
-                        "Delete Selected"
+                        "Delete"
                     </Button>
                 }
                 .into_any()

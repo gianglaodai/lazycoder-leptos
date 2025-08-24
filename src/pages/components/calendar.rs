@@ -1,5 +1,7 @@
 use leptos::prelude::*;
 use time::{Date, Duration, Month, Weekday};
+use crate::cn;
+use crate::pages::components::button::{Button, ButtonSize, ButtonVariant};
 
 fn always_enabled() -> Callback<Date, bool> {
     Callback::new(|_| false)
@@ -59,6 +61,24 @@ fn month_name(month: Month) -> &'static str {
         Month::October => "October",
         Month::November => "November",
         Month::December => "December",
+    }
+}
+
+fn month_from_u8(n: u8) -> Month {
+    match n {
+        1 => Month::January,
+        2 => Month::February,
+        3 => Month::March,
+        4 => Month::April,
+        5 => Month::May,
+        6 => Month::June,
+        7 => Month::July,
+        8 => Month::August,
+        9 => Month::September,
+        10 => Month::October,
+        11 => Month::November,
+        12 => Month::December,
+        _ => Month::January,
     }
 }
 
@@ -132,6 +152,12 @@ fn is_same_date(a: &Date, b: &Date) -> bool {
     a == b
 }
 
+#[derive(Clone, Copy, PartialEq, Eq)]
+pub enum CaptionLayout {
+    Label,
+    Dropdown,
+}
+
 /// Calendar component, shadcn-style
 ///
 /// Props:
@@ -148,13 +174,19 @@ pub fn Calendar(
     #[prop(into, optional)] on_change: Option<Callback<Date, ()>>,
     #[prop(into, optional, default = always_enabled())] disabled: Callback<Date, bool>,
     #[prop(into, optional)] class: Option<String>,
-    #[prop(optional)] show_outside_days: bool,
+    #[prop(optional, default = true)] show_outside_days: bool,
+    #[prop(optional, default = CaptionLayout::Label)] caption_layout: CaptionLayout,
+    #[prop(optional, default = true)] show_navigation: bool,
 ) -> impl IntoView {
     // Controlled/uncontrolled selected state
     let (sel_signal, set_sel) = {
         if let Some(sig) = selected {
             let setter = Callback::new(move |d: Option<Date>| {
-                if let Some(cb) = on_change { if let Some(dd) = d { cb.run(dd); } }
+                if let Some(cb) = on_change {
+                    if let Some(dd) = d {
+                        cb.run(dd);
+                    }
+                }
             });
             (sig, setter)
         } else {
@@ -162,17 +194,18 @@ pub fn Calendar(
             let cb = on_change.clone();
             let setter = Callback::new(move |d: Option<Date>| {
                 set.set(d);
-                if let Some(cb) = cb { if let Some(dd) = d { cb.run(dd); } }
+                if let Some(cb) = cb {
+                    if let Some(dd) = d {
+                        cb.run(dd);
+                    }
+                }
             });
             (s.into(), setter)
         }
     };
 
     // Current visible month
-    let today = Date::from_calendar_date(1970, Month::January, 1)
-        .ok()
-        .and_then(|_| Date::from_calendar_date(2025, Month::January, 1).ok());
-    // Fallback to system date via JS Date if we wanted, but keep simple: use selected or default or 1970-01-01?
+    // Initial visible month: selected -> default_selected -> 1970-01-01
     let initial = sel_signal
         .get_untracked()
         .or(default_selected)
@@ -182,7 +215,6 @@ pub fn Calendar(
     let (year, set_year) = signal(cur_year);
     let (month, set_month) = signal(cur_month);
 
-    let show_outside_days = if show_outside_days { true } else { true }; // default true
 
     let go_prev = move |_| {
         let (y, m) = add_month(year.get_untracked(), month.get_untracked(), -1);
@@ -225,7 +257,10 @@ pub fn Calendar(
 
         let mut classes = crate::cn!(day_btn_base_cls());
         if is_selected {
-            classes = crate::cn!(classes, "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground");
+            classes = crate::cn!(
+                classes,
+                "bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground"
+            );
         } else {
             classes = crate::cn!(classes, "hover:bg-accent hover:text-accent-foreground");
         }
@@ -238,31 +273,89 @@ pub fn Calendar(
 
         let day_num = d.day() as i32;
         view! {
-            <button
-                class=move || classes.clone()
+            <Button
+                class=classes.clone()
+                variant=crate::pages::components::button::ButtonVariant::Ghost
+                size=crate::pages::components::button::ButtonSize::Icon
                 disabled=is_disabled
-                on:click=move |_| {
+                on_click=Callback::new(move |_| {
                     if !is_disabled {
                         set_sel.run(Some(d));
                     }
-                }
-            >{day_num}</button>
+                })
+            >{day_num}</Button>
         }
     };
 
     view! {
-        <div class=move || crate::cn!(calendar_base_cls(), class.clone())>
+        <div class=move || cn!(calendar_base_cls(), class.clone())>
             // Header
             <div class=header_cls()>
-                <button class=nav_btn_cls() on:click=go_prev aria-label="Previous month">{"\u{2039}"}</button>
+                <Show when=move || show_navigation>
+                    <Button
+                        class=nav_btn_cls().to_string()
+                        variant=crate::pages::components::button::ButtonVariant::Ghost
+                        size=crate::pages::components::button::ButtonSize::Icon
+                        on_click=Callback::new(move |_| go_prev(()))
+                    >
+                        {"\u{2039}"}
+                    </Button>
+                </Show>
                 <div class=month_title_cls()>
                     {move || {
-                        let y = year.get();
-                        let m = month.get();
-                        format!("{} {}", month_name(m), y)
+                        if matches!(caption_layout, CaptionLayout::Dropdown) {
+                            // Render month/year dropdowns
+                            let y = year.get();
+                            let m = month.get() as u8;
+                            view! {
+                                <div class="flex items-center justify-center gap-1.5 text-sm font-medium">
+                                    <select
+                                        class="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                                        prop:value=move || format!("{}", m)
+                                        on:change=move |ev| {
+                                            if let Ok(v) = event_target_value(&ev).parse::<u8>() {
+                                                set_month.set(month_from_u8(v));
+                                            }
+                                        }
+                                    >
+                                        {(1u8..=12u8).map(|i| {
+                                            let label = month_name(month_from_u8(i));
+                                            view! { <option value=move || format!("{}", i) selected=move || i == month.get() as u8>{label}</option> }
+                                        }).collect_view()}
+                                    </select>
+                                    <select
+                                        class="h-8 rounded-md border border-input bg-background px-2 text-sm"
+                                        prop:value=move || format!("{}", y)
+                                        on:change=move |ev| {
+                                            if let Ok(v) = event_target_value(&ev).parse::<i32>() {
+                                                set_year.set(v);
+                                            }
+                                        }
+                                    >
+                                        {let yc = year.get();
+                                        ((yc-50)..=(yc+50)).map(|yy| {
+                                            view! { <option value=move || format!("{}", yy) selected=move || yy == year.get()>{yy}</option> }
+                                        }).collect_view()}
+                                    </select>
+                                </div>
+                            }.into_any()
+                        } else {
+                            let y = year.get();
+                            let m = month.get();
+                            format!("{} {}", month_name(m), y).into_any()
+                        }
                     }}
                 </div>
-                <button class=nav_btn_cls() on:click=go_next aria-label="Next month">{"\u{203A}"}</button>
+                <Show when=move || show_navigation>
+                    <Button
+                        class=nav_btn_cls().to_string()
+                        variant=ButtonVariant::Ghost
+                        size=ButtonSize::Icon
+                        on_click=Callback::new(move |_| go_next(()))
+                    >
+                        {"\u{203A}"}
+                    </Button>
+                </Show>
             </div>
 
             // Weekdays

@@ -2,8 +2,8 @@ use crate::pages::admin::guard::AdminGuard;
 use crate::pages::components::button::{ButtonIntent, ButtonVariant};
 use crate::pages::components::{
     Button, DataTable, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter,
-    DialogHeader, DialogTitle, DialogTrigger, Input,
-    Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage,
+    DialogHeader, DialogTitle, DialogTrigger, Form, FormControl, FormDescription, FormField,
+    FormItem, FormLabel, FormMessage, Input,
 };
 use crate::pages::rest::auth_api::UserTO;
 use crate::pages::rest::post_api::{create_post, delete_post, update_post, PostTO};
@@ -49,7 +49,11 @@ fn NewPostDialog() -> impl IntoView {
         let error = error.clone();
         move || {
             let e = error.get();
-            if e.is_empty() { None } else { Some(e) }
+            if e.is_empty() {
+                None
+            } else {
+                Some(e)
+            }
         }
     });
 
@@ -120,10 +124,83 @@ pub fn AdminPostsPage() -> impl IntoView {
     let reload = RwSignal::new(0u32);
 
     let posts_and_total_resource = Resource::new(
-        move || (first_result(), max_results(), reload.get()),
-        |(first_result, max_results, _)| async move {
-            let fut_posts = load_post_infos(first_result, max_results);
-            let fut_count = count_post_infos();
+        move || {
+            let sort: Option<String> = query.with(|q| q.get("sort").map(|s| s.to_string()));
+            let search: Option<String> = query.with(|q| q.get("search").map(|s| s.to_string()));
+            let (p_filters, a_filters): (Option<Vec<String>>, Option<Vec<String>>) = {
+                #[cfg(target_arch = "wasm32")]
+                {
+                    if let Some(w) = leptos::web_sys::window() {
+                        if let Ok(search_str) = w.location().search() {
+                            let qs = search_str.trim_start_matches('?');
+                            let mut pfs: Vec<String> = vec![];
+                            let mut afs: Vec<String> = vec![];
+                            for kv in qs.split('&') {
+                                if let Some((k, v)) = kv.split_once('=') {
+                                    if k == "p_filters" {
+                                        pfs.push(v.to_string());
+                                    }
+                                    if k == "a_filters" {
+                                        afs.push(v.to_string());
+                                    }
+                                }
+                            }
+                            (
+                                if pfs.is_empty() { None } else { Some(pfs) },
+                                if afs.is_empty() { None } else { Some(afs) },
+                            )
+                        } else {
+                            (None, None)
+                        }
+                    } else {
+                        (None, None)
+                    }
+                }
+                #[cfg(not(target_arch = "wasm32"))]
+                {
+                    let pfs = query.with(|q| {
+                        let mut items: Vec<String> = Vec::new();
+                        if let Some(v) = q.get("p_filters") {
+                            items.push(v.to_string());
+                        }
+                        if let Some(v) = q.get("p_filters[]") {
+                            items.push(v.to_string());
+                        }
+                        if items.is_empty() { None } else { Some(items) }
+                    });
+                    let afs = query.with(|q| {
+                        let mut items: Vec<String> = Vec::new();
+                        if let Some(v) = q.get("a_filters") {
+                            items.push(v.to_string());
+                        }
+                        if let Some(v) = q.get("a_filters[]") {
+                            items.push(v.to_string());
+                        }
+                        if items.is_empty() { None } else { Some(items) }
+                    });
+                    (pfs, afs)
+                }
+            };
+            (
+                first_result() as i32,
+                max_results(),
+                sort,
+                search,
+                p_filters,
+                a_filters,
+                reload.get(),
+            )
+        },
+        |(first_result_i32, max_results_i32, sort, search, p_filters, a_filters, _)| async move {
+            let fut_posts = load_post_infos(
+                first_result_i32 as i64,
+                max_results_i32,
+                sort.clone(),
+                search.clone(),
+                p_filters.clone(),
+                a_filters.clone(),
+            );
+            let fut_count = count_post_infos(search.clone(), p_filters.clone(), a_filters.clone());
             let (posts_res, total_res) = futures::join!(fut_posts, fut_count);
             match (posts_res, total_res) {
                 (Ok(posts), Ok(total)) => Ok((posts, total)),
@@ -171,13 +248,13 @@ pub fn AdminPostsPage() -> impl IntoView {
                         Some(Ok((posts, total))) => view! {
                             {
                                 let field_definitions = vec![
-                                    ("id".to_string(), "ID".to_string()),
-                                    ("uid".to_string(), "UID".to_string()),
-                                    ("title".to_string(), "Title".to_string()),
-                                    ("slug".to_string(), "Slug".to_string()),
-                                    ("status".to_string(), "Status".to_string()),
-                                    ("created_at".to_string(), "Created".to_string()),
-                                    ("updated_at".to_string(), "Updated".to_string()),
+                                    ("id".to_string(), "ID".to_string(), crate::value_data_type::ValueDataType::Int),
+                                    ("uid".to_string(), "UID".to_string(), crate::value_data_type::ValueDataType::String),
+                                    ("title".to_string(), "Title".to_string(), crate::value_data_type::ValueDataType::String),
+                                    ("slug".to_string(), "Slug".to_string(), crate::value_data_type::ValueDataType::String),
+                                    ("status".to_string(), "Status".to_string(), crate::value_data_type::ValueDataType::Int),
+                                    ("created_at".to_string(), "Created".to_string(), crate::value_data_type::ValueDataType::DateTime),
+                                    ("updated_at".to_string(), "Updated".to_string(), crate::value_data_type::ValueDataType::DateTime),
                                 ];
                                 let rows: Vec<HashMap<String, String>> = posts
                                     .into_iter()
@@ -229,7 +306,7 @@ fn AdminPostItem(post: PostTO, reload: RwSignal<u32>) -> impl IntoView {
     let status = RwSignal::new(post.status.clone());
 
     let format =
-        format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]").unwrap();
+        time::macros::format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
     let created = post
         .created_at
         .format(&format)

@@ -49,8 +49,8 @@ pub struct FormFieldInfo {
 }
 
 pub fn use_form_field() -> FormFieldInfo {
-    let item = use_context::<FormItemContext>()
-        .expect("use_form_field should be used within <FormItem>");
+    let item =
+        use_context::<FormItemContext>().expect("use_form_field should be used within <FormItem>");
     let field = use_context::<FormFieldContext>().unwrap_or(FormFieldContext {
         name: None,
         error: None,
@@ -62,9 +62,7 @@ pub fn use_form_field() -> FormFieldInfo {
     let form_description_id = format!("{}-form-item-description", id);
     let form_message_id = format!("{}-form-item-message", id);
 
-    let error = field
-        .error
-        .and_then(|sig| sig.get());
+    let error = field.error.and_then(|sig| sig.get());
 
     FormFieldInfo {
         id,
@@ -141,7 +139,11 @@ pub fn FormLabel(
 
     let computed_for = html_for.unwrap_or_else(|| info.form_item_id.clone());
     let final_class = crate::cn!(
-        if info.error.is_some() { "text-destructive" } else { "" },
+        if info.error.is_some() {
+            "text-destructive"
+        } else {
+            ""
+        },
         class.clone()
     );
 
@@ -171,7 +173,11 @@ pub fn FormControl(
     } else {
         info.form_description_id.clone()
     };
-    let invalid = if info.error.is_some() { "true" } else { "false" };
+    let invalid = if info.error.is_some() {
+        "true"
+    } else {
+        "false"
+    };
 
     view! {
         <div
