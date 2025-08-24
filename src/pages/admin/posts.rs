@@ -1,18 +1,16 @@
 use crate::pages::admin::guard::AdminGuard;
 use crate::pages::components::button::{ButtonIntent, ButtonVariant};
 use crate::pages::components::{
-    Button, DataTable, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter,
-    DialogHeader, DialogTitle, DialogTrigger, Form, FormControl, FormDescription, FormField,
+    Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter,
+    DialogHeader, DialogTitle, DialogTrigger, Form, FormControl, FormField,
     FormItem, FormLabel, FormMessage, Input,
 };
 use crate::pages::rest::auth_api::UserTO;
 use crate::pages::rest::post_api::{create_post, delete_post, update_post, PostTO};
-use crate::pages::rest::post_info_api::{count_post_infos, load_post_infos};
+use crate::pages::rest::post_info_api::{count_post_infos, load_post_infos };
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
-use std::collections::HashMap;
-use time::format_description;
 
 #[component]
 fn NewPostDialog() -> impl IntoView {
@@ -166,7 +164,11 @@ pub fn AdminPostsPage() -> impl IntoView {
                         if let Some(v) = q.get("p_filters[]") {
                             items.push(v.to_string());
                         }
-                        if items.is_empty() { None } else { Some(items) }
+                        if items.is_empty() {
+                            None
+                        } else {
+                            Some(items)
+                        }
                     });
                     let afs = query.with(|q| {
                         let mut items: Vec<String> = Vec::new();
@@ -176,7 +178,11 @@ pub fn AdminPostsPage() -> impl IntoView {
                         if let Some(v) = q.get("a_filters[]") {
                             items.push(v.to_string());
                         }
-                        if items.is_empty() { None } else { Some(items) }
+                        if items.is_empty() {
+                            None
+                        } else {
+                            Some(items)
+                        }
                     });
                     (pfs, afs)
                 }
@@ -219,22 +225,6 @@ pub fn AdminPostsPage() -> impl IntoView {
         }
     });
 
-    let navigate = use_navigate();
-    let on_edit = Callback::new(move |row: HashMap<String, String>| {
-        if let Some(id_str) = row.get("id") {
-            if let Ok(id) = id_str.parse::<i32>() {
-                navigate(&format!("/admin/posts/{}", id), Default::default());
-            }
-        }
-    });
-    let delete_action = delete_action.clone();
-    let on_delete = Callback::new(move |row: HashMap<String, String>| {
-        if let Some(id_str) = row.get("id") {
-            if let Ok(id) = id_str.parse::<i32>() {
-                delete_action.dispatch(id);
-            }
-        }
-    });
     view! {
         <AdminGuard>
             <div class="container-page py-10 font-serif">
@@ -242,55 +232,6 @@ pub fn AdminPostsPage() -> impl IntoView {
                     <h1 class="text-3xl font-bold">Manage Posts</h1>
                     <NewPostDialog />
                 </div>
-
-                <Suspense fallback=move || view! {<div class="text-center py-8">Loading posts...</div>}>
-                    {move || match posts_and_total_resource.get() {
-                        Some(Ok((posts, total))) => view! {
-                            {
-                                let field_definitions = vec![
-                                    ("id".to_string(), "ID".to_string(), crate::value_data_type::ValueDataType::Int),
-                                    ("uid".to_string(), "UID".to_string(), crate::value_data_type::ValueDataType::String),
-                                    ("title".to_string(), "Title".to_string(), crate::value_data_type::ValueDataType::String),
-                                    ("slug".to_string(), "Slug".to_string(), crate::value_data_type::ValueDataType::String),
-                                    ("status".to_string(), "Status".to_string(), crate::value_data_type::ValueDataType::Int),
-                                    ("created_at".to_string(), "Created".to_string(), crate::value_data_type::ValueDataType::DateTime),
-                                    ("updated_at".to_string(), "Updated".to_string(), crate::value_data_type::ValueDataType::DateTime),
-                                ];
-                                let rows: Vec<HashMap<String, String>> = posts
-                                    .into_iter()
-                                    .map(|p| {
-                                        p
-                                        .to_field_map()
-                                        .into_iter()
-                                        .map(|(k, v)| (k.to_string(), v))
-                                        .collect()
-                                    })
-                                    .collect();
-                                {
-                                    view! {
-                                        <DataTable
-                                            field_definitions=field_definitions.clone()
-                                            rows=rows
-                                            total_entities=total as i64
-                                            first_result=first_result()
-                                            max_results=max_results() as i64
-                                            max_visible_pages=3
-                                            editable=true
-                                            deletable=true
-                                            on_edit=on_edit
-                                            on_delete=on_delete
-                                            caption="A list of your posts.".to_string()
-                                        />
-                                    }
-                                }
-                            }
-                        }.into_any(),
-                        Some(Err(e)) => view! {
-                            <div class="text-red-600">Error loading posts: {e.to_string()}</div>
-                        }.into_any(),
-                        None => view! {<div class="text-center py-8">Loading...</div>}.into_any()
-                    }}
-                </Suspense>
             </div>
         </AdminGuard>
     }
@@ -305,8 +246,7 @@ fn AdminPostItem(post: PostTO, reload: RwSignal<u32>) -> impl IntoView {
     let content = RwSignal::new(post.content.clone());
     let status = RwSignal::new(post.status.clone());
 
-    let format =
-        time::macros::format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
+    let format = time::macros::format_description!("[year]-[month]-[day] [hour]:[minute]:[second]");
     let created = post
         .created_at
         .format(&format)

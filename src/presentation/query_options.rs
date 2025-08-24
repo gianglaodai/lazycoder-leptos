@@ -209,10 +209,19 @@ impl QueryOptions {
             ));
         }
 
-        let (key, operator_str, value_str_opt, dtype_opt): (String, &str, Option<String>, Option<&str>) = if parts.len() == 2 {
+        let (key, operator_str, value_str_opt, dtype_opt): (
+            String,
+            &str,
+            Option<String>,
+            Option<&str>,
+        ) = if parts.len() == 2 {
             let key = parts[0].to_string();
             let operator_str = parts[1];
-            if operator_str == "=null" || operator_str == "is_null" || operator_str == "!null" || operator_str == "not_null" {
+            if operator_str == "=null"
+                || operator_str == "is_null"
+                || operator_str == "!null"
+                || operator_str == "not_null"
+            {
                 (key, operator_str, None, None)
             } else {
                 return Err(CoreError::UnprocessableEntity(
@@ -231,7 +240,7 @@ impl QueryOptions {
             if parts.len() == 3 {
                 return Err(CoreError::UnprocessableEntity(
                     "error.filters.missing.datatype".into(),
-                    HashMap::from([( "filter".into(), raw.into() )]),
+                    HashMap::from([("filter".into(), raw.into())]),
                 ));
             } else {
                 return Err(CoreError::UnprocessableEntity(
@@ -709,11 +718,8 @@ mod tests {
     #[test]
     fn test_parse_single_filter_datetime() {
         // Single DateTime equality as property filter
-        let f = QueryOptions::parse_single_filter(
-            "created_at:=:2025-07-16T15:30:01Z:5",
-            true,
-        )
-        .unwrap();
+        let f =
+            QueryOptions::parse_single_filter("created_at:=:2025-07-16T15:30:01Z:5", true).unwrap();
         assert_eq!(
             f,
             Filter::Property {

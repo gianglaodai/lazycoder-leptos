@@ -43,8 +43,8 @@ pub async fn load_post_infos(
     p_filters: Option<Vec<String>>,
     a_filters: Option<Vec<String>>,
 ) -> Result<Vec<PostInfoTO>, ServerFnError> {
-    use crate::state::AppState;
     use crate::presentation::query_options::QueryOptions;
+    use crate::state::AppState;
     use leptos_actix::extract;
 
     // Extract app state
@@ -62,7 +62,12 @@ pub async fn load_post_infos(
 
     let result = state
         .post_info_service
-        .get_many(query_options.to_sort_criteria(), query_options.first_result, query_options.max_results, query_options.to_filters())
+        .get_many(
+            query_options.to_sort_criteria(),
+            query_options.first_result,
+            query_options.max_results,
+            query_options.to_filters(),
+        )
         .await
         .map(|items| {
             items
@@ -80,8 +85,8 @@ pub async fn count_post_infos(
     p_filters: Option<Vec<String>>,
     a_filters: Option<Vec<String>>,
 ) -> Result<i64, ServerFnError> {
-    use crate::state::AppState;
     use crate::presentation::query_options::QueryOptions;
+    use crate::state::AppState;
     use leptos_actix::extract;
 
     let state: actix_web::web::Data<AppState> = extract().await?;

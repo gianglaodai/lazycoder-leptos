@@ -205,7 +205,7 @@ fn classify_group(base: &str) -> Option<Group> {
     // Display
     match s {
         "block" | "inline-block" | "inline" | "flex" | "inline-flex" | "grid" | "inline-grid"
-        | "table" | "inline-table" | "contents" | "flow-root" | "hidden" => {
+        | "datatable" | "inline-datatable" | "contents" | "flow-root" | "hidden" => {
             return Some(Group::Simple("display"));
         }
         _ => {}

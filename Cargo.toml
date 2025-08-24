@@ -35,6 +35,7 @@ futures = "0.3.31"
 quote = "1.0.40"
 syn = { version = "2.0.104", features = ["full", "extra-traits"] }
 field_accessor_derive = { path = "field_accessor_derive" }
+thiserror = "2.0.12"
 
 [features]
 csr = ["leptos/csr"]

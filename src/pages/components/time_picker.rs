@@ -38,7 +38,12 @@ pub fn TimePicker(
     create_effect(move |_| {
         let v = sel_sig.get();
         if let Some(t) = v {
-            set_text.set(format!("{:02}:{:02}:{:02}", t.hour(), t.minute(), t.second()));
+            set_text.set(format!(
+                "{:02}:{:02}:{:02}",
+                t.hour(),
+                t.minute(),
+                t.second()
+            ));
         } else {
             set_text.set(String::new());
         }
@@ -49,10 +54,16 @@ pub fn TimePicker(
     // Parse input "HH:MM" or "HH:MM:SS"
     fn parse_time_str(s: &str) -> Option<Time> {
         let parts: Vec<&str> = s.split(':').collect();
-        if parts.len() < 2 { return None; }
+        if parts.len() < 2 {
+            return None;
+        }
         let h: u8 = parts.get(0)?.parse().ok()?;
         let m: u8 = parts.get(1)?.parse().ok()?;
-        let sec: u8 = if let Some(p) = parts.get(2) { p.parse().ok()? } else { 0 };
+        let sec: u8 = if let Some(p) = parts.get(2) {
+            p.parse().ok()?
+        } else {
+            0
+        };
         Time::from_hms(h, m, sec).ok()
     }
 

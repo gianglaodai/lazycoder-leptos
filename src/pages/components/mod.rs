@@ -1,8 +1,7 @@
 pub mod button;
 pub mod calendar;
 pub mod checkbox;
-pub mod column_filter;
-pub mod data_table;
+pub mod datatable;
 pub mod date_picker;
 pub mod datetime_picker;
 pub mod dialog;
@@ -25,8 +24,7 @@ pub mod time_picker;
 pub use button::Button;
 pub use calendar::Calendar;
 pub use checkbox::Checkbox;
-pub use column_filter::ColumnFilter;
-pub use data_table::DataTable;
+pub use datatable::render::data_table::DataTable;
 pub use date_picker::DatePicker;
 pub use datetime_picker::DateTimePicker;
 pub use dialog::{

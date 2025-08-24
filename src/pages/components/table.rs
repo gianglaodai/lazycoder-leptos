@@ -9,7 +9,7 @@ fn thead_cls() -> &'static str {
 }
 
 fn tbody_cls() -> &'static str {
-    "[&_tr:last-child]:border-0"
+    "[&_tr:last-child]:border-0 h-[30vw]"
 }
 
 fn tfoot_cls() -> &'static str {
@@ -17,7 +17,7 @@ fn tfoot_cls() -> &'static str {
 }
 
 fn tr_cls() -> &'static str {
-    "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted"
+    "border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted h-12"
 }
 
 fn th_cls() -> &'static str {
@@ -36,7 +36,7 @@ fn caption_cls() -> &'static str {
 pub fn Table(#[prop(into, optional)] class: Option<String>, children: Children) -> impl IntoView {
     let class = class.unwrap_or_default();
     view! {
-        <div class="w-full overflow-auto">
+        <div class="w-full overflow-auto min-h-96">
             <table class=move || crate::cn!(tbl(), class.clone())>{children()}</table>
         </div>
     }

@@ -1,7 +1,7 @@
-use leptos::prelude::*;
-use time::{Date, Duration, Month, Weekday};
 use crate::cn;
 use crate::pages::components::button::{Button, ButtonSize, ButtonVariant};
+use leptos::prelude::*;
+use time::{Date, Duration, Month, Weekday};
 
 fn always_enabled() -> Callback<Date, bool> {
     Callback::new(|_| false)
@@ -214,7 +214,6 @@ pub fn Calendar(
     let (cur_year, cur_month) = (initial.year(), initial.month());
     let (year, set_year) = signal(cur_year);
     let (month, set_month) = signal(cur_month);
-
 
     let go_prev = move |_| {
         let (y, m) = add_month(year.get_untracked(), month.get_untracked(), -1);
