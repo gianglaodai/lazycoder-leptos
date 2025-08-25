@@ -1,13 +1,13 @@
 use crate::pages::admin::guard::AdminGuard;
 use crate::pages::components::button::{ButtonIntent, ButtonVariant};
 use crate::pages::components::{
-    Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter,
-    DialogHeader, DialogTitle, DialogTrigger, Form, FormControl, FormField,
-    FormItem, FormLabel, FormMessage, Input,
+    Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader,
+    DialogTitle, DialogTrigger, Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
+    Input,
 };
 use crate::pages::rest::auth_api::UserTO;
 use crate::pages::rest::post_api::{create_post, delete_post, update_post, PostTO};
-use crate::pages::rest::post_info_api::{count_post_infos, load_post_infos };
+use crate::pages::rest::post_info_api::{count_post_infos, load_post_infos};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
@@ -225,12 +225,204 @@ pub fn AdminPostsPage() -> impl IntoView {
         }
     });
 
+    // Build datatable state and columns
+    use crate::pages::components::datatable::core::column::{ColumnDef, Pinned};
+    use crate::pages::components::datatable::core::render_value::Value;
+    use crate::pages::components::datatable::core::row::RowNode;
+    use crate::pages::components::datatable::core::state::TableState;
+    use crate::pages::components::datatable::DataTable;
+    use std::sync::Arc;
+
+    let table_state: Arc<TableState<crate::pages::rest::post_info_api::PostInfoTO>> = Arc::new(TableState::new());
+
+    // Define columns (AG Grid inspired)
+    table_state.columns.set(vec![
+        ColumnDef {
+            id: "id",
+            header_name: "ID",
+            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Number(p.id as f64))),
+            value_formatter: None,
+            cell_renderer: None,
+            cell_editor: None,
+            sortable: true,
+            filterable: true,
+            resizable: true,
+            movable: false,
+            pinned: Pinned::None,
+            width: 80,
+            min_width: 60,
+            max_width: Some(140),
+            groupable: false,
+            aggregate: None,
+            comparator: None,
+            field: Some("id"),
+        },
+        ColumnDef {
+            id: "title",
+            header_name: "Title",
+            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.title.clone()))),
+            value_formatter: None,
+            cell_renderer: None,
+            cell_editor: None,
+            sortable: true,
+            filterable: true,
+            resizable: true,
+            movable: true,
+            pinned: Pinned::None,
+            width: 260,
+            min_width: 120,
+            max_width: None,
+            groupable: false,
+            aggregate: None,
+            comparator: None,
+            field: Some("title"),
+        },
+        ColumnDef {
+            id: "slug",
+            header_name: "Slug",
+            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.slug.clone()))),
+            value_formatter: None,
+            cell_renderer: None,
+            cell_editor: None,
+            sortable: true,
+            filterable: true,
+            resizable: true,
+            movable: true,
+            pinned: Pinned::None,
+            width: 200,
+            min_width: 120,
+            max_width: None,
+            groupable: false,
+            aggregate: None,
+            comparator: None,
+            field: Some("slug"),
+        },
+        ColumnDef {
+            id: "status",
+            header_name: "Status",
+            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.status.clone()))),
+            value_formatter: None,
+            cell_renderer: None,
+            cell_editor: None,
+            sortable: true,
+            filterable: true,
+            resizable: true,
+            movable: true,
+            pinned: Pinned::None,
+            width: 120,
+            min_width: 80,
+            max_width: Some(200),
+            groupable: false,
+            aggregate: None,
+            comparator: None,
+            field: Some("status"),
+        },
+        ColumnDef {
+            id: "username",
+            header_name: "Author",
+            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.username.clone()))),
+            value_formatter: None,
+            cell_renderer: None,
+            cell_editor: None,
+            sortable: true,
+            filterable: true,
+            resizable: true,
+            movable: true,
+            pinned: Pinned::None,
+            width: 160,
+            min_width: 100,
+            max_width: None,
+            groupable: false,
+            aggregate: None,
+            comparator: None,
+            field: Some("username"),
+        },
+        ColumnDef {
+            id: "email",
+            header_name: "Email",
+            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.email.clone()))),
+            value_formatter: None,
+            cell_renderer: None,
+            cell_editor: None,
+            sortable: true,
+            filterable: true,
+            resizable: true,
+            movable: true,
+            pinned: Pinned::None,
+            width: 220,
+            min_width: 140,
+            max_width: None,
+            groupable: false,
+            aggregate: None,
+            comparator: None,
+            field: Some("email"),
+        },
+        ColumnDef {
+            id: "created_at",
+            header_name: "Created",
+            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.created_at.to_string()))),
+            value_formatter: None,
+            cell_renderer: None,
+            cell_editor: None,
+            sortable: true,
+            filterable: false,
+            resizable: true,
+            movable: true,
+            pinned: Pinned::None,
+            width: 180,
+            min_width: 140,
+            max_width: None,
+            groupable: false,
+            aggregate: None,
+            comparator: None,
+            field: Some("created_at"),
+        },
+        ColumnDef {
+            id: "updated_at",
+            header_name: "Updated",
+            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.updated_at.to_string()))),
+            value_formatter: None,
+            cell_renderer: None,
+            cell_editor: None,
+            sortable: true,
+            filterable: false,
+            resizable: true,
+            movable: true,
+            pinned: Pinned::None,
+            width: 180,
+            min_width: 140,
+            max_width: None,
+            groupable: false,
+            aggregate: None,
+            comparator: None,
+            field: Some("updated_at"),
+        },
+    ]);
+
+    // Keep page size consistent with the query's max_results
+    table_state.page_size.set(max_results() as usize);
+
+    // When resource resolves, populate rows and total
+    Effect::new({
+        let table_state = table_state.clone();
+        move |_| {
+            if let Some(Ok((posts, total))) = posts_and_total_resource.get() {
+                let rows: Vec<RowNode<_>> = posts.into_iter().map(|p| RowNode::new(p.id.to_string(), p)).collect();
+                table_state.set_rows(rows);
+                table_state.set_total_rows(Some(total as usize));
+            }
+        }
+    });
+
     view! {
         <AdminGuard>
             <div class="container-page py-10 font-serif">
                 <div class="flex items-center justify-between mb-6">
                     <h1 class="text-3xl font-bold">Manage Posts</h1>
                     <NewPostDialog />
+                </div>
+                <div class="mt-4">
+                    <DataTable state=table_state.clone() height="600px".to_string() row_height=36 />
                 </div>
             </div>
         </AdminGuard>

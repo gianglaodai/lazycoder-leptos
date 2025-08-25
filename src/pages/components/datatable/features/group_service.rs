@@ -1,4 +1,3 @@
-
 pub struct GroupService;
 
 impl GroupService {
@@ -6,7 +5,7 @@ impl GroupService {
         Self
     }
     pub fn set_group_cols(&mut self, _cols: Vec<String>) {
-        unimplemented!()
+        // no-op for now; grouping pipeline will be implemented later
     }
     pub fn group_rows<T>(&self, _rows: Vec<T>, _cols: &[String]) -> GroupResult<T> {
         GroupResult {

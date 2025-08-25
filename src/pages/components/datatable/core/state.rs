@@ -1,7 +1,8 @@
-use crate::pages::components::datatable::core::column::ColumnDef;
+use crate::pages::components::datatable::core::column::{ColumnDef, ColumnState};
 use crate::pages::components::datatable::core::data_source::{FilterModel, SortModel};
 use crate::pages::components::datatable::core::row::{RowNode, SelectionState};
-use leptos::prelude::{RwSignal, Set, Update};
+use leptos::prelude::{ReadUntracked, RwSignal, Set, Update};
+use std::collections::HashMap;
 
 #[derive(Clone, Debug, Default)]
 pub struct ViewportState {
@@ -13,6 +14,7 @@ pub struct ViewportState {
 
 pub struct TableState<T: Send + Sync + 'static> {
     pub columns: RwSignal<Vec<ColumnDef<T>>>,
+    pub column_state: RwSignal<HashMap<String, ColumnState>>, // per-column runtime state (width/hidden/pinned/sort)
     pub sort_model: RwSignal<Vec<SortModel>>,
     pub filter_model: RwSignal<FilterModel>,
     pub selection: RwSignal<SelectionState>,
@@ -22,12 +24,16 @@ pub struct TableState<T: Send + Sync + 'static> {
     pub error: RwSignal<Option<String>>,
     pub rows: RwSignal<Vec<RowNode<T>>>,
     pub total_rows: RwSignal<Option<usize>>,
+    // Client-side pagination (optional):
+    pub page_size: RwSignal<usize>,
+    pub current_page: RwSignal<usize>,
 }
 
 impl<T: Send + Sync + 'static> TableState<T> {
     pub fn new() -> Self {
         Self {
             columns: RwSignal::new(Vec::new()),
+            column_state: RwSignal::new(HashMap::new()),
             sort_model: RwSignal::new(Vec::new()),
             filter_model: RwSignal::new(FilterModel::default()),
             selection: RwSignal::new(SelectionState::default()),
@@ -37,6 +43,8 @@ impl<T: Send + Sync + 'static> TableState<T> {
             error: RwSignal::new(None),
             rows: RwSignal::new(Vec::new()),
             total_rows: RwSignal::new(None),
+            page_size: RwSignal::new(50),
+            current_page: RwSignal::new(1),
         }
     }
 
@@ -56,8 +64,8 @@ impl<T: Send + Sync + 'static> TableState<T> {
         self.rows.update(|v| v.push(row));
     }
     pub fn rows_en(&self) -> usize {
-        // Fallback implementation without requiring Clone/GetUntracked on the signal's inner type
-        // Consider adding a dedicated counter signal updated alongside `rows` if you need this frequently.
-        0
+        // Return the current number of row nodes tracked by the table state.
+        // This uses get_untracked to avoid creating reactive dependencies here.
+        self.rows.read_untracked().len()
     }
 }
