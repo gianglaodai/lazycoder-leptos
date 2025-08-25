@@ -39,20 +39,20 @@ pub fn DataTable<T: Clone + Send + Sync + 'static>(
     let s_foot = state.clone();
 
     view! {
-        <div class="lc-datatable border border-gray-200 rounded-md overflow-hidden text-sm bg-white">
-            <div class="lc-dt-header sticky top-0 z-10 bg-gray-50 border-b border-gray-200">
-                <HeaderRow state=s_head />
-            </div>
+        <div class="lc-datatable relative border border-gray-200 rounded-md overflow-hidden text-sm bg-white">
             <div class="lc-dt-body overflow-auto" style=move || format!("height:{};", height)>
+                <div class="lc-dt-header sticky top-0 z-10 bg-gray-50 border-b border-gray-200">
+                    <HeaderRow state=s_head />
+                </div>
                 <VirtualizedBody state=s_body row_height=row_height />
             </div>
-            <Show when=move || loading.get_untracked()>
+            <Show when=move || loading.get()>
                 <LoadingOverlay _state=s_load.clone() />
             </Show>
-            <Show when=move || error.get_untracked().is_some()>
+            <Show when=move || error.get().is_some()>
                 <ErrorOverlay state=s_err.clone() />
             </Show>
-            <Show when=move || !loading.get_untracked() && error.get_untracked().is_none() && rows.get_untracked().is_empty()>
+            <Show when=move || !loading.get() && error.get().is_none() && rows.with(|v| v.is_empty())>
                 <EmptyOverlay _state=s_empty.clone() />
             </Show>
             <div class="lc-dt-footer border-t border-gray-200 bg-gray-50">

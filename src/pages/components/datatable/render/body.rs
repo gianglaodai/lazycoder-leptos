@@ -1,8 +1,25 @@
 use crate::pages::components::datatable::core::column::ColumnDef;
 use crate::pages::components::datatable::core::row::RowNode;
 use crate::pages::components::datatable::core::state::TableState;
+use crate::pages::components::datatable::core::render_value::Value as LCValue;
 use leptos::prelude::*;
+use std::cmp::Ordering;
+use std::collections::HashMap;
 use std::sync::Arc;
+
+fn compare_value(a: &LCValue, b: &LCValue) -> Ordering {
+    use LCValue::*;
+    match (a, b) {
+        (Empty, Empty) => Ordering::Equal,
+        (Empty, _) => Ordering::Less,
+        (_, Empty) => Ordering::Greater,
+        (Number(x), Number(y)) => x.partial_cmp(y).unwrap_or(Ordering::Equal),
+        (Bool(x), Bool(y)) => x.cmp(y),
+        (Date(x), Date(y)) => x.cmp(y), // assume ISO format for lexicographic order
+        (Text(x), Text(y)) => x.cmp(y),
+        _ => a.to_string().cmp(&b.to_string()),
+    }
+}
 
 #[component]
 pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
@@ -41,6 +58,9 @@ pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
     let quick = state.quick_filter;
     let page_size = state.page_size;
     let current_page = state.current_page;
+    let total_rows_sig = state.total_rows;
+    let sort_model_sig = state.sort_model;
+    let columns_sig = state.columns;
 
     // Helper: filter rows by quick text across visible columns.
     let filtered_rows = move || {
@@ -54,7 +74,7 @@ pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
             rows.into_iter()
                 .filter(|rn| {
                     cols.iter().any(|c| {
-                        let val = if let Some(getter) = &c.value_getter { getter(&rn.data) } else { crate::pages::components::datatable::core::render_value::Value::Empty };
+                        let val = if let Some(getter) = &c.value_getter { getter(&rn.data) } else { LCValue::Empty };
                         let txt = if let Some(fmt) = &c.value_formatter { fmt(&val) } else { val.to_string() };
                         txt.to_lowercase().contains(&q)
                     })
@@ -63,13 +83,61 @@ pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
         }
     };
 
-    // Helper: page the filtered rows.
+    // Helper: sort rows based on sort_model.
+    let sorted_rows = move || {
+        let mut rows = filtered_rows();
+        let model = sort_model_sig.with(|m| m.clone());
+        if model.is_empty() || rows.len() <= 1 {
+            return rows;
+        }
+        // Map columns by id for quick lookup of getters and comparators
+        let cols = columns_sig.with(|c| c.clone());
+        let col_map: HashMap<String, ColumnDef<T>> = cols.into_iter().map(|c| (c.id.to_string(), c)).collect();
+        // Order model by sort_index (if any)
+        let mut ordered = model.clone();
+        ordered.sort_by(|a, b| match (a.sort_index, b.sort_index) {
+            (Some(x), Some(y)) => x.cmp(&y),
+            (Some(_), None) => std::cmp::Ordering::Less,
+            (None, Some(_)) => std::cmp::Ordering::Greater,
+            (None, None) => a.col_id.cmp(&b.col_id),
+        });
+        rows.sort_by(|ra, rb| {
+            for sm in ordered.iter() {
+                if let Some(col) = col_map.get(&sm.col_id) {
+                    let va = if let Some(getter) = &col.value_getter { getter(&ra.data) } else { LCValue::Empty };
+                    let vb = if let Some(getter) = &col.value_getter { getter(&rb.data) } else { LCValue::Empty };
+                    let ord = if let Some(cmp) = &col.comparator {
+                        cmp(&va, &vb)
+                    } else {
+                        compare_value(&va, &vb)
+                    };
+                    let ord = match sm.sort {
+                        crate::pages::components::datatable::core::data_source::SortOrder::Asc => ord,
+                        crate::pages::components::datatable::core::data_source::SortOrder::Desc => ord.reverse(),
+                    };
+                    if ord != Ordering::Equal {
+                        return ord;
+                    }
+                }
+            }
+            Ordering::Equal
+        });
+        rows
+    };
+
+    // Helper: page the sorted rows.
     let paged_rows = move || {
         let ps = page_size.get_untracked().max(1);
         let cp = current_page.get_untracked().max(1);
+        let fr = sorted_rows();
+        // If total_rows is provided (server-side pagination) and the current rows are already a single page,
+        // avoid client-side slicing to prevent double pagination.
+        let total_opt = total_rows_sig.get_untracked();
+        if total_opt.is_some() && fr.len() <= ps {
+            return fr;
+        }
         let start = ps.saturating_mul(cp.saturating_sub(1));
         let end = start + ps;
-        let fr = filtered_rows();
         fr.into_iter().enumerate().filter_map(|(idx, r)| if idx >= start && idx < end { Some(r) } else { None }).collect::<Vec<_>>()
     };
 

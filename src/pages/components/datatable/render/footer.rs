@@ -18,8 +18,8 @@ pub fn StatusBar<T: Send + Sync + 'static>(
 
     // Determine page count based on total_rows when provided, else based on local rows length.
     let page_count = move || {
-        let ps = page_size.get_untracked().max(1);
-        let total_opt = total.get_untracked();
+        let ps = page_size.get().max(1);
+        let total_opt = total.get();
         let total_rows = total_opt.unwrap_or_else(|| rows.with(|v| v.len()));
         let pages = (total_rows + ps - 1) / ps;
         pages.max(1)
@@ -27,8 +27,8 @@ pub fn StatusBar<T: Send + Sync + 'static>(
 
     let total_text = move || total.with(|t| t.map(|n| n.to_string()).unwrap_or_else(|| "unknown".into()));
 
-    let can_prev = move || current_page.get_untracked() > 1;
-    let can_next = move || current_page.get_untracked() < page_count();
+    let can_prev = move || current_page.get() > 1;
+    let can_next = move || current_page.get() < page_count();
 
     let goto_prev = {
         let current_page = current_page.clone();
@@ -57,7 +57,7 @@ pub fn StatusBar<T: Send + Sync + 'static>(
             </div>
             <div class="lc-dt-pagination inline-flex items-center gap-2">
                 <button class="px-2 py-1 border border-gray-200 rounded text-gray-700 disabled:text-gray-400" on:click=goto_prev disabled=move || !can_prev() >{"Prev"}</button>
-                <span class="text-gray-500">{move || format!("Page {}/{}", current_page.get_untracked(), page_count())}</span>
+                <span class="text-gray-500">{move || format!("Page {}/{}", current_page.get(), page_count())}</span>
                 <button class="px-2 py-1 border border-gray-200 rounded text-gray-700 disabled:text-gray-400" on:click=goto_next disabled=move || !can_next() >{"Next"}</button>
             </div>
         </div>

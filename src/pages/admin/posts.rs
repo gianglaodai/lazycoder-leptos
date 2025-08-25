@@ -57,7 +57,7 @@ fn NewPostDialog() -> impl IntoView {
 
     view! {
         <Dialog>
-            <DialogTrigger>New Post</DialogTrigger>
+            <DialogTrigger variant=ButtonVariant::Primary intent=ButtonIntent::Primary>New Post</DialogTrigger>
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>New Post</DialogTitle>
@@ -121,81 +121,107 @@ pub fn AdminPostsPage() -> impl IntoView {
 
     let reload = RwSignal::new(0u32);
 
+    // Build datatable state and columns
+    use crate::pages::components::datatable::core::column::{ColumnDef, Pinned};
+    use crate::pages::components::datatable::core::render_value::Value;
+    use crate::pages::components::datatable::core::row::RowNode;
+    use crate::pages::components::datatable::core::state::TableState;
+    use crate::pages::components::datatable::DataTable;
+    use std::sync::Arc;
+
+    let table_state: Arc<TableState<crate::pages::rest::post_info_api::PostInfoTO>> = Arc::new(TableState::new());
+
+    // Initialize pagination from query
+    table_state.page_size.set(max_results() as usize);
+    let initial_cp = {
+        let ps = table_state.page_size.get_untracked().max(1) as i64;
+        let fr = first_result();
+        ((fr / ps) + 1).max(1) as usize
+    };
+    table_state.current_page.set(initial_cp);
+
     let posts_and_total_resource = Resource::new(
-        move || {
-            let sort: Option<String> = query.with(|q| q.get("sort").map(|s| s.to_string()));
-            let search: Option<String> = query.with(|q| q.get("search").map(|s| s.to_string()));
-            let (p_filters, a_filters): (Option<Vec<String>>, Option<Vec<String>>) = {
-                #[cfg(target_arch = "wasm32")]
-                {
-                    if let Some(w) = leptos::web_sys::window() {
-                        if let Ok(search_str) = w.location().search() {
-                            let qs = search_str.trim_start_matches('?');
-                            let mut pfs: Vec<String> = vec![];
-                            let mut afs: Vec<String> = vec![];
-                            for kv in qs.split('&') {
-                                if let Some((k, v)) = kv.split_once('=') {
-                                    if k == "p_filters" {
-                                        pfs.push(v.to_string());
-                                    }
-                                    if k == "a_filters" {
-                                        afs.push(v.to_string());
+        {
+            let table_state = table_state.clone();
+            move || {
+                let sort: Option<String> = query.with(|q| q.get("sort").map(|s| s.to_string()));
+                let search: Option<String> = query.with(|q| q.get("search").map(|s| s.to_string()));
+                let (p_filters, a_filters): (Option<Vec<String>>, Option<Vec<String>>) = {
+                    #[cfg(target_arch = "wasm32")]
+                    {
+                        if let Some(w) = leptos::web_sys::window() {
+                            if let Ok(search_str) = w.location().search() {
+                                let qs = search_str.trim_start_matches('?');
+                                let mut pfs: Vec<String> = vec![];
+                                let mut afs: Vec<String> = vec![];
+                                for kv in qs.split('&') {
+                                    if let Some((k, v)) = kv.split_once('=') {
+                                        if k == "p_filters" {
+                                            pfs.push(v.to_string());
+                                        }
+                                        if k == "a_filters" {
+                                            afs.push(v.to_string());
+                                        }
                                     }
                                 }
+                                (
+                                    if pfs.is_empty() { None } else { Some(pfs) },
+                                    if afs.is_empty() { None } else { Some(afs) },
+                                )
+                            } else {
+                                (None, None)
                             }
-                            (
-                                if pfs.is_empty() { None } else { Some(pfs) },
-                                if afs.is_empty() { None } else { Some(afs) },
-                            )
                         } else {
                             (None, None)
                         }
-                    } else {
-                        (None, None)
                     }
-                }
-                #[cfg(not(target_arch = "wasm32"))]
-                {
-                    let pfs = query.with(|q| {
-                        let mut items: Vec<String> = Vec::new();
-                        if let Some(v) = q.get("p_filters") {
-                            items.push(v.to_string());
-                        }
-                        if let Some(v) = q.get("p_filters[]") {
-                            items.push(v.to_string());
-                        }
-                        if items.is_empty() {
-                            None
-                        } else {
-                            Some(items)
-                        }
-                    });
-                    let afs = query.with(|q| {
-                        let mut items: Vec<String> = Vec::new();
-                        if let Some(v) = q.get("a_filters") {
-                            items.push(v.to_string());
-                        }
-                        if let Some(v) = q.get("a_filters[]") {
-                            items.push(v.to_string());
-                        }
-                        if items.is_empty() {
-                            None
-                        } else {
-                            Some(items)
-                        }
-                    });
-                    (pfs, afs)
-                }
-            };
-            (
-                first_result() as i32,
-                max_results(),
-                sort,
-                search,
-                p_filters,
-                a_filters,
-                reload.get(),
-            )
+                    #[cfg(not(target_arch = "wasm32"))]
+                    {
+                        let pfs = query.with(|q| {
+                            let mut items: Vec<String> = Vec::new();
+                            if let Some(v) = q.get("p_filters") {
+                                items.push(v.to_string());
+                            }
+                            if let Some(v) = q.get("p_filters[]") {
+                                items.push(v.to_string());
+                            }
+                            if items.is_empty() {
+                                None
+                            } else {
+                                Some(items)
+                            }
+                        });
+                        let afs = query.with(|q| {
+                            let mut items: Vec<String> = Vec::new();
+                            if let Some(v) = q.get("a_filters") {
+                                items.push(v.to_string());
+                            }
+                            if let Some(v) = q.get("a_filters[]") {
+                                items.push(v.to_string());
+                            }
+                            if items.is_empty() {
+                                None
+                            } else {
+                                Some(items)
+                            }
+                        });
+                        (pfs, afs)
+                    }
+                };
+                let ps = table_state.page_size.get();
+                let cp = table_state.current_page.get();
+                let first_result_i32 = ((cp.saturating_sub(1) * ps) as i32).max(0);
+                let max_results_i32 = ps as i32;
+                (
+                    first_result_i32,
+                    max_results_i32,
+                    sort,
+                    search,
+                    p_filters,
+                    a_filters,
+                    reload.get(),
+                )
+            }
         },
         |(first_result_i32, max_results_i32, sort, search, p_filters, a_filters, _)| async move {
             let fut_posts = load_post_infos(
@@ -224,16 +250,6 @@ pub fn AdminPostsPage() -> impl IntoView {
             }
         }
     });
-
-    // Build datatable state and columns
-    use crate::pages::components::datatable::core::column::{ColumnDef, Pinned};
-    use crate::pages::components::datatable::core::render_value::Value;
-    use crate::pages::components::datatable::core::row::RowNode;
-    use crate::pages::components::datatable::core::state::TableState;
-    use crate::pages::components::datatable::DataTable;
-    use std::sync::Arc;
-
-    let table_state: Arc<TableState<crate::pages::rest::post_info_api::PostInfoTO>> = Arc::new(TableState::new());
 
     // Define columns (AG Grid inspired)
     table_state.columns.set(vec![
@@ -398,9 +414,6 @@ pub fn AdminPostsPage() -> impl IntoView {
             field: Some("updated_at"),
         },
     ]);
-
-    // Keep page size consistent with the query's max_results
-    table_state.page_size.set(max_results() as usize);
 
     // When resource resolves, populate rows and total
     Effect::new({
