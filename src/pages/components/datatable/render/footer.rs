@@ -5,12 +5,12 @@ use leptos::*;
 use std::rc::Rc;
 
 #[component]
-pub fn StatusBar<T: 'static>(#[prop(into)] state: Rc<TableState<T>>) -> impl IntoView {
+pub fn StatusBar<T: Send + Sync + 'static>(#[prop(into)] state: Rc<TableState<T>>) -> impl IntoView {
     unimplemented!()
 }
 
 #[component]
-pub fn Pagination<T: 'static>(#[prop(into)] state: Rc<TableState<T>>) -> impl IntoView {
+pub fn Pagination<T: Send + Sync + 'static>(#[prop(into)] state: Rc<TableState<T>>) -> impl IntoView {
     unimplemented!()
 }
 

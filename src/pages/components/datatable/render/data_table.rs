@@ -11,7 +11,7 @@ pub struct DataTableProperties<T: 'static> {
 }
 
 #[component]
-pub fn DataTable<T: Clone + 'static>(
+pub fn DataTable<T: Clone + Send + Sync + 'static>(
     #[prop(into)] state: Rc<TableState<T>>,
     #[prop(optional)] height: Option<String>,
     #[prop(optional)] row_height: Option<i32>,

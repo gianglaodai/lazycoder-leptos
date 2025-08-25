@@ -5,12 +5,12 @@ use crate::pages::components::datatable::core::column::ColumnDef;
 use crate::pages::components::datatable::core::state::TableState;
 
 #[component]
-pub fn HeaderRow<T: 'static>(#[prop(into)] state: Rc<TableState<T>>) -> impl IntoView {
+pub fn HeaderRow<T: Send + Sync + 'static>(#[prop(into)] state: Rc<TableState<T>>) -> impl IntoView {
     unimplemented!()
 }
 
 #[component]
-pub fn HeaderCell<T: 'static>(col: ColumnDef<T>) -> impl IntoView {
+pub fn HeaderCell<T: Send + Sync + 'static>(col: ColumnDef<T>) -> impl IntoView {
     unimplemented!()
 }
 

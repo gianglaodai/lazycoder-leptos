@@ -6,7 +6,7 @@ use leptos::*;
 use std::rc::Rc;
 
 #[component]
-pub fn VirtualizedBody<T: Clone + 'static>(
+pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
     #[prop(into)] state: Rc<TableState<T>>,
     row_height: i32,
 ) -> impl IntoView {
@@ -14,7 +14,7 @@ pub fn VirtualizedBody<T: Clone + 'static>(
 }
 
 #[component]
-pub fn RowRenderer<T: Clone + 'static>(
+pub fn RowRenderer<T: Clone + Send + Sync + 'static>(
     row: RowNode<T>,
     cols: Vec<ColumnDef<T>>,
     row_height: i32,
@@ -23,7 +23,7 @@ pub fn RowRenderer<T: Clone + 'static>(
 }
 
 #[component]
-pub fn CellHost<T: Clone + 'static>(row: RowNode<T>, col: ColumnDef<T>) -> impl IntoView {
+pub fn CellHost<T: Clone + Send + Sync + 'static>(row: RowNode<T>, col: ColumnDef<T>) -> impl IntoView {
     unimplemented!()
 }
 

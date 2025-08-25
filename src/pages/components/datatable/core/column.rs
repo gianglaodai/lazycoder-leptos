@@ -1,7 +1,9 @@
-use std::rc::Rc;
+use std::sync::Arc;
 
 use crate::pages::components::datatable::core::agg::AggregateFn;
 use crate::pages::components::datatable::core::data_source::SortOrder;
+use crate::pages::components::datatable::core::render_value::Value;
+use crate::pages::components::datatable::renderers::base::ICellRenderer;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Pinned {
@@ -14,10 +16,10 @@ pub enum Pinned {
 pub struct ColumnDef<T: 'static> {
     pub id: &'static str,
     pub header_name: &'static str,
-    pub value_getter: Option<Rc<dyn Fn(&T) -> Value>>,
-    pub value_formatter: Option<Rc<dyn Fn(&Value) -> String>>,
-    pub cell_renderer: Option<Rc<dyn std::any::Any>>,
-    pub cell_editor: Option<Rc<dyn std::any::Any>>,
+    pub value_getter: Option<Arc<dyn Fn(&T) -> Value + Send + Sync>>,
+    pub value_formatter: Option<Arc<dyn Fn(&Value) -> String + Send + Sync>>,
+    pub cell_renderer: Option<Arc<dyn ICellRenderer<T> + Send + Sync>>,
+    pub cell_editor: Option<Arc<dyn std::any::Any + Send + Sync>>,
     pub sortable: bool,
     pub filterable: bool,
     pub resizable: bool,
@@ -28,7 +30,7 @@ pub struct ColumnDef<T: 'static> {
     pub max_width: Option<i32>,
     pub groupable: bool,
     pub aggregate: Option<AggregateFn>,
-    pub comparator: Option<Rc<dyn Fn(&Value, &Value) -> std::cmp::Ordering>>,
+    pub comparator: Option<Arc<dyn Fn(&Value, &Value) -> std::cmp::Ordering + Send + Sync>>,
     pub field: Option<&'static str>,
 }
 
@@ -57,14 +59,4 @@ impl ColumnApi {
     pub fn set_column_state(&self, _state: Vec<ColumnState>) {
         unimplemented!()
     }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum Value {
-    Text(String),
-    Int(i64),
-    Float(f64),
-    Bool(bool),
-    Date(String),
-    Empty,
 }

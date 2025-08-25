@@ -5,16 +5,16 @@ use std::rc::Rc;
 use crate::pages::components::datatable::core::state::TableState;
 
 #[component]
-pub fn LoadingOverlay<T: 'static>(#[prop(into)] state: Rc<TableState<T>>) -> impl IntoView {
+pub fn LoadingOverlay<T: Send + Sync + 'static>(#[prop(into)] state: Rc<TableState<T>>) -> impl IntoView {
     unimplemented!()
 }
 
 #[component]
-pub fn EmptyOverlay<T: 'static>(#[prop(into)] state: Rc<TableState<T>>) -> impl IntoView {
+pub fn EmptyOverlay<T: Send + Sync + 'static>(#[prop(into)] state: Rc<TableState<T>>) -> impl IntoView {
     unimplemented!()
 }
 
 #[component]
-pub fn ErrorOverlay<T: 'static>(#[prop(into)] state: Rc<TableState<T>>) -> impl IntoView {
+pub fn ErrorOverlay<T: Send + Sync + 'static>(#[prop(into)] state: Rc<TableState<T>>) -> impl IntoView {
     unimplemented!()
 }

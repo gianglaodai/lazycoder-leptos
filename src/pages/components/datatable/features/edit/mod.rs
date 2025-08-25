@@ -1,5 +1,6 @@
 use crate::pages::components::datatable::core::render_value::Value;
 use leptos::prelude::*;
+use leptos::prelude::AnyView;
 
 pub mod editors;
 
@@ -7,7 +8,7 @@ pub trait ICellEditor<T> {
     fn start_value(&self, _v: &Value) -> Value {
         Value::Empty
     }
-    fn view(&self, _row: &T) -> impl IntoView {
+    fn view(&self, _row: &T) -> AnyView {
         unimplemented!()
     }
     fn get_value(&self) -> Value {

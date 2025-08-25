@@ -1,18 +1,19 @@
 use std::collections::HashMap;
-use std::rc::Rc;
+use std::sync::Arc;
 use super::base::ICellRenderer;
 
 
-/// Registry gắn col_id -> renderer
 pub struct RendererRegistry<T> {
-    map: HashMap<String, Rc<dyn ICellRenderer<T>>>,
+    map: HashMap<String, Arc<dyn ICellRenderer<T> + Send + Sync>>,
 }
 
 
 impl<T> RendererRegistry<T> {
     pub fn new() -> Self { Self { map: HashMap::new() } }
-    pub fn register(&mut self, _col_id: impl Into<String>, _r: Rc<dyn ICellRenderer<T>>) {
-        unimplemented!()
+    pub fn register(&mut self, col_id: impl Into<String>, r: Arc<dyn ICellRenderer<T> + Send + Sync>) {
+        self.map.insert(col_id.into(), r);
     }
-    pub fn get(&self, _col_id: &str) -> Option<Rc<dyn ICellRenderer<T>>> { None }
+    pub fn get(&self, col_id: &str) -> Option<Arc<dyn ICellRenderer<T> + Send + Sync>> {
+        self.map.get(col_id).cloned()
+    }
 }
