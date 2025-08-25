@@ -19,6 +19,14 @@ pub struct FilterModel {
     // simple per-column text filters (AG Grid-like 'contains' behavior)
     pub quick_text: Option<String>,
     pub column_text: std::collections::HashMap<String, String>,
+    // advanced per-column filters: operator + typed value
+    pub column_advanced: std::collections::HashMap<String, AdvancedFilter>,
+}
+
+#[derive(Clone, Debug)]
+pub struct AdvancedFilter {
+    pub operator: crate::business::filter::FilterOperator,
+    pub value: Option<crate::business::filter::FilterValue>,
 }
 
 #[derive(Clone, Debug, Default)]

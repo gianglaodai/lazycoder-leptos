@@ -38,6 +38,12 @@ pub fn StatusBar<T: Send + Sync + 'static>(
             }
         }
     };
+    let goto_first = {
+        let st = state.clone();
+        move |_| {
+            go_to_page(&st, 1);
+        }
+    };
     let goto_next = {
         let current_page = current_page.clone();
         move |_| {
@@ -47,18 +53,59 @@ pub fn StatusBar<T: Send + Sync + 'static>(
             }
         }
     };
-
+    let goto_last = {
+        let st = state.clone();
+        move |_| {
+            // Use a large number; go_to_page will clamp to the last page based on total_rows & page_size
+            go_to_page(&st, usize::MAX);
+        }
+    };
     view! {
         <div class="lc-dt-status flex items-center justify-between px-3 py-2 text-xs text-gray-600">
             <div class="flex items-center gap-3">
-                <span>{move || format!("Rows: {}", rows_count())}</span>
+                <span>{move || {
+                    let ps = page_size.get().max(1);
+                    let cp = current_page.get().max(1);
+                    let total_rows = total.get().unwrap_or_else(|| rows.with(|v| v.len()));
+                    if total_rows == 0 {
+                        "0 to 0 of 0".to_string()
+                    } else {
+                        let start = (cp - 1) * ps + 1;
+                        let end = std::cmp::min(start + ps - 1, total_rows);
+                        format!("{} to {} of {}", start, end, total_rows)
+                    }
+                }}</span>
                 <span>{move || format!("Selected: {}", selected_count())}</span>
-                <span>{move || format!("Total: {}", total_text())}</span>
+                <div class="flex items-center gap-1">
+                    <span class="text-gray-500">{"Page size:"}</span>
+                    {
+                        let st = state.clone();
+                        view!{
+                            <select class="w-20 border border-gray-200 rounded px-1 py-0.5 text-gray-700"
+                                prop:value=move || page_size.get().to_string()
+                                on:change=move |ev| {
+                                    let val = leptos::prelude::event_target_value(&ev);
+                                    if let Ok(num) = val.parse::<usize>() {
+                                        set_page_size(&st, num);
+                                    }
+                                }
+                            >
+                                <option value="5">{"5"}</option>
+                                <option value="10">{"10"}</option>
+                                <option value="20">{"20"}</option>
+                                <option value="50">{"50"}</option>
+                                <option value="100">{"100"}</option>
+                            </select>
+                        }
+                    }
+                </div>
             </div>
             <div class="lc-dt-pagination inline-flex items-center gap-2">
-                <button class="px-2 py-1 border border-gray-200 rounded text-gray-700 disabled:text-gray-400" on:click=goto_prev disabled=move || !can_prev() >{"Prev"}</button>
-                <span class="text-gray-500">{move || format!("Page {}/{}", current_page.get(), page_count())}</span>
-                <button class="px-2 py-1 border border-gray-200 rounded text-gray-700 disabled:text-gray-400" on:click=goto_next disabled=move || !can_next() >{"Next"}</button>
+                <button class="px-2 py-1 border border-gray-200 rounded text-gray-700 disabled:text-gray-400 transform rotate-270" on:click=goto_first disabled=move || !can_prev() >{"⌅"}</button>
+                <button class="px-2 py-1 border border-gray-200 rounded text-gray-700 disabled:text-gray-400 transform rotate-270" on:click=goto_prev disabled=move || !can_prev() >{"⌃"}</button>
+                <span class="text-gray-500">{move || format!("Page {} of {}", current_page.get(), page_count())}</span>
+                <button class="px-2 py-1 border border-gray-200 rounded text-gray-700 disabled:text-gray-400 transform rotate-90" on:click=goto_next disabled=move || !can_next() >{"⌃"}</button>
+                <button class="px-2 py-1 border border-gray-200 rounded text-gray-700 disabled:text-gray-400 transform rotate-90" on:click=goto_last disabled=move || !can_next() >{"⌅"}</button>
             </div>
         </div>
     }
@@ -78,9 +125,33 @@ pub fn Pagination<T: Send + Sync + 'static>(
     }
 }
 
-pub fn go_to_page(_page: usize) {
-    // no-op for now
+pub fn go_to_page<T: Send + Sync + 'static>(state: &Arc<TableState<T>>, page: usize) {
+    let page_size = state.page_size.get_untracked().max(1);
+    // Determine total rows from server-provided total when available; otherwise from local rows length.
+    let total_rows = state
+        .total_rows
+        .get_untracked()
+        .unwrap_or_else(|| state.rows.read_untracked().len());
+    let max_pages = ((total_rows + page_size - 1) / page_size).max(1);
+    let target = page.clamp(1, max_pages);
+    state.current_page.set(target);
 }
-pub fn set_page_size(_size: usize) {
-    // no-op for now
+
+pub fn set_page_size<T: Send + Sync + 'static>(state: &Arc<TableState<T>>, size: usize) {
+    let new_size = size.max(1);
+    // Update page size first
+    state.page_size.set(new_size);
+    // Re-clamp current page against new page count
+    let total_rows = state
+        .total_rows
+        .get_untracked()
+        .unwrap_or_else(|| state.rows.read_untracked().len());
+    let max_pages = ((total_rows + new_size - 1) / new_size).max(1);
+    state.current_page.update(|cp| {
+        if *cp > max_pages {
+            *cp = max_pages;
+        } else if *cp == 0 {
+            *cp = 1;
+        }
+    });
 }

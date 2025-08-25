@@ -272,6 +272,7 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("id"),
+            data_type: Some(crate::pages::components::datatable::core::column::DataType::Int),
         },
         ColumnDef {
             id: "title",
@@ -292,6 +293,7 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("title"),
+            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
         },
         ColumnDef {
             id: "slug",
@@ -312,6 +314,7 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("slug"),
+            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
         },
         ColumnDef {
             id: "status",
@@ -332,6 +335,7 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("status"),
+            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
         },
         ColumnDef {
             id: "username",
@@ -352,6 +356,7 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("username"),
+            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
         },
         ColumnDef {
             id: "email",
@@ -372,6 +377,7 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("email"),
+            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
         },
         ColumnDef {
             id: "created_at",
@@ -392,6 +398,7 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("created_at"),
+            data_type: Some(crate::pages::components::datatable::core::column::DataType::DateTime),
         },
         ColumnDef {
             id: "updated_at",
@@ -412,7 +419,8 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("updated_at"),
-        },
+            data_type: Some(crate::pages::components::datatable::core::column::DataType::DateTime),
+        }
     ]);
 
     // When resource resolves, populate rows and total

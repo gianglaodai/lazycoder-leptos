@@ -1,4 +1,4 @@
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum FilterOperator {
     Equal,
     NotEqual,
@@ -17,7 +17,7 @@ pub enum FilterOperator {
     NotBetween,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum Filter {
     Property {
         property_name: String,
@@ -34,7 +34,7 @@ pub enum Filter {
     },
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub enum FilterValue {
     Int(i32),
     IntRange(i32, i32),

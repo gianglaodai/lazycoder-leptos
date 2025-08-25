@@ -15,6 +15,17 @@ pub enum Pinned {
     Right,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum DataType {
+    Text,
+    Int,
+    Float,
+    Boolean,
+    Date,
+    Time,
+    DateTime,
+}
+
 #[derive(Clone)]
 pub struct ColumnDef<T: 'static> {
     pub id: &'static str,
@@ -35,6 +46,7 @@ pub struct ColumnDef<T: 'static> {
     pub aggregate: Option<AggregateFn>,
     pub comparator: Option<Arc<dyn Fn(&Value, &Value) -> std::cmp::Ordering + Send + Sync>>,
     pub field: Option<&'static str>,
+    pub data_type: Option<DataType>,
 }
 
 #[derive(Clone, Debug, Default)]
