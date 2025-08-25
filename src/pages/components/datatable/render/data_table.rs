@@ -39,7 +39,7 @@ pub fn DataTable<T: Clone + Send + Sync + 'static>(
     let s_foot = state.clone();
 
     view! {
-        <div class="lc-datatable relative border border-gray-200 rounded-md overflow-hidden text-sm bg-white">
+        <div class="lc-datatable relative border border-gray-200 rounded-md overflow-visible text-sm bg-white">
             <div class="lc-dt-body overflow-auto" style=move || format!("height:{};", height)>
                 <div class="lc-dt-header sticky top-0 z-10 bg-gray-50 border-b border-gray-200">
                     <HeaderRow state=s_head />

@@ -63,21 +63,38 @@ pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
     let columns_sig = state.columns;
 
     // Helper: filter rows by quick text across visible columns.
+    let state_for_filter = state.clone();
     let filtered_rows = move || {
         let q = quick.get_untracked().to_lowercase();
         let rows = rows_sig.with(|v| v.clone());
-        if q.is_empty() {
+        let col_filters = state_for_filter.filter_model.with(|fm| fm.column_text.clone());
+        let cols = visible_cols();
+        let apply_quick = |text: &str| q.is_empty() || text.to_lowercase().contains(&q);
+        if q.is_empty() && col_filters.is_empty() {
             rows
         } else {
-            // build a vector of visible columns once
-            let cols = visible_cols();
             rows.into_iter()
                 .filter(|rn| {
-                    cols.iter().any(|c| {
-                        let val = if let Some(getter) = &c.value_getter { getter(&rn.data) } else { LCValue::Empty };
-                        let txt = if let Some(fmt) = &c.value_formatter { fmt(&val) } else { val.to_string() };
-                        txt.to_lowercase().contains(&q)
-                    })
+                    // Quick filter across any visible column
+                    let quick_ok = if q.is_empty() { true } else {
+                        cols.iter().any(|c| {
+                            let val = if let Some(getter) = &c.value_getter { getter(&rn.data) } else { LCValue::Empty };
+                            let txt = if let Some(fmt) = &c.value_formatter { fmt(&val) } else { val.to_string() };
+                            apply_quick(&txt)
+                        })
+                    };
+                    if !quick_ok { return false; }
+                    // Per-column filters (contains)
+                    for (cid, needle) in col_filters.iter() {
+                        if let Some(c) = cols.iter().find(|c| &c.id == cid) {
+                            let val = if let Some(getter) = &c.value_getter { getter(&rn.data) } else { LCValue::Empty };
+                            let txt = if let Some(fmt) = &c.value_formatter { fmt(&val) } else { val.to_string() };
+                            if !txt.to_lowercase().contains(&needle.to_lowercase()) {
+                                return false;
+                            }
+                        }
+                    }
+                    true
                 })
                 .collect::<Vec<_>>()
         }

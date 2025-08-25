@@ -381,7 +381,7 @@ pub fn AdminPostsPage() -> impl IntoView {
             cell_renderer: None,
             cell_editor: None,
             sortable: true,
-            filterable: false,
+            filterable: true,
             resizable: true,
             movable: true,
             pinned: Pinned::None,

@@ -16,8 +16,9 @@ pub struct SortModel {
 
 #[derive(Clone, Debug, Default)]
 pub struct FilterModel {
-    // placeholder: fill with column -> condition list
+    // simple per-column text filters (AG Grid-like 'contains' behavior)
     pub quick_text: Option<String>,
+    pub column_text: std::collections::HashMap<String, String>,
 }
 
 #[derive(Clone, Debug, Default)]
