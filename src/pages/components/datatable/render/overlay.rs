@@ -29,7 +29,10 @@ pub fn EmptyOverlay<T: Send + Sync + 'static>(
 pub fn ErrorOverlay<T: Send + Sync + 'static>(
     #[prop(into)] state: Arc<TableState<T>>,
 ) -> impl IntoView {
-    let msg = state.error.get_untracked().unwrap_or_else(|| "Unknown error".to_string());
+    let msg = state
+        .error
+        .get_untracked()
+        .unwrap_or_else(|| "Unknown error".to_string());
     view! {
         <div class="lc-dt-overlay absolute inset-0 flex items-center justify-center bg-red-50 text-red-700">
             <span>{msg}</span>

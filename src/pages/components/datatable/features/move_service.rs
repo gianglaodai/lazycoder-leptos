@@ -39,11 +39,21 @@ impl MoveService {
     }
 
     /// Returns whether a drag is in progress.
-    pub fn is_dragging(&self) -> bool { self.dragging }
+    pub fn is_dragging(&self) -> bool {
+        self.dragging
+    }
 
     /// Returns the current horizontal delta since begin_drag.
-    pub fn delta_x(&self) -> i32 { if self.dragging { self.current_x - self.start_x } else { 0 } }
+    pub fn delta_x(&self) -> i32 {
+        if self.dragging {
+            self.current_x - self.start_x
+        } else {
+            0
+        }
+    }
 
     /// Returns the id of the column being dragged, if any.
-    pub fn dragging_col_id(&self) -> Option<&str> { self.col_id.as_deref() }
+    pub fn dragging_col_id(&self) -> Option<&str> {
+        self.col_id.as_deref()
+    }
 }

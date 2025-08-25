@@ -7,7 +7,9 @@ pub struct PivotService {
 
 impl PivotService {
     pub fn new() -> Self {
-        Self { model: PivotModel::default() }
+        Self {
+            model: PivotModel::default(),
+        }
     }
     /// Set the columns that will be used as pivot dimensions.
     pub fn set_pivot_cols(&mut self, cols: Vec<String>) {

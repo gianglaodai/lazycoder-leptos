@@ -25,9 +25,10 @@ impl<T: Send + Sync + 'static> PinService<T> {
             PinSide::Right => Pinned::Right,
         };
         self.state.column_state.update(|m| {
-            let entry = m
-                .entry(id.clone())
-                .or_insert_with(|| ColumnState { id: id.clone(), ..Default::default() });
+            let entry = m.entry(id.clone()).or_insert_with(|| ColumnState {
+                id: id.clone(),
+                ..Default::default()
+            });
             entry.pinned = Some(pin_val);
         });
     }
@@ -35,9 +36,10 @@ impl<T: Send + Sync + 'static> PinService<T> {
     pub fn unpin(&self, col_id: &str) {
         let id = col_id.to_string();
         self.state.column_state.update(|m| {
-            let entry = m
-                .entry(id.clone())
-                .or_insert_with(|| ColumnState { id: id.clone(), ..Default::default() });
+            let entry = m.entry(id.clone()).or_insert_with(|| ColumnState {
+                id: id.clone(),
+                ..Default::default()
+            });
             entry.pinned = Some(Pinned::None);
         });
     }

@@ -5,12 +5,12 @@ use crate::pages::components::datatable::core::state::TableState;
 use leptos::prelude::{Update, With};
 
 pub struct ResizeService<T: Send + Sync + 'static> {
-    state: Arc<TableState<T>>,      // table state handle
-    resizing: bool,                 // whether a resize is in progress
-    col_id: Option<String>,         // id of the column being resized
-    start_x: i32,                   // pointer x at begin
-    current_x: i32,                 // latest pointer x
-    start_width: i32,               // effective width at begin (taking overrides into account)
+    state: Arc<TableState<T>>, // table state handle
+    resizing: bool,            // whether a resize is in progress
+    col_id: Option<String>,    // id of the column being resized
+    start_x: i32,              // pointer x at begin
+    current_x: i32,            // latest pointer x
+    start_width: i32,          // effective width at begin (taking overrides into account)
 }
 
 impl<T: Send + Sync + 'static> ResizeService<T> {
@@ -34,10 +34,12 @@ impl<T: Send + Sync + 'static> ResizeService<T> {
         // Determine effective start width (column_state override or column def width)
         let id = col_id.to_string();
         let effective = {
-            let def_width = self
-                .state
-                .columns
-                .with(|cols| cols.iter().find(|c| c.id == id.as_str()).map(|c| c.width).unwrap_or(0));
+            let def_width = self.state.columns.with(|cols| {
+                cols.iter()
+                    .find(|c| c.id == id.as_str())
+                    .map(|c| c.width)
+                    .unwrap_or(0)
+            });
             self.state
                 .column_state
                 .with(|m| m.get(&id).and_then(|cs| cs.width))
@@ -70,12 +72,17 @@ impl<T: Send + Sync + 'static> ResizeService<T> {
                 }
             });
             let mut new_w = self.start_width.saturating_add(delta);
-            if let Some(maxw) = max_w_opt { new_w = new_w.clamp(min_w, maxw); } else { new_w = new_w.max(min_w); }
+            if let Some(maxw) = max_w_opt {
+                new_w = new_w.clamp(min_w, maxw);
+            } else {
+                new_w = new_w.max(min_w);
+            }
             // Write into column_state
             self.state.column_state.update(|m| {
-                let entry = m
-                    .entry(id.clone())
-                    .or_insert_with(|| ColumnState { id: id.clone(), ..Default::default() });
+                let entry = m.entry(id.clone()).or_insert_with(|| ColumnState {
+                    id: id.clone(),
+                    ..Default::default()
+                });
                 entry.width = Some(new_w);
             });
         }

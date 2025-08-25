@@ -166,8 +166,12 @@ pub fn PopoverContent(
                     let elem: web_sys::HtmlElement = el.unchecked_into();
                     let w = elem.offset_width() as f64;
                     let h = elem.offset_height() as f64;
-                    if w > 0.0 { cw.set(w); }
-                    if h > 0.0 { ch.set(h); }
+                    if w > 0.0 {
+                        cw.set(w);
+                    }
+                    if h > 0.0 {
+                        ch.set(h);
+                    }
                 }
             }
         }

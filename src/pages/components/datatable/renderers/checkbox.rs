@@ -16,6 +16,7 @@ impl<T> ICellRenderer<T> for CheckboxRenderer {
         let checked = matches!(value, Value::Bool(true));
         view! {
             <input type="checkbox" prop:checked=checked disabled=true class="pointer-events-none" />
-        }.into_any()
+        }
+        .into_any()
     }
 }

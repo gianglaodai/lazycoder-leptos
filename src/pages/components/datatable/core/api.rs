@@ -123,26 +123,45 @@ impl<T: Clone + Send + Sync + 'static> GridApi<T> {
         let state_for_export = state.clone();
         let export_csv = Rc::new(move |opts: ExportOpts| {
             // Build CSV from visible columns and current (unfiltered) rows.
-            let delimiter = if opts.delimiter == '\0' { ',' } else { opts.delimiter };
+            let delimiter = if opts.delimiter == '\0' {
+                ','
+            } else {
+                opts.delimiter
+            };
             let include_headers = opts.include_headers;
-            let file_name = opts.file_name.clone().unwrap_or_else(|| "export.csv".to_string());
+            let file_name = opts
+                .file_name
+                .clone()
+                .unwrap_or_else(|| "export.csv".to_string());
 
-            let (cols, col_state) = (state_for_export.columns.read_untracked(), state_for_export.column_state.read_untracked());
+            let (cols, col_state) = (
+                state_for_export.columns.read_untracked(),
+                state_for_export.column_state.read_untracked(),
+            );
             let visible_cols = cols
                 .iter()
-                .filter(|c| !col_state.get(c.id).and_then(|cs| cs.hidden).unwrap_or(false))
+                .filter(|c| {
+                    !col_state
+                        .get(c.id)
+                        .and_then(|cs| cs.hidden)
+                        .unwrap_or(false)
+                })
                 .cloned()
                 .collect::<Vec<_>>();
 
             let mut out = String::new();
             if include_headers {
                 for (i, c) in visible_cols.iter().enumerate() {
-                    if i > 0 { out.push(delimiter); }
+                    if i > 0 {
+                        out.push(delimiter);
+                    }
                     let mut h = c.header_name.to_string();
                     // simple CSV escaping for headers
                     if h.contains(delimiter) || h.contains('\n') || h.contains('"') {
                         h = h.replace('"', "\"\"");
-                        out.push('"'); out.push_str(&h); out.push('"');
+                        out.push('"');
+                        out.push_str(&h);
+                        out.push('"');
                     } else {
                         out.push_str(&h);
                     }
@@ -152,12 +171,24 @@ impl<T: Clone + Send + Sync + 'static> GridApi<T> {
             let rows = state_for_export.rows.read_untracked();
             for rn in rows.iter() {
                 for (i, c) in visible_cols.iter().enumerate() {
-                    if i > 0 { out.push(delimiter); }
-                    let val = if let Some(getter) = &c.value_getter { getter(&rn.data) } else { crate::pages::components::datatable::core::render_value::Value::Empty };
-                    let s = if let Some(fmt) = &c.value_formatter { fmt(&val) } else { val.to_string() };
+                    if i > 0 {
+                        out.push(delimiter);
+                    }
+                    let val = if let Some(getter) = &c.value_getter {
+                        getter(&rn.data)
+                    } else {
+                        crate::pages::components::datatable::core::render_value::Value::Empty
+                    };
+                    let s = if let Some(fmt) = &c.value_formatter {
+                        fmt(&val)
+                    } else {
+                        val.to_string()
+                    };
                     if s.contains(delimiter) || s.contains('\n') || s.contains('"') {
                         let escaped = s.replace('"', "\"\"");
-                        out.push('"'); out.push_str(&escaped); out.push('"');
+                        out.push('"');
+                        out.push_str(&escaped);
+                        out.push('"');
                     } else {
                         out.push_str(&s);
                     }

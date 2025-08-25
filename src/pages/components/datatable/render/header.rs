@@ -1,12 +1,12 @@
+use crate::business::filter::{FilterOperator, FilterValue};
 use crate::pages::components::datatable::core::column::ColumnDef;
+use crate::pages::components::datatable::core::column::DataType;
 use crate::pages::components::datatable::core::data_source::{SortModel, SortOrder};
 use crate::pages::components::datatable::core::state::TableState;
-use leptos::prelude::*;
-use leptos::prelude::event_target_value;
-use std::sync::Arc;
 use crate::pages::components::{Popover, PopoverContent, PopoverTrigger};
-use crate::business::filter::{FilterOperator, FilterValue};
-use crate::pages::components::datatable::core::column::DataType;
+use leptos::prelude::event_target_value;
+use leptos::prelude::*;
+use std::sync::Arc;
 
 #[component]
 pub fn HeaderRow<T: Clone + Send + Sync + 'static>(
@@ -68,12 +68,21 @@ pub fn HeaderCell<T: Clone + Send + Sync + 'static>(
             state.sort_model.update(|sm| {
                 if let Some(pos) = sm.iter().position(|s| s.col_id == col_id) {
                     match sm[pos].sort {
-                        SortOrder::Asc => { sm[pos].sort = SortOrder::Desc; sm[pos].sort_index = Some(0); }
-                        SortOrder::Desc => { sm.clear(); }
+                        SortOrder::Asc => {
+                            sm[pos].sort = SortOrder::Desc;
+                            sm[pos].sort_index = Some(0);
+                        }
+                        SortOrder::Desc => {
+                            sm.clear();
+                        }
                     }
                 } else {
                     sm.clear();
-                    sm.push(SortModel { col_id: col_id.clone(), sort: SortOrder::Asc, sort_index: Some(0) });
+                    sm.push(SortModel {
+                        col_id: col_id.clone(),
+                        sort: SortOrder::Asc,
+                        sort_index: Some(0),
+                    });
                 }
             });
         }

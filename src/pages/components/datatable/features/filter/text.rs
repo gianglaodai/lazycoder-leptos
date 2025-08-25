@@ -27,6 +27,10 @@ impl IFilter for TextFilter {
     }
     fn as_model(&self) -> ColumnFilterModel {
         // Safe default model; real wiring will fill values from inputs later
-        ColumnFilterModel { col_id: String::new(), operator: "contains".into(), value: String::new() }
+        ColumnFilterModel {
+            col_id: String::new(),
+            operator: "contains".into(),
+            value: String::new(),
+        }
     }
 }

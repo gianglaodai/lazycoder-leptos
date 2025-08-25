@@ -1,7 +1,7 @@
 use crate::pages::components::datatable::core::column::ColumnDef;
+use crate::pages::components::datatable::core::render_value::Value as LCValue;
 use crate::pages::components::datatable::core::row::RowNode;
 use crate::pages::components::datatable::core::state::TableState;
-use crate::pages::components::datatable::core::render_value::Value as LCValue;
 use leptos::prelude::*;
 use std::cmp::Ordering;
 use std::collections::HashMap;
@@ -32,8 +32,7 @@ pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
     let visible_cols = move || {
         cols_sig.with(|cols| {
             col_state_sig.with(|m| {
-                cols
-                    .iter()
+                cols.iter()
                     .filter(|c| !m.get(c.id).and_then(|cs| cs.hidden).unwrap_or(false))
                     .map(|c| {
                         let mut cc = c.clone();
@@ -67,7 +66,9 @@ pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
     let filtered_rows = move || {
         let q = quick.get_untracked().to_lowercase();
         let rows = rows_sig.with(|v| v.clone());
-        let col_filters = state_for_filter.filter_model.with(|fm| fm.column_text.clone());
+        let col_filters = state_for_filter
+            .filter_model
+            .with(|fm| fm.column_text.clone());
         let cols = visible_cols();
         let apply_quick = |text: &str| q.is_empty() || text.to_lowercase().contains(&q);
         if q.is_empty() && col_filters.is_empty() {
@@ -76,19 +77,39 @@ pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
             rows.into_iter()
                 .filter(|rn| {
                     // Quick filter across any visible column
-                    let quick_ok = if q.is_empty() { true } else {
+                    let quick_ok = if q.is_empty() {
+                        true
+                    } else {
                         cols.iter().any(|c| {
-                            let val = if let Some(getter) = &c.value_getter { getter(&rn.data) } else { LCValue::Empty };
-                            let txt = if let Some(fmt) = &c.value_formatter { fmt(&val) } else { val.to_string() };
+                            let val = if let Some(getter) = &c.value_getter {
+                                getter(&rn.data)
+                            } else {
+                                LCValue::Empty
+                            };
+                            let txt = if let Some(fmt) = &c.value_formatter {
+                                fmt(&val)
+                            } else {
+                                val.to_string()
+                            };
                             apply_quick(&txt)
                         })
                     };
-                    if !quick_ok { return false; }
+                    if !quick_ok {
+                        return false;
+                    }
                     // Per-column filters (contains)
                     for (cid, needle) in col_filters.iter() {
                         if let Some(c) = cols.iter().find(|c| &c.id == cid) {
-                            let val = if let Some(getter) = &c.value_getter { getter(&rn.data) } else { LCValue::Empty };
-                            let txt = if let Some(fmt) = &c.value_formatter { fmt(&val) } else { val.to_string() };
+                            let val = if let Some(getter) = &c.value_getter {
+                                getter(&rn.data)
+                            } else {
+                                LCValue::Empty
+                            };
+                            let txt = if let Some(fmt) = &c.value_formatter {
+                                fmt(&val)
+                            } else {
+                                val.to_string()
+                            };
                             if !txt.to_lowercase().contains(&needle.to_lowercase()) {
                                 return false;
                             }
@@ -109,7 +130,8 @@ pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
         }
         // Map columns by id for quick lookup of getters and comparators
         let cols = columns_sig.with(|c| c.clone());
-        let col_map: HashMap<String, ColumnDef<T>> = cols.into_iter().map(|c| (c.id.to_string(), c)).collect();
+        let col_map: HashMap<String, ColumnDef<T>> =
+            cols.into_iter().map(|c| (c.id.to_string(), c)).collect();
         // Order model by sort_index (if any)
         let mut ordered = model.clone();
         ordered.sort_by(|a, b| match (a.sort_index, b.sort_index) {
@@ -121,16 +143,28 @@ pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
         rows.sort_by(|ra, rb| {
             for sm in ordered.iter() {
                 if let Some(col) = col_map.get(&sm.col_id) {
-                    let va = if let Some(getter) = &col.value_getter { getter(&ra.data) } else { LCValue::Empty };
-                    let vb = if let Some(getter) = &col.value_getter { getter(&rb.data) } else { LCValue::Empty };
+                    let va = if let Some(getter) = &col.value_getter {
+                        getter(&ra.data)
+                    } else {
+                        LCValue::Empty
+                    };
+                    let vb = if let Some(getter) = &col.value_getter {
+                        getter(&rb.data)
+                    } else {
+                        LCValue::Empty
+                    };
                     let ord = if let Some(cmp) = &col.comparator {
                         cmp(&va, &vb)
                     } else {
                         compare_value(&va, &vb)
                     };
                     let ord = match sm.sort {
-                        crate::pages::components::datatable::core::data_source::SortOrder::Asc => ord,
-                        crate::pages::components::datatable::core::data_source::SortOrder::Desc => ord.reverse(),
+                        crate::pages::components::datatable::core::data_source::SortOrder::Asc => {
+                            ord
+                        }
+                        crate::pages::components::datatable::core::data_source::SortOrder::Desc => {
+                            ord.reverse()
+                        }
                     };
                     if ord != Ordering::Equal {
                         return ord;
@@ -155,7 +189,16 @@ pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
         }
         let start = ps.saturating_mul(cp.saturating_sub(1));
         let end = start + ps;
-        fr.into_iter().enumerate().filter_map(|(idx, r)| if idx >= start && idx < end { Some(r) } else { None }).collect::<Vec<_>>()
+        fr.into_iter()
+            .enumerate()
+            .filter_map(|(idx, r)| {
+                if idx >= start && idx < end {
+                    Some(r)
+                } else {
+                    None
+                }
+            })
+            .collect::<Vec<_>>()
     };
 
     view! {
@@ -223,10 +266,18 @@ pub fn CellHost<T: Clone + Send + Sync + 'static>(
     row: RowNode<T>,
     col: ColumnDef<T>,
 ) -> impl IntoView {
-    use leptos::prelude::AnyView;
     use crate::pages::components::datatable::core::render_value::Value as LCValue;
-    let value = if let Some(getter) = &col.value_getter { getter(&row.data) } else { LCValue::Empty };
-    let text = if let Some(fmt) = &col.value_formatter { fmt(&value) } else { value.to_string() };
+    use leptos::prelude::AnyView;
+    let value = if let Some(getter) = &col.value_getter {
+        getter(&row.data)
+    } else {
+        LCValue::Empty
+    };
+    let text = if let Some(fmt) = &col.value_formatter {
+        fmt(&value)
+    } else {
+        value.to_string()
+    };
     let inner: AnyView = view! { <span class="truncate">{text}</span> }.into_any();
     view! {
         <div class="lc-dt-cell px-3 py-2 border-r border-gray-100 overflow-hidden">{inner}</div>

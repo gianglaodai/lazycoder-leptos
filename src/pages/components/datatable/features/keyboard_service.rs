@@ -52,7 +52,9 @@ impl KeyboardService {
                 pos.col = 0;
             }
             "End" => {
-                if let Some(maxc) = self.max_cols { pos.col = (maxc - 1).max(0); }
+                if let Some(maxc) = self.max_cols {
+                    pos.col = (maxc - 1).max(0);
+                }
             }
             // PageUp/PageDown operate on rows
             "PageUp" => {
@@ -62,22 +64,20 @@ impl KeyboardService {
                 pos.row = pos.row.saturating_add(PAGE_STEP);
             }
             // Tab advances column, wrapping to next row when max_cols is known
-            "Tab" => {
-                match self.max_cols {
-                    Some(maxc) if maxc > 0 => {
-                        let next = pos.col + 1;
-                        if next >= maxc {
-                            pos.col = 0;
-                            pos.row = pos.row.saturating_add(1);
-                        } else {
-                            pos.col = next;
-                        }
-                    }
-                    _ => {
-                        pos.col = pos.col.saturating_add(1);
+            "Tab" => match self.max_cols {
+                Some(maxc) if maxc > 0 => {
+                    let next = pos.col + 1;
+                    if next >= maxc {
+                        pos.col = 0;
+                        pos.row = pos.row.saturating_add(1);
+                    } else {
+                        pos.col = next;
                     }
                 }
-            }
+                _ => {
+                    pos.col = pos.col.saturating_add(1);
+                }
+            },
             // Enter moves down a row
             "Enter" => {
                 pos.row = pos.row.saturating_add(1);
@@ -100,11 +100,27 @@ impl KeyboardService {
 
     fn clamp(mut pos: FocusPos, max_rows: Option<i32>, max_cols: Option<i32>) -> FocusPos {
         // lower bounds at 0
-        if pos.row < 0 { pos.row = 0; }
-        if pos.col < 0 { pos.col = 0; }
+        if pos.row < 0 {
+            pos.row = 0;
+        }
+        if pos.col < 0 {
+            pos.col = 0;
+        }
         // upper bounds when known
-        if let Some(mr) = max_rows { if mr > 0 { pos.row = pos.row.min(mr - 1); } else { pos.row = 0; } }
-        if let Some(mc) = max_cols { if mc > 0 { pos.col = pos.col.min(mc - 1); } else { pos.col = 0; } }
+        if let Some(mr) = max_rows {
+            if mr > 0 {
+                pos.row = pos.row.min(mr - 1);
+            } else {
+                pos.row = 0;
+            }
+        }
+        if let Some(mc) = max_cols {
+            if mc > 0 {
+                pos.col = pos.col.min(mc - 1);
+            } else {
+                pos.col = 0;
+            }
+        }
         pos
     }
 }

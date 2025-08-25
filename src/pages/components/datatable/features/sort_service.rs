@@ -14,7 +14,10 @@ pub struct SortService {
 
 impl SortService {
     pub fn new() -> Self {
-        Self { model: Vec::new(), comparators: HashMap::new() }
+        Self {
+            model: Vec::new(),
+            comparators: HashMap::new(),
+        }
     }
 
     /// Replace the current sort model. The incoming list may contain sort_index hints.
@@ -93,7 +96,11 @@ fn json_to_value(v: &serde_json::Value) -> Value {
         serde_json::Value::Null => Value::Empty,
         serde_json::Value::Bool(b) => Value::Bool(*b),
         serde_json::Value::Number(n) => {
-            if let Some(f) = n.as_f64() { Value::Number(f) } else { Value::Empty }
+            if let Some(f) = n.as_f64() {
+                Value::Number(f)
+            } else {
+                Value::Empty
+            }
         }
         serde_json::Value::String(s) => Value::Text(s.clone()),
         other => Value::Text(other.to_string()),

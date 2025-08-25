@@ -129,7 +129,8 @@ pub fn AdminPostsPage() -> impl IntoView {
     use crate::pages::components::datatable::DataTable;
     use std::sync::Arc;
 
-    let table_state: Arc<TableState<crate::pages::rest::post_info_api::PostInfoTO>> = Arc::new(TableState::new());
+    let table_state: Arc<TableState<crate::pages::rest::post_info_api::PostInfoTO>> =
+        Arc::new(TableState::new());
 
     // Initialize pagination from query
     table_state.page_size.set(max_results() as usize);
@@ -256,7 +257,9 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "id",
             header_name: "ID",
-            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Number(p.id as f64))),
+            value_getter: Some(Arc::new(
+                |p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Number(p.id as f64),
+            )),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -277,7 +280,9 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "title",
             header_name: "Title",
-            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.title.clone()))),
+            value_getter: Some(Arc::new(
+                |p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.title.clone()),
+            )),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -298,7 +303,9 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "slug",
             header_name: "Slug",
-            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.slug.clone()))),
+            value_getter: Some(Arc::new(
+                |p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.slug.clone()),
+            )),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -319,7 +326,9 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "status",
             header_name: "Status",
-            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.status.clone()))),
+            value_getter: Some(Arc::new(
+                |p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.status.clone()),
+            )),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -340,7 +349,9 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "username",
             header_name: "Author",
-            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.username.clone()))),
+            value_getter: Some(Arc::new(
+                |p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.username.clone()),
+            )),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -361,7 +372,9 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "email",
             header_name: "Email",
-            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.email.clone()))),
+            value_getter: Some(Arc::new(
+                |p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.email.clone()),
+            )),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -382,7 +395,11 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "created_at",
             header_name: "Created",
-            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.created_at.to_string()))),
+            value_getter: Some(Arc::new(
+                |p: &crate::pages::rest::post_info_api::PostInfoTO| {
+                    Value::Text(p.created_at.to_string())
+                },
+            )),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -403,7 +420,11 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "updated_at",
             header_name: "Updated",
-            value_getter: Some(Arc::new(|p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.updated_at.to_string()))),
+            value_getter: Some(Arc::new(
+                |p: &crate::pages::rest::post_info_api::PostInfoTO| {
+                    Value::Text(p.updated_at.to_string())
+                },
+            )),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -420,7 +441,7 @@ pub fn AdminPostsPage() -> impl IntoView {
             comparator: None,
             field: Some("updated_at"),
             data_type: Some(crate::pages::components::datatable::core::column::DataType::DateTime),
-        }
+        },
     ]);
 
     // When resource resolves, populate rows and total
@@ -428,7 +449,10 @@ pub fn AdminPostsPage() -> impl IntoView {
         let table_state = table_state.clone();
         move |_| {
             if let Some(Ok((posts, total))) = posts_and_total_resource.get() {
-                let rows: Vec<RowNode<_>> = posts.into_iter().map(|p| RowNode::new(p.id.to_string(), p)).collect();
+                let rows: Vec<RowNode<_>> = posts
+                    .into_iter()
+                    .map(|p| RowNode::new(p.id.to_string(), p))
+                    .collect();
                 table_state.set_rows(rows);
                 table_state.set_total_rows(Some(total as usize));
             }

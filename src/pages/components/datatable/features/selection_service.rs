@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::pages::components::datatable::core::state::TableState;
-use leptos::prelude::{ReadUntracked, Update, With, Set};
+use leptos::prelude::{ReadUntracked, Set, Update, With};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
 pub enum SelectionMode {
@@ -49,7 +49,8 @@ impl<T: Send + Sync + 'static> SelectionService<T> {
             SelectionMode::Single => {
                 let id = row_id.to_string();
                 {
-                    let mut s = crate::pages::components::datatable::core::row::SelectionState::default();
+                    let mut s =
+                        crate::pages::components::datatable::core::row::SelectionState::default();
                     s.selected_row_ids.push(id.clone());
                     s.last_clicked_row_id = Some(id);
                     self.state.selection.set(s);
@@ -107,6 +108,10 @@ impl<T: Send + Sync + 'static> SelectionService<T> {
     }
 
     pub fn selected_ids(&self) -> Vec<String> {
-        self.state.selection.read_untracked().selected_row_ids.clone()
+        self.state
+            .selection
+            .read_untracked()
+            .selected_row_ids
+            .clone()
     }
 }

@@ -25,6 +25,10 @@ impl IFilter for DateFilter {
     }
     fn as_model(&self) -> ColumnFilterModel {
         // Return a safe default model; real wiring will populate these from user input later
-        ColumnFilterModel { col_id: String::new(), operator: "equals".into(), value: String::new() }
+        ColumnFilterModel {
+            col_id: String::new(),
+            operator: "equals".into(),
+            value: String::new(),
+        }
     }
 }

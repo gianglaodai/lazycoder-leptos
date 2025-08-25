@@ -21,6 +21,10 @@ impl IFilter for SetFilter {
     }
     fn as_model(&self) -> ColumnFilterModel {
         // Safe default: using operator "in" and empty value (to be populated later)
-        ColumnFilterModel { col_id: String::new(), operator: "in".into(), value: String::new() }
+        ColumnFilterModel {
+            col_id: String::new(),
+            operator: "in".into(),
+            value: String::new(),
+        }
     }
 }

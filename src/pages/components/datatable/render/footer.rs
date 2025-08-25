@@ -25,7 +25,8 @@ pub fn StatusBar<T: Send + Sync + 'static>(
         pages.max(1)
     };
 
-    let total_text = move || total.with(|t| t.map(|n| n.to_string()).unwrap_or_else(|| "unknown".into()));
+    let total_text =
+        move || total.with(|t| t.map(|n| n.to_string()).unwrap_or_else(|| "unknown".into()));
 
     let can_prev = move || current_page.get() > 1;
     let can_next = move || current_page.get() < page_count();

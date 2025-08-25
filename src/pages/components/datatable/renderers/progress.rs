@@ -13,7 +13,10 @@ impl ProgressRenderer {
 
 impl<T> ICellRenderer<T> for ProgressRenderer {
     fn view(&self, cx: Scope, value: &Value, _row: &T) -> AnyView {
-        let pct = match value { Value::Number(n) => (*n).max(0.0).min(100.0), _ => 0.0 };
+        let pct = match value {
+            Value::Number(n) => (*n).max(0.0).min(100.0),
+            _ => 0.0,
+        };
         let w = format!("{}%", pct);
         view! {
             <div class="w-full h-2 bg-gray-100 rounded">
