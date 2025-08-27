@@ -1,10 +1,17 @@
-use crate::business::filter::{FilterOperator, FilterValue};
+use crate::business::filter::FilterOperator;
+use crate::pages::components::button::ButtonVariant;
 use crate::pages::components::datatable::core::column::ColumnDef;
 use crate::pages::components::datatable::core::column::DataType;
 use crate::pages::components::datatable::core::data_source::{SortModel, SortOrder};
 use crate::pages::components::datatable::core::state::TableState;
+use crate::pages::components::datatable::features::filter::boolean::BooleanFilter;
+use crate::pages::components::datatable::features::filter::{
+    date::DateFilter, datetime::DateTimeFilter, float::FloatFilter, integer::IntegerFilter,
+    text::TextFilter, time::TimeFilter, IFilter,
+};
+use crate::pages::components::datatable::features::resize_service::ResizeService;
+use crate::pages::components::Button;
 use crate::pages::components::{Popover, PopoverContent, PopoverTrigger};
-use leptos::prelude::event_target_value;
 use leptos::prelude::*;
 use std::sync::Arc;
 
@@ -59,12 +66,14 @@ pub fn HeaderCell<T: Clone + Send + Sync + 'static>(
     let state_for_sort = state.clone();
     let state_for_filter = state.clone();
     let col_id = col.id.to_string();
+    let col_id_sort = col_id.clone();
+    let col_id_filter = col_id.clone();
 
     // Sorting click only on the label area
     let on_sort_click = {
         let state = state.clone();
-        let col_id = col_id.clone();
-        move |_| {
+        let col_id = col_id_sort.clone();
+        Callback::new(move |_| {
             state.sort_model.update(|sm| {
                 if let Some(pos) = sm.iter().position(|s| s.col_id == col_id) {
                     match sm[pos].sort {
@@ -85,17 +94,87 @@ pub fn HeaderCell<T: Clone + Send + Sync + 'static>(
                     });
                 }
             });
-        }
+            // If server-side sorting is enabled (i.e., client-side disabled), notify consumers
+            if !state.client_side_sorting.get_untracked() {
+                // reset to first page to mimic typical server-side sort behavior
+                state.current_page.set(1);
+                state.notify_query_changed();
+            }
+        })
     };
 
     let is_filterable = col.filterable;
+    // Determine if this column currently has any active filter (text contains or advanced operator/value)
+    let has_filter = {
+        let st = state_for_filter.clone();
+        let cid = col_id_filter.clone();
+        move || {
+            st.filter_model.with(|fm| {
+                let text_active = fm
+                    .column_text
+                    .get(&cid)
+                    .map(|s| !s.trim().is_empty())
+                    .unwrap_or(false);
+                let adv_active = fm
+                    .column_advanced
+                    .get(&cid)
+                    .map(|adv| match adv.operator {
+                        FilterOperator::IsNull | FilterOperator::NotNull => true,
+                        _ => adv.value.is_some(),
+                    })
+                    .unwrap_or(false);
+                text_active || adv_active
+            })
+        }
+    };
+    let has_filter_title = {
+        let st = state_for_filter.clone();
+        let cid = col_id_filter.clone();
+        move || {
+            st.filter_model.with(|fm| {
+                let text_active = fm
+                    .column_text
+                    .get(&cid)
+                    .map(|s| !s.trim().is_empty())
+                    .unwrap_or(false);
+                let adv_active = fm
+                    .column_advanced
+                    .get(&cid)
+                    .map(|adv| match adv.operator {
+                        FilterOperator::IsNull | FilterOperator::NotNull => true,
+                        _ => adv.value.is_some(),
+                    })
+                    .unwrap_or(false);
+                text_active || adv_active
+            })
+        }
+    };
+
+    use std::cell::RefCell;
+    use std::rc::Rc;
+    let resize = Rc::new(RefCell::new(ResizeService::new(state.clone())));
+    // Resizer handlers: delegate completely to ResizeService
+    let on_resize_mousedown = {
+        let rs = resize.clone();
+        let id = col_id.clone();
+        move |ev: leptos::ev::MouseEvent| {
+            rs.borrow_mut().begin_resize(&id, ev.client_x());
+        }
+    };
+    let on_resize_dblclick = {
+        let svc = ResizeService::new(state.clone());
+        let id = col_id.clone();
+        move |_ev: leptos::ev::MouseEvent| {
+            svc.auto_size_header_only(&id);
+        }
+    };
 
     view! {
-        <div class="lc-dt-header-cell flex items-center gap-2 px-3 py-2 border-r border-gray-200 text-gray-700 font-medium select-none justify-between">
-            <button class="flex items-center gap-1 min-w-0" on:click=on_sort_click>
-                <span class="truncate">{col.header_name}</span>
+        <div class="lc-dt-header-cell relative flex items-center gap-0 pl-3 py-2 border-r border-gray-200 text-gray-700 font-medium select-none">
+            <Button class="pl-0 flex-1 justify-start" variant={ButtonVariant::Ghost} on_click=on_sort_click>
+                <span class="truncate mr-2">{col.header_name}</span>
                 { let state_for_sort = state_for_sort.clone();
-                  let col_id = col_id.clone();
+                  let col_id = col_id_sort.clone();
                   move || {
                       let ord = state_for_sort.sort_model.with(|sm| sm.iter().find(|s| s.col_id == col_id).map(|s| s.sort.clone()));
                       match ord {
@@ -105,119 +184,67 @@ pub fn HeaderCell<T: Clone + Send + Sync + 'static>(
                       }
                   }
                 }
-            </button>
+            </Button>
             <div class="ml-auto" class=("hidden", move || !is_filterable)>
                 <Popover>
                     <PopoverTrigger>
-                        <button class="text-gray-500 hover:text-gray-700" title="Filter">
+                        <Button variant={ButtonVariant::Ghost}>
                             {"⏷"}
-                        </button>
+                        </Button>
                     </PopoverTrigger>
                     <PopoverContent class="bg-white border border-gray-200 rounded shadow p-2">
                         {
-                            let operator = RwSignal::new(String::from(match col.data_type.unwrap_or(DataType::Text) {
-                                DataType::Text => "contains",
-                                DataType::Int | DataType::Float => "equals",
-                                DataType::Boolean => "is",
-                                DataType::Date | DataType::Time | DataType::DateTime => "equals",
-                            }));
-                            let value = RwSignal::new(String::new());
-                            let to_op = |s: &str| -> FilterOperator {
-                                match s {
-                                    "contains" => FilterOperator::Like,
-                                    "notContains" => FilterOperator::NotLike,
-                                    "equals" => FilterOperator::Equal,
-                                    "notEqual" => FilterOperator::NotEqual,
-                                    "lt" => FilterOperator::LessThan,
-                                    "lte" => FilterOperator::LessThanOrEqual,
-                                    "gt" => FilterOperator::GreaterThan,
-                                    "gte" => FilterOperator::GreaterThanOrEqual,
-                                    "is" => FilterOperator::Is,
-                                    "before" => FilterOperator::LessThan,
-                                    "after" => FilterOperator::GreaterThan,
-                                    _ => FilterOperator::Equal,
-                                }
-                            };
-                            let parse_val = {
-                                let dtype = col.data_type.unwrap_or(DataType::Text);
-                                move |txt: &str| -> Option<FilterValue> {
-                                    let t = txt.trim();
-                                    if t.is_empty() { return None; }
-                                    match dtype {
-                                        DataType::Text => Some(FilterValue::String(t.to_string())),
-                                        DataType::Int => t.parse::<i32>().ok().map(FilterValue::Int),
-                                        DataType::Float => t.parse::<f64>().ok().map(FilterValue::Float),
-                                        DataType::Boolean => {
-                                            match t.to_lowercase().as_str() { "true"|"1"|"yes"|"y" => Some(FilterValue::Bool(true)), "false"|"0"|"no"|"n" => Some(FilterValue::Bool(false)), _ => None }
-                                        }
-                                        DataType::Date => {
-                                            let fmt = time::macros::format_description!("[year]-[month]-[day]");
-                                            time::Date::parse(t, &fmt).ok().map(FilterValue::Date)
-                                        }
-                                        DataType::Time => {
-                                            let fmt1 = time::macros::format_description!("[hour]:[minute]");
-                                            let fmt2 = time::macros::format_description!("[hour]:[minute]:[second]");
-                                            time::Time::parse(t, &fmt1).ok().or_else(|| time::Time::parse(t, &fmt2).ok()).map(FilterValue::Time)
-                                        }
-                                        DataType::DateTime => {
-                                            let fmt1 = time::macros::format_description!("[year]-[month]-[day]T[hour]:[minute]");
-                                            let fmt2 = time::macros::format_description!("[year]-[month]-[day]T[hour]:[minute]:[second]");
-                                            if let Ok(pdt) = time::PrimitiveDateTime::parse(t, &fmt1) { Some(FilterValue::DateTime(pdt.assume_utc())) }
-                                            else if let Ok(pdt2) = time::PrimitiveDateTime::parse(t, &fmt2) { Some(FilterValue::DateTime(pdt2.assume_utc())) }
-                                            else { None }
-                                        }
-                                    }
-                                }
-                            };
-                            let state2 = state_for_filter.clone();
-                            let col_id2 = col_id.clone();
-                            let apply = std::rc::Rc::new(move || {
-                                let op_s = operator.get();
-                                let op = to_op(&op_s);
-                                let val_opt = parse_val(&value.get());
-                                state2.filter_model.update(|fm| {
-                                    if val_opt.is_none() && !matches!(op, FilterOperator::Is | FilterOperator::IsNull | FilterOperator::NotNull) {
-                                        fm.column_advanced.remove(&col_id2);
-                                    } else {
-                                        fm.column_advanced.insert(col_id2.clone(), crate::pages::components::datatable::core::data_source::AdvancedFilter { operator: op.clone(), value: val_opt.clone() });
-                                    }
-                                    if let Some(dtype) = col.data_type { if matches!(dtype, crate::pages::components::datatable::core::column::DataType::Text) && matches!(op, FilterOperator::Like) {
-                                        let v = value.get();
-                                        if v.trim().is_empty() { fm.column_text.remove(&col_id2); } else { fm.column_text.insert(col_id2.clone(), v); }
-                                    } else {
-                                        fm.column_text.remove(&col_id2);
-                                    }}
-                                });
-                            });
                             let dtype = col.data_type.unwrap_or(DataType::Text);
-                            view!{
-                                <div class="flex flex-col items-center gap-2">
-                                    <select class="w-full border border-gray-300 rounded px-2 py-1 text-xs text-gray-700 bg-white" on:change={ let a = apply.clone(); move |ev| { operator.set(event_target_value(&ev)); a(); } }>
-                                        <option value="~" class:hidden=move || !matches!(dtype, DataType::Text)>"Contains"</option>
-                                        <option value="!~" class:hidden=move || !matches!(dtype, DataType::Text)>"Does not contains"</option>
-                                        <option value="=">"Equals"</option>
-                                        <option value="!=">"Does not equals"</option>
-                                        <option value="=null">"Is null"</option>
-                                        <option value="!null">"Not null"</option>
-                                        <option value="<" class:hidden=move || matches!(dtype, DataType::Text | DataType::Boolean)>"Less than"</option>
-                                        <option value="<=" class:hidden=move || matches!(dtype, DataType::Text | DataType::Boolean)>"Less than or equal to"</option>
-                                        <option value=">" class:hidden=move || matches!(dtype, DataType::Text | DataType::Boolean)>"Greater than"</option>
-                                        <option value=">=" class:hidden=move || matches!(dtype, DataType::Text | DataType::Boolean)>"Greater than or equal to"</option>
-                                        <option value="<" class:hidden=move || !matches!(dtype, DataType::Date | DataType::Time | DataType::DateTime)>"Before"</option>
-                                        <option value=">" class:hidden=move || !matches!(dtype, DataType::Date | DataType::Time | DataType::DateTime)>"After"</option>
-                                        <option value="is" class:hidden=move || !matches!(dtype, DataType::Boolean)>"Is"</option>
-                                    </select>
-                                    <input type="text" class:hidden=move || !matches!(dtype, DataType::Text) class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-700 w-48" placeholder="Filter..." on:input={ let a = apply.clone(); move |ev| { value.set(event_target_value(&ev)); a(); } } />
-                                    <input type="number" step="any" class:hidden=move || !matches!(dtype, DataType::Int | DataType::Float) class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-700 w-32" on:input={ let a = apply.clone(); move |ev| { value.set(event_target_value(&ev)); a(); } } />
-                                    <select class:hidden=move || !matches!(dtype, DataType::Boolean) class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-700" on:change={ let a = apply.clone(); move |ev| { value.set(event_target_value(&ev)); a(); } }><option value="true">"true"</option><option value="false">"false"</option></select>
-                                    <input type="date" class:hidden=move || !matches!(dtype, DataType::Date) class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-700" on:input={ let a = apply.clone(); move |ev| { value.set(event_target_value(&ev)); a(); } } />
-                                    <input type="time" class:hidden=move || !matches!(dtype, DataType::Time) class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-700" on:input={ let a = apply.clone(); move |ev| { value.set(event_target_value(&ev)); a(); } } />
-                                    <input type="datetime-local" class:hidden=move || !matches!(dtype, DataType::DateTime) class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-700" on:input={ let a = apply.clone(); move |ev| { value.set(event_target_value(&ev)); a(); } } />
-                                </div>
+                            match dtype {
+                                                            // Unify return type to AnyView by boxing IntoView
+                                DataType::Text => {
+                                    let f = TextFilter::new();
+                                    let v: AnyView = view!{ {f.view()} }.into_any();
+                                    v
+                                }
+                                DataType::Int => {
+                                    let f = IntegerFilter::new();
+                                    let v: AnyView = view!{ {f.view()} }.into_any();
+                                    v
+                                }
+                                DataType::Float => {
+                                    let f = FloatFilter::new();
+                                    let v: AnyView = view!{ {f.view()} }.into_any();
+                                    v
+                                }
+                                DataType::Boolean => {
+                                    let f = BooleanFilter::new();
+                                    let v: AnyView = view!{ {f.view()} }.into_any();
+                                    v
+                                }
+                                DataType::Date => {
+                                    let f = DateFilter::new();
+                                    let v: AnyView = view!{ {f.view()} }.into_any();
+                                    v
+                                }
+                                DataType::Time => {
+                                    let f = TimeFilter::new();
+                                    let v: AnyView = view!{ {f.view()} }.into_any();
+                                    v
+                                }
+                                DataType::DateTime => {
+                                    let f = DateTimeFilter::new();
+                                    let v: AnyView = view!{ {f.view()} }.into_any();
+                                    v
+                                }
                             }
                         }
                     </PopoverContent>
                 </Popover>
+            </div>
+            // Resizer (shown only if column is resizable)
+            <div class=("hidden", move || !col.resizable)
+                 class="relative w-0 h-full"
+            >
+                <div class="lc-dt-col-resizer absolute top-0 right-0 w-1 h-full cursor-col-resize select-none"
+                     on:mousedown=on_resize_mousedown
+                     on:dblclick=on_resize_dblclick
+                />
             </div>
         </div>
     }

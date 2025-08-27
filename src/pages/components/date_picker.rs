@@ -1,38 +1,7 @@
 use leptos::prelude::*;
-use time::{Date, Month};
+use time::Date;
 
-use crate::pages::components::button::{Button, ButtonVariant};
-use crate::pages::components::calendar::Calendar;
-use crate::pages::components::popover::{Popover, PopoverContent, PopoverTrigger};
-
-fn calendar_icon() -> impl IntoView {
-    view! {
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-4 w-4">
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
-            <line x1="16" y1="2" x2="16" y2="6"></line>
-            <line x1="8" y1="2" x2="8" y2="6"></line>
-            <line x1="3" y1="10" x2="21" y2="10"></line>
-        </svg>
-    }
-}
-
-fn format_date(d: Date) -> String {
-    let month = match d.month() {
-        Month::January => "January",
-        Month::February => "February",
-        Month::March => "March",
-        Month::April => "April",
-        Month::May => "May",
-        Month::June => "June",
-        Month::July => "July",
-        Month::August => "August",
-        Month::September => "September",
-        Month::October => "October",
-        Month::November => "November",
-        Month::December => "December",
-    };
-    format!("{} {}, {}", month, d.day(), d.year())
-}
+use crate::pages::components::Input;
 
 #[component]
 pub fn DatePicker(
@@ -41,12 +10,11 @@ pub fn DatePicker(
     #[prop(into, optional)] on_change: Option<Callback<Date, ()>>,
     #[prop(into, optional)] placeholder: Option<String>,
     #[prop(into, optional)] class: Option<String>,
-    #[prop(into, optional)] disabled: Option<Callback<Date, bool>>,
+    #[prop(into, optional)] _disabled: Option<Callback<Date, bool>>,
 ) -> impl IntoView {
     // Controlled/uncontrolled selected state handling
     let (sel_sig, set_sel) = match selected {
         Some(sig) => {
-            // In controlled mode we do not own the state; call on_change only
             let setter = Callback::new(move |d: Option<Date>| {
                 if let (Some(cb), Some(dd)) = (&on_change, d) {
                     cb.run(dd);
@@ -67,49 +35,39 @@ pub fn DatePicker(
         }
     };
 
-    // Popover open state
-    let (open, set_open) = signal(false);
+    // Keep a text binding that mirrors the selected date in YYYY-MM-DD
+    let (text, set_text) = signal(String::new());
+    Effect::new(move |_| {
+        match sel_sig.get() {
+            Some(d) => set_text.set(format!("{:04}-{:02}-{:02}", d.year(), d.month() as u8, d.day())),
+            None => set_text.set(String::new()),
+        }
+    });
 
     let placeholder_text = placeholder.unwrap_or_else(|| "Pick a date".to_string());
-    let trigger_classes = move || {
-        // shadcn example uses w-[280px] justify-start text-left font-normal
-        crate::cn!(
-            "w-[280px] justify-start text-left font-normal",
-            class.clone().unwrap_or_default()
-        )
-    };
 
-    // Handle selection from Calendar: set and close popover
-    let on_select = {
-        let set_open = set_open.clone();
-        Callback::new(move |d: Date| {
-            set_sel.run(Some(d));
-            set_open.set(false);
-        })
-    };
+    // Explicit Signal<String> for Input value
+    let value_sig: Signal<String> = text.into();
 
-    // Build disabled predicate: default is all enabled if not provided
-    let disabled_fn = {
-        let disabled_opt = disabled.clone();
-        Callback::new(move |d: Date| disabled_opt.as_ref().map(|cb| cb.run(d)).unwrap_or(false))
-    };
+    // Parse YYYY-MM-DD to time::Date
+    fn parse_date_str(s: &str) -> Option<Date> {
+        let fmt = time::macros::format_description!("[year]-[month]-[day]");
+        Date::parse(s, &fmt).ok()
+    }
 
     view! {
-        <Popover open=open.into() on_open_change=Callback::new(move |v| set_open.set(v))>
-            <PopoverTrigger>
-                <Button variant=ButtonVariant::Outline class=trigger_classes()>
-                    {calendar_icon()}
-                    <span class="ml-2">
-                        {move || match sel_sig.get() {
-                            Some(d) => format_date(d),
-                            None => placeholder_text.clone(),
-                        }}
-                    </span>
-                </Button>
-            </PopoverTrigger>
-            <PopoverContent class="p-0">
-                <Calendar selected=sel_sig on_change=on_select disabled=disabled_fn />
-            </PopoverContent>
-        </Popover>
+        <Input
+            r#type="date"
+            class=class.clone().unwrap_or_default()
+            placeholder=placeholder_text
+            value=value_sig
+            on_input=Callback::new(move |ev| {
+                let v = event_target_value(&ev);
+                set_text.set(v.clone());
+                if let Some(d) = parse_date_str(&v) {
+                    set_sel.run(Some(d));
+                }
+            })
+        />
     }
 }

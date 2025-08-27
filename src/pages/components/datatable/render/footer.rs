@@ -32,10 +32,13 @@ pub fn StatusBar<T: Send + Sync + 'static>(
     let can_next = move || current_page.get() < page_count();
 
     let goto_prev = {
-        let current_page = current_page.clone();
+        let st = state.clone();
         move |_| {
-            if current_page.get_untracked() > 1 {
-                current_page.update(|p| *p -= 1);
+            if st.current_page.get_untracked() > 1 {
+                st.current_page.update(|p| *p -= 1);
+                if !st.client_side_sorting.get_untracked() || !st.client_side_filtering.get_untracked() {
+                    st.notify_query_changed();
+                }
             }
         }
     };
@@ -46,11 +49,14 @@ pub fn StatusBar<T: Send + Sync + 'static>(
         }
     };
     let goto_next = {
-        let current_page = current_page.clone();
+        let st = state.clone();
         move |_| {
             let pc = page_count();
-            if current_page.get_untracked() < pc {
-                current_page.update(|p| *p += 1);
+            if st.current_page.get_untracked() < pc {
+                st.current_page.update(|p| *p += 1);
+                if !st.client_side_sorting.get_untracked() || !st.client_side_filtering.get_untracked() {
+                    st.notify_query_changed();
+                }
             }
         }
     };
@@ -59,6 +65,9 @@ pub fn StatusBar<T: Send + Sync + 'static>(
         move |_| {
             // Use a large number; go_to_page will clamp to the last page based on total_rows & page_size
             go_to_page(&st, usize::MAX);
+            if !st.client_side_sorting.get_untracked() || !st.client_side_filtering.get_untracked() {
+                st.notify_query_changed();
+            }
         }
     };
     view! {
@@ -136,6 +145,9 @@ pub fn go_to_page<T: Send + Sync + 'static>(state: &Arc<TableState<T>>, page: us
     let max_pages = ((total_rows + page_size - 1) / page_size).max(1);
     let target = page.clamp(1, max_pages);
     state.current_page.set(target);
+    if !state.client_side_sorting.get_untracked() || !state.client_side_filtering.get_untracked() {
+        state.notify_query_changed();
+    }
 }
 
 pub fn set_page_size<T: Send + Sync + 'static>(state: &Arc<TableState<T>>, size: usize) {
@@ -155,4 +167,7 @@ pub fn set_page_size<T: Send + Sync + 'static>(state: &Arc<TableState<T>>, size:
             *cp = 1;
         }
     });
+    if !state.client_side_sorting.get_untracked() || !state.client_side_filtering.get_untracked() {
+        state.notify_query_changed();
+    }
 }

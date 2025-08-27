@@ -1,32 +1,30 @@
 use super::{ColumnFilterModel, IFilter};
 use leptos::prelude::*;
 
-pub struct DateFilter;
+pub struct BooleanFilter;
 
-impl DateFilter {
+impl BooleanFilter {
     pub fn new() -> Self {
         Self
     }
 }
 
-impl IFilter for DateFilter {
+impl IFilter for BooleanFilter {
     fn view(&self) -> impl IntoView {
-        // Minimal, non-interactive UI skeleton to avoid panics until fully wired
+        // Minimal, non-interactive number filter UI to avoid panics until fully wired
         view! {
-            <div class="lc-filter-date flex items-center gap-2">
+            <div class="lc-filter-number flex items-center gap-2">
                 <select class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-700 bg-white">
-                    <option value="=">"Equals"</option>
-                    <option value="<">"Before"</option>
-                    <option value=">">"After"</option>
+                    <option value="is">"Is"</option>
                     <option value="=null">"Is null"</option>
                     <option value="!null">"Not null"</option>
                 </select>
-                <input type="date" class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-700" />
+                <input type="checkbox" class="h-4 w-4 border-gray-300 rounded text-blue-600 focus:ring-blue-500" />
             </div>
         }
     }
     fn as_model(&self) -> ColumnFilterModel {
-        // Return a safe default model; real wiring will populate these from user input later
+        // Safe default model; real wiring will fill values from inputs later
         ColumnFilterModel {
             col_id: String::new(),
             operator: "equals".into(),

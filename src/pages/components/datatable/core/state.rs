@@ -27,6 +27,11 @@ pub struct TableState<T: Send + Sync + 'static> {
     // Client-side pagination (optional):
     pub page_size: RwSignal<usize>,
     pub current_page: RwSignal<usize>,
+    // Feature toggles
+    pub client_side_sorting: RwSignal<bool>,
+    pub client_side_filtering: RwSignal<bool>,
+    // A simple tick to notify consumers that query (sort/filter/page) changed, useful for server-side modes
+    pub query_version: RwSignal<u32>,
 }
 
 impl<T: Send + Sync + 'static> TableState<T> {
@@ -45,6 +50,10 @@ impl<T: Send + Sync + 'static> TableState<T> {
             total_rows: RwSignal::new(None),
             page_size: RwSignal::new(50),
             current_page: RwSignal::new(1),
+            // default to client-side features enabled
+            client_side_sorting: RwSignal::new(true),
+            client_side_filtering: RwSignal::new(true),
+            query_version: RwSignal::new(0),
         }
     }
 
@@ -67,5 +76,8 @@ impl<T: Send + Sync + 'static> TableState<T> {
         // Return the current number of row nodes tracked by the table state.
         // This uses get_untracked to avoid creating reactive dependencies here.
         self.rows.read_untracked().len()
+    }
+    pub fn notify_query_changed(&self) {
+        self.query_version.update(|v| *v = v.wrapping_add(1));
     }
 }

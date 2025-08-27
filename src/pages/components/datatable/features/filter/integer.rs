@@ -1,28 +1,30 @@
 use super::{ColumnFilterModel, IFilter};
 use leptos::prelude::*;
 
-pub struct TextFilter;
+pub struct IntegerFilter;
 
-impl TextFilter {
+impl IntegerFilter {
     pub fn new() -> Self {
         Self
     }
 }
 
-impl IFilter for TextFilter {
+impl IFilter for IntegerFilter {
     fn view(&self) -> impl IntoView {
-        // Minimal, non-interactive text filter UI to avoid panics until fully wired
+        // Minimal, non-interactive number filter UI to avoid panics until fully wired
         view! {
-            <div class="lc-filter-text flex items-center gap-2">
+            <div class="lc-filter-number flex items-center gap-2">
                 <select class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-700 bg-white">
-                    <option value="~">"Contains"</option>
-                    <option value="!~">"Not contains"</option>
                     <option value="=">"Equals"</option>
                     <option value="!=">"Not equals"</option>
+                    <option value="<">"Less than"</option>
+                    <option value="<=">"Less than or equal to"</option>
+                    <option value=">">"Greater than"</option>
+                    <option value=">=">"Greater than or equal to"</option>
                     <option value="=null">"Is null"</option>
                     <option value="!null">"Not null"</option>
                 </select>
-                <input type="text" class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-700 w-32" placeholder="Filter..." />
+                <input type="number" pattern="[0-9]*" class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-700 w-24" />
             </div>
         }
     }
@@ -30,7 +32,7 @@ impl IFilter for TextFilter {
         // Safe default model; real wiring will fill values from inputs later
         ColumnFilterModel {
             col_id: String::new(),
-            operator: "contains".into(),
+            operator: "equals".into(),
             value: String::new(),
         }
     }

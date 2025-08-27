@@ -1,12 +1,12 @@
 mod clipboard_service;
 mod edit;
 mod export_service;
-mod filter;
+pub mod filter;
 pub mod group_service;
 mod keyboard_service;
 mod move_service;
 mod pin_service;
 mod pivot_service;
-mod resize_service;
+pub mod resize_service;
 mod selection_service;
 mod sort_service;

@@ -252,6 +252,10 @@ pub fn AdminPostsPage() -> impl IntoView {
         }
     });
 
+    // Enable server-side sorting and filtering
+    table_state.client_side_sorting.set(false);
+    table_state.client_side_filtering.set(false);
+
     // Define columns (AG Grid inspired)
     table_state.columns.set(vec![
         ColumnDef {
@@ -338,7 +342,7 @@ pub fn AdminPostsPage() -> impl IntoView {
             movable: true,
             pinned: Pinned::None,
             width: 120,
-            min_width: 80,
+            min_width: 100,
             max_width: Some(200),
             groupable: false,
             aggregate: None,
@@ -443,6 +447,16 @@ pub fn AdminPostsPage() -> impl IntoView {
             data_type: Some(crate::pages::components::datatable::core::column::DataType::DateTime),
         },
     ]);
+
+    // Reflect table query (sort/filter/page) into URL for server-side fetching
+    {
+        use crate::pages::components::datatable::core::query_sync::{sync_table_query_to_url, SyncOptions};
+        let nav = use_navigate();
+        let st = table_state.clone();
+        sync_table_query_to_url(st, move |qs| {
+            nav(&qs, leptos_router::NavigateOptions { replace: true, ..Default::default() });
+        }, SyncOptions { include_sort: true, include_p_filters: true, include_a_filters: false, include_search: false, ..Default::default() });
+    }
 
     // When resource resolves, populate rows and total
     Effect::new({

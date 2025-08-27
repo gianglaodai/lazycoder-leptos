@@ -1,15 +1,15 @@
 use super::{ColumnFilterModel, IFilter};
 use leptos::prelude::*;
 
-pub struct DateFilter;
+pub struct TimeFilter;
 
-impl DateFilter {
+impl TimeFilter {
     pub fn new() -> Self {
         Self
     }
 }
 
-impl IFilter for DateFilter {
+impl IFilter for TimeFilter {
     fn view(&self) -> impl IntoView {
         // Minimal, non-interactive UI skeleton to avoid panics until fully wired
         view! {
@@ -21,7 +21,7 @@ impl IFilter for DateFilter {
                     <option value="=null">"Is null"</option>
                     <option value="!null">"Not null"</option>
                 </select>
-                <input type="date" class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-700" />
+                <input type="time" class="border border-gray-300 rounded px-2 py-1 text-xs text-gray-700" />
             </div>
         }
     }

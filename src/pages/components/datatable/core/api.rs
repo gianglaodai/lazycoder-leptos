@@ -3,7 +3,7 @@ use crate::pages::components::datatable::core::data_source::{FilterModel, SortMo
 use crate::pages::components::datatable::core::render_value::Value;
 use crate::pages::components::datatable::core::row::RowNode;
 use crate::pages::components::datatable::core::state::TableState;
-use leptos::prelude::{ReadUntracked, Set, Update, With};
+use leptos::prelude::{GetUntracked, ReadUntracked, Set, Update, With};
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -66,6 +66,10 @@ impl<T: Clone + Send + Sync + 'static> GridApi<T> {
             Rc::new(move |q: String| {
                 state.quick_filter.set(q.clone());
                 state.filter_model.update(|f| f.quick_text = Some(q));
+                if !state.client_side_filtering.get_untracked() {
+                    state.current_page.set(1);
+                    state.notify_query_changed();
+                }
             })
         };
         let set_column_state = {

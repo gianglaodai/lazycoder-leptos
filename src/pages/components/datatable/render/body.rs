@@ -63,7 +63,12 @@ pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
 
     // Helper: filter rows by quick text across visible columns.
     let state_for_filter = state.clone();
+    let state_for_filtering_flag = state.clone();
     let filtered_rows = move || {
+        // When client-side filtering is disabled, don't filter locally.
+        if !state_for_filtering_flag.client_side_filtering.get_untracked() {
+            return rows_sig.with(|v| v.clone());
+        }
         let q = quick.get_untracked().to_lowercase();
         let rows = rows_sig.with(|v| v.clone());
         let col_filters = state_for_filter
@@ -122,8 +127,13 @@ pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
     };
 
     // Helper: sort rows based on sort_model.
+    let state_for_sorting_flag = state.clone();
     let sorted_rows = move || {
         let mut rows = filtered_rows();
+        // When client-side sorting is disabled, do not sort locally.
+        if !state_for_sorting_flag.client_side_sorting.get_untracked() {
+            return rows;
+        }
         let model = sort_model_sig.with(|m| m.clone());
         if model.is_empty() || rows.len() <= 1 {
             return rows;

@@ -5,3 +5,4 @@ pub mod data_source;
 pub mod render_value;
 pub mod row;
 pub mod state;
+pub mod query_sync;

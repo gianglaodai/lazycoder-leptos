@@ -21,8 +21,11 @@ pub fn DataTable<T: Clone + Send + Sync + 'static>(
     #[prop(into)] state: Arc<TableState<T>>,
     #[prop(optional)] height: Option<String>,
     #[prop(optional)] row_height: Option<i32>,
+    #[prop(optional)] client_side_sorting: Option<bool>,
+    #[prop(optional)] client_side_filtering: Option<bool>,
 ) -> impl IntoView {
-    let height = height.unwrap_or_else(|| "auto".to_string());
+    // height is intentionally ignored to avoid fixed height; keep it to preserve API compatibility.
+    let _height = height.unwrap_or_else(|| "auto".to_string());
     let row_height = row_height.unwrap_or(36);
 
     // Basic AG Grid-inspired container with sticky header and scrollable body
@@ -38,9 +41,20 @@ pub fn DataTable<T: Clone + Send + Sync + 'static>(
     let s_empty = state.clone();
     let s_foot = state.clone();
 
+    // Compute min/max height for the scrollable body to fit 5 to 10 rows (+ header height estimate)
+    let body_style = {
+        let row_height = row_height;
+        move || {
+            let header_h = 40; // approximate header height (px)
+            let min_h = header_h + row_height * 5;
+            let max_h = header_h + row_height * 100;
+            format!("min-height:{}px;max-height:{}px;", min_h, max_h)
+        }
+    };
+
     view! {
         <div class="lc-datatable relative border border-gray-200 rounded-md overflow-visible text-sm bg-white">
-            <div class="lc-dt-body overflow-auto" style=move || format!("height:{};", height)>
+            <div class="lc-dt-body overflow-auto" style=body_style>
                 <div class="lc-dt-header sticky top-0 z-10 bg-gray-50 border-b border-gray-200">
                     <HeaderRow state=s_head />
                 </div>
