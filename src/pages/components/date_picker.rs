@@ -37,11 +37,14 @@ pub fn DatePicker(
 
     // Keep a text binding that mirrors the selected date in YYYY-MM-DD
     let (text, set_text) = signal(String::new());
-    Effect::new(move |_| {
-        match sel_sig.get() {
-            Some(d) => set_text.set(format!("{:04}-{:02}-{:02}", d.year(), d.month() as u8, d.day())),
-            None => set_text.set(String::new()),
-        }
+    Effect::new(move |_| match sel_sig.get() {
+        Some(d) => set_text.set(format!(
+            "{:04}-{:02}-{:02}",
+            d.year(),
+            d.month() as u8,
+            d.day()
+        )),
+        None => set_text.set(String::new()),
     });
 
     let placeholder_text = placeholder.unwrap_or_else(|| "Pick a date".to_string());

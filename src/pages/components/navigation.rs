@@ -1,33 +1,32 @@
-use crate::pages::components::button::ButtonVariant;
-use crate::pages::components::Button;
-use crate::pages::rest::auth_api::{logout, UserTO};
+use crate::pages::components::dropdown_menu::{
+    DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+};
+use crate::pages::rest::auth_api::{logout as api_logout, UserRole, UserTO};
 use leptos::prelude::*;
 use leptos_router::components::A;
-use leptos_router::hooks::use_navigate;
 
 #[component]
 pub fn Navigation() -> impl IntoView {
     let user_ctx: RwSignal<Option<UserTO>> = expect_context();
-    let show_menu = RwSignal::new(false);
-    let _navigate = use_navigate();
     let username = Memo::new(move |_| user_ctx.get().map(|u| u.username).unwrap_or_default());
+    let is_admin = Memo::new(move |_| {
+        user_ctx
+            .get()
+            .map(|u| u.role == UserRole::ADMIN)
+            .unwrap_or(false)
+    });
 
-    let logout = move |_| {
-        // Close menu, logout, clear user, and navigate home
-        show_menu.set(false);
+    let do_logout = move |_| {
         let user_ctx = user_ctx.clone();
         leptos::task::spawn_local(async move {
-            let _ = logout().await; // ignore error gracefully
+            let _ = api_logout().await; // ignore error gracefully
             user_ctx.set(None);
             let _ = leptos::prelude::window().location().set_href("/");
         });
     };
 
-    // Close dropdown when clicking outside
-    let on_click_outside = move |_| show_menu.set(false);
-
     view! {
-        <nav class="font-serif bg-[--color-bg]/80 backdrop-blur supports-[backdrop-filter]:bg-[--color-bg]/80 mb-10 px-9 py-8 shadow-[0_0_2em_rgba(0,0,0,0.1)] sm:mx-0" on:click=on_click_outside>
+        <nav class="font-serif bg-[--color-bg]/80 backdrop-blur supports-[backdrop-filter]:bg-[--color-bg]/80 mb-10 px-9 py-8 shadow-[0_0_2em_rgba(0,0,0,0.1)] sm:mx-0">
             <div class="container-page">
                 <div class="flex items-center justify-between py-3">
                     {/* Left navigation links */}
@@ -50,19 +49,25 @@ pub fn Navigation() -> impl IntoView {
                                 </div>
                             }
                         >
-                            <div class="flex items-center">
-                                <Button variant=ButtonVariant::Link class="text-xl font-bold underline underline-offset-4 decoration-1 hover:no-underline hover:text-black transition-colors" on_click=Callback::new(move |ev: leptos::ev::MouseEvent| { ev.stop_propagation(); show_menu.update(|v| *v = !*v); })>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger class="text-xl cursor-pointer font-bold underline underline-offset-4 decoration-1 hover:no-underline hover:text-black transition-colors">
                                     {move || format!("Welcome, {}", username.get())}
-                                </Button>
-                                <Show when=move || show_menu.get() fallback=|| ()>
-                                    <div class="absolute right-0 mt-2 w-48 rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-none z-50" on:click=|ev| ev.stop_propagation()>
-                                        <div class="py-1 text-[--color-ink]">
-                                            <A href="/settings" attr:class="block px-4 py-2 text-sm hover:bg-gray-100">Settings</A>
-                                            <Button class="w-full text-left block px-4 py-2 text-sm hover:bg-gray-100" variant=ButtonVariant::Ghost on_click=Callback::new(move |_| logout(()))>Logout</Button>
-                                        </div>
-                                    </div>
-                                </Show>
-                            </div>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent class="right-0 mt-2 w-56">
+                                    <Show when=move || is_admin.get() fallback=|| view! { <></> }>
+                                        <DropdownMenuItem>
+                                            <A href="/admin/home" attr:class="block w-full px-2 py-1.5 text-sm">Dashboard</A>
+                                        </DropdownMenuItem>
+                                    </Show>
+                                    <DropdownMenuItem>
+                                        <A href="/settings" attr:class="block w-full px-2 py-1.5 text-sm">Settings</A>
+                                    </DropdownMenuItem>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem on_click=Callback::new(move |_| do_logout(()))>
+                                        Logout
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </Show>
                     </div>
                 </div>

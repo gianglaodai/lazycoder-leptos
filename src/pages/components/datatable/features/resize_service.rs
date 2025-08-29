@@ -44,39 +44,66 @@ impl<T: Send + Sync + 'static> ResizeService<T> {
                 #[allow(unused_mut)]
                 let mut pressed = true;
                 #[cfg(target_arch = "wasm32")]
-                { pressed = e.buttons() & 1 == 1; }
-                if !pressed { return; }
-                let is_active = ACTIVE_RESIZE_COL.with(|c| c.borrow().as_deref() == Some(id.as_str()));
-                if !is_active { return; }
+                {
+                    pressed = e.buttons() & 1 == 1;
+                }
+                if !pressed {
+                    return;
+                }
+                let is_active =
+                    ACTIVE_RESIZE_COL.with(|c| c.borrow().as_deref() == Some(id.as_str()));
+                if !is_active {
+                    return;
+                }
                 // Compute width based on start snapshot only (no reread of base from state)
                 let delta = e.client_x() - start_x;
                 // Obtain constraints for clamping
                 let (min_w, max_w_opt) = state.columns.with(|cols| {
-                    if let Some(c) = cols.iter().find(|c| c.id == id.as_str()) { (c.min_width.max(0), c.max_width) } else { (0, None) }
+                    if let Some(c) = cols.iter().find(|c| c.id == id.as_str()) {
+                        (c.min_width.max(0), c.max_width)
+                    } else {
+                        (0, None)
+                    }
                 });
                 let mut w = start_width.saturating_add(delta);
-                if let Some(maxw) = max_w_opt { w = w.clamp(min_w, maxw); } else { w = w.max(min_w); }
+                if let Some(maxw) = max_w_opt {
+                    w = w.clamp(min_w, maxw);
+                } else {
+                    w = w.max(min_w);
+                }
                 // Apply width to state
                 state.column_state.update(|m| {
-                    let entry = m.entry(id.clone()).or_insert_with(|| ColumnState { id: id.clone(), ..Default::default() });
+                    let entry = m.entry(id.clone()).or_insert_with(|| ColumnState {
+                        id: id.clone(),
+                        ..Default::default()
+                    });
                     entry.width = Some(w);
                 });
             }
         });
         self.move_guard.set(Some(mv_handle));
-        let up_handle = window_event_listener(leptos::ev::mouseup, move |_e: leptos::ev::MouseEvent| {
-            // On mouseup, drop listeners and clear active column; do not touch self
-            if let Some(h) = move_cell.take() { drop(h); }
-            if let Some(h) = up_cell.take() { drop(h); }
-            ACTIVE_RESIZE_COL.with(|c| c.replace(None));
-        });
+        let up_handle =
+            window_event_listener(leptos::ev::mouseup, move |_e: leptos::ev::MouseEvent| {
+                // On mouseup, drop listeners and clear active column; do not touch self
+                if let Some(h) = move_cell.take() {
+                    drop(h);
+                }
+                if let Some(h) = up_cell.take() {
+                    drop(h);
+                }
+                ACTIVE_RESIZE_COL.with(|c| c.replace(None));
+            });
         self.up_guard.set(Some(up_handle));
     }
 
     #[cfg(target_arch = "wasm32")]
     fn detach_listeners(&mut self) {
-        if let Some(h) = self.move_guard.take() { drop(h); }
-        if let Some(h) = self.up_guard.take() { drop(h); }
+        if let Some(h) = self.move_guard.take() {
+            drop(h);
+        }
+        if let Some(h) = self.up_guard.take() {
+            drop(h);
+        }
     }
 
     #[cfg(not(target_arch = "wasm32"))]
@@ -197,14 +224,21 @@ impl<T: Send + Sync + 'static> ResizeService<T> {
         // Find header text and constraints
         let (header, padding, min_w, max_w_opt) = self.state.columns.with(|cols| {
             if let Some(c) = cols.iter().find(|c| c.id == id) {
-                (c.header_name.to_string(), 16, c.min_width.max(0), c.max_width)
+                (
+                    c.header_name.to_string(),
+                    16,
+                    c.min_width.max(0),
+                    c.max_width,
+                )
             } else {
                 (String::new(), 16, 0, None)
             }
         });
         // Heuristic: ~8 px per character for default font, plus padding
         let mut w = ((header.len() as i32) * 8) + padding;
-        if let Some(maxw) = max_w_opt { w = w.min(maxw); }
+        if let Some(maxw) = max_w_opt {
+            w = w.min(maxw);
+        }
         w = w.max(min_w);
         self.apply_width(id, w);
     }

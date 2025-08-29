@@ -66,7 +66,10 @@ pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
     let state_for_filtering_flag = state.clone();
     let filtered_rows = move || {
         // When client-side filtering is disabled, don't filter locally.
-        if !state_for_filtering_flag.client_side_filtering.get_untracked() {
+        if !state_for_filtering_flag
+            .client_side_filtering
+            .get_untracked()
+        {
             return rows_sig.with(|v| v.clone());
         }
         let q = quick.get_untracked().to_lowercase();

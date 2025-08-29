@@ -36,7 +36,9 @@ pub fn StatusBar<T: Send + Sync + 'static>(
         move |_| {
             if st.current_page.get_untracked() > 1 {
                 st.current_page.update(|p| *p -= 1);
-                if !st.client_side_sorting.get_untracked() || !st.client_side_filtering.get_untracked() {
+                if !st.client_side_sorting.get_untracked()
+                    || !st.client_side_filtering.get_untracked()
+                {
                     st.notify_query_changed();
                 }
             }
@@ -54,7 +56,9 @@ pub fn StatusBar<T: Send + Sync + 'static>(
             let pc = page_count();
             if st.current_page.get_untracked() < pc {
                 st.current_page.update(|p| *p += 1);
-                if !st.client_side_sorting.get_untracked() || !st.client_side_filtering.get_untracked() {
+                if !st.client_side_sorting.get_untracked()
+                    || !st.client_side_filtering.get_untracked()
+                {
                     st.notify_query_changed();
                 }
             }
@@ -65,7 +69,8 @@ pub fn StatusBar<T: Send + Sync + 'static>(
         move |_| {
             // Use a large number; go_to_page will clamp to the last page based on total_rows & page_size
             go_to_page(&st, usize::MAX);
-            if !st.client_side_sorting.get_untracked() || !st.client_side_filtering.get_untracked() {
+            if !st.client_side_sorting.get_untracked() || !st.client_side_filtering.get_untracked()
+            {
                 st.notify_query_changed();
             }
         }

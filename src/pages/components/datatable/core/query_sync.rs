@@ -10,7 +10,7 @@ pub struct SyncOptions {
     pub include_sort: bool,
     pub include_p_filters: bool,
     pub include_a_filters: bool, // reserved for future
-    pub include_search: bool,     // reserved for future
+    pub include_search: bool,    // reserved for future
     pub first_result_key: &'static str,
     pub max_results_key: &'static str,
     pub sort_key: &'static str,
@@ -155,8 +155,10 @@ pub fn build_p_filters<T: Send + Sync + 'static>(state: &Arc<TableState<T>>) -> 
                 5,
             ),
             FilterValue::Time(t) => (
-                t.format(&time::macros::format_description!("[hour]:[minute]:[second]"))
-                    .unwrap_or_default(),
+                t.format(&time::macros::format_description!(
+                    "[hour]:[minute]:[second]"
+                ))
+                .unwrap_or_default(),
                 6,
             ),
             FilterValue::IntRange(a, b) => (format!("{}|{}", a, b), 1),
@@ -184,19 +186,29 @@ pub fn build_p_filters<T: Send + Sync + 'static>(state: &Arc<TableState<T>>) -> 
             FilterValue::TimeRange(a, b) => (
                 format!(
                     "{}|{}",
-                    a.format(&time::macros::format_description!("[hour]:[minute]:[second]"))
-                        .unwrap_or_default(),
-                    b.format(&time::macros::format_description!("[hour]:[minute]:[second]"))
-                        .unwrap_or_default()
+                    a.format(&time::macros::format_description!(
+                        "[hour]:[minute]:[second]"
+                    ))
+                    .unwrap_or_default(),
+                    b.format(&time::macros::format_description!(
+                        "[hour]:[minute]:[second]"
+                    ))
+                    .unwrap_or_default()
                 ),
                 6,
             ),
             FilterValue::ListInt(vs) => (
-                vs.iter().map(|x| x.to_string()).collect::<Vec<_>>().join("|"),
+                vs.iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<_>>()
+                    .join("|"),
                 1,
             ),
             FilterValue::ListFloat(vs) => (
-                vs.iter().map(|x| x.to_string()).collect::<Vec<_>>().join("|"),
+                vs.iter()
+                    .map(|x| x.to_string())
+                    .collect::<Vec<_>>()
+                    .join("|"),
                 2,
             ),
             FilterValue::ListString(vs) => (vs.join("|"), 0),
@@ -209,9 +221,7 @@ pub fn build_p_filters<T: Send + Sync + 'static>(state: &Arc<TableState<T>>) -> 
     for (cid, needle) in col_text.into_iter() {
         if let Some(col) = cols.iter().find(|c| c.id == cid) {
             let field = col.field.unwrap_or(col.id);
-            let dtype = col
-                .data_type
-                .unwrap_or(DataType::Text);
+            let dtype = col.data_type.unwrap_or(DataType::Text);
             let code = to_dtype_code(&dtype);
             if !needle.trim().is_empty() {
                 out.push(format!("{}:{}:{}:{}", field, "~", needle, code));

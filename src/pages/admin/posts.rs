@@ -1,5 +1,9 @@
 use crate::pages::admin::guard::AdminGuard;
 use crate::pages::components::button::{ButtonIntent, ButtonVariant};
+use crate::pages::components::datatable::core::column::{ColumnDef, Pinned};
+use crate::pages::components::datatable::core::render_value::Value;
+use crate::pages::components::datatable::core::row::RowNode;
+use crate::pages::components::datatable::core::state::TableState;
 use crate::pages::components::{
     Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader,
     DialogTitle, DialogTrigger, Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
@@ -11,6 +15,16 @@ use crate::pages::rest::post_info_api::{count_post_infos, load_post_infos};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
+use std::sync::Arc;
+
+#[component]
+fn DataTableCtx() -> impl IntoView {
+    use crate::pages::components::datatable::core::state::TableState;
+    use crate::pages::components::datatable::DataTable;
+    use std::sync::Arc;
+    let ts: Arc<TableState<crate::pages::rest::post_info_api::PostInfoTO>> = expect_context();
+    view! { <DataTable state=ts height="600px".to_string() row_height=36 /> }
+}
 
 #[component]
 fn NewPostDialog() -> impl IntoView {
@@ -22,7 +36,7 @@ fn NewPostDialog() -> impl IntoView {
 
     let create_action = Action::new(move |t: &String| {
         let title_val = t.clone();
-        let user_id = user_ctx.get().map(|u| u.id).unwrap_or(0);
+        let user_id = user_ctx.get_untracked().map(|u| u.id).unwrap_or(0);
         async move { create_post(title_val, user_id).await }
     });
 
@@ -67,7 +81,7 @@ fn NewPostDialog() -> impl IntoView {
                     let disabled = disabled.clone();
                     let create_action = create_action.clone();
                     let title = title.clone();
-                    move |_| { if !disabled.get() { create_action.dispatch(title.get()); } }
+                    move |_| { if !disabled.get_untracked() { create_action.dispatch(title.get_untracked()); } }
                 })>
                     <FormField name="title".to_string() error=error_sig>
                         <FormItem>
@@ -86,7 +100,7 @@ fn NewPostDialog() -> impl IntoView {
                         intent=ButtonIntent::Primary
                         disabled_signal=disabled
                         loading_signal=create_action.pending().into()
-                        on_click=Callback::new(move |_| { if !disabled.get() { create_action.dispatch(title.get()); } })
+                        on_click=Callback::new(move |_| { if !disabled.get_untracked() { create_action.dispatch(title.get_untracked()); } })
                     >
                         {move || if create_action.pending().get() { "Creating...".to_string() } else { "Create".to_string() }}
                     </Button>
@@ -100,16 +114,16 @@ fn NewPostDialog() -> impl IntoView {
 pub fn AdminPostsPage() -> impl IntoView {
     let query = use_query_map();
     let first_result = move || {
-        query.with(|q| {
+        query.with_untracked(|q| {
             q.get("first_result")
-                .and_then(|p| p.parse::<i64>().ok())
+                .and_then(move |p| p.parse::<i64>().ok())
                 .unwrap_or(0)
         })
     };
     let max_results = move || {
-        query.with(|q| {
+        query.with_untracked(|q| {
             q.get("max_results")
-                .and_then(|p| p.parse::<i32>().ok())
+                .and_then(move |p| p.parse::<i32>().ok())
                 .unwrap_or(5)
         })
     };
@@ -122,15 +136,11 @@ pub fn AdminPostsPage() -> impl IntoView {
     let reload = RwSignal::new(0u32);
 
     // Build datatable state and columns
-    use crate::pages::components::datatable::core::column::{ColumnDef, Pinned};
-    use crate::pages::components::datatable::core::render_value::Value;
-    use crate::pages::components::datatable::core::row::RowNode;
-    use crate::pages::components::datatable::core::state::TableState;
-    use crate::pages::components::datatable::DataTable;
-    use std::sync::Arc;
 
     let table_state: Arc<TableState<crate::pages::rest::post_info_api::PostInfoTO>> =
         Arc::new(TableState::new());
+    // Provide table_state in context to avoid moving it into child closures that require Fn
+    provide_context(table_state.clone());
 
     // Initialize pagination from query
     table_state.page_size.set(max_results() as usize);
@@ -450,12 +460,30 @@ pub fn AdminPostsPage() -> impl IntoView {
 
     // Reflect table query (sort/filter/page) into URL for server-side fetching
     {
-        use crate::pages::components::datatable::core::query_sync::{sync_table_query_to_url, SyncOptions};
+        use crate::pages::components::datatable::core::query_sync::{
+            sync_table_query_to_url, SyncOptions,
+        };
         let nav = use_navigate();
         let st = table_state.clone();
-        sync_table_query_to_url(st, move |qs| {
-            nav(&qs, leptos_router::NavigateOptions { replace: true, ..Default::default() });
-        }, SyncOptions { include_sort: true, include_p_filters: true, include_a_filters: false, include_search: false, ..Default::default() });
+        sync_table_query_to_url(
+            st,
+            move |qs| {
+                nav(
+                    &qs,
+                    leptos_router::NavigateOptions {
+                        replace: true,
+                        ..Default::default()
+                    },
+                );
+            },
+            SyncOptions {
+                include_sort: true,
+                include_p_filters: true,
+                include_a_filters: false,
+                include_search: false,
+                ..Default::default()
+            },
+        );
     }
 
     // When resource resolves, populate rows and total
@@ -475,15 +503,22 @@ pub fn AdminPostsPage() -> impl IntoView {
 
     view! {
         <AdminGuard>
-            <div class="container-page py-10 font-serif">
-                <div class="flex items-center justify-between mb-6">
-                    <h1 class="text-3xl font-bold">Manage Posts</h1>
-                    <NewPostDialog />
+            <crate::pages::components::sidebar::SidebarProvider default_open=true>
+                <div class="flex gap-0">
+                    <crate::pages::admin::layout::AdminSidebar />
+                    <main class="flex-1 min-h-screen">
+                        <div class="container-page py-10 font-serif">
+                            <div class="flex items-center justify-between mb-6">
+                                <h1 class="text-3xl font-bold">Manage Posts</h1>
+                                <NewPostDialog />
+                            </div>
+                            <div class="mt-4">
+                                <DataTableCtx />
+                            </div>
+                        </div>
+                    </main>
                 </div>
-                <div class="mt-4">
-                    <DataTable state=table_state.clone() height="600px".to_string() row_height=36 />
-                </div>
-            </div>
+            </crate::pages::components::sidebar::SidebarProvider>
         </AdminGuard>
     }
 }

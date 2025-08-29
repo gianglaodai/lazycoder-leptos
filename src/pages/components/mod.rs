@@ -5,6 +5,7 @@ pub mod datatable;
 pub mod date_picker;
 pub mod datetime_picker;
 pub mod dialog;
+pub mod dropdown_menu;
 pub mod footer;
 pub mod form;
 pub mod input;
@@ -16,9 +17,14 @@ pub mod pagination;
 mod paginator;
 pub mod popover;
 pub mod select;
+pub mod separator;
+pub mod sheet;
+pub mod sidebar;
+pub mod skeleton;
 pub mod table;
 pub mod textarea;
 pub mod time_picker;
+pub mod tooltip;
 
 // Re-export components for easier importing
 pub use button::Button;
@@ -47,8 +53,18 @@ pub use pagination::{
 pub use paginator::Paginator;
 pub use popover::{Popover, PopoverContent, PopoverTrigger};
 pub use select::Select;
+pub use separator::Separator;
+pub use sheet::{
+    Sheet, SheetClose, SheetContent, SheetDescription, SheetFooter, SheetHeader, SheetTitle,
+    SheetTrigger,
+};
+pub use sidebar::{
+    Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarProvider, SidebarTrigger,
+};
+pub use skeleton::Skeleton;
 pub use table::{
     Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow,
 };
 pub use textarea::Textarea;
 pub use time_picker::TimePicker;
+pub use tooltip::{Tooltip, TooltipContent, TooltipProvider, TooltipTrigger};

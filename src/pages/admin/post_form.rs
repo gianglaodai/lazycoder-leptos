@@ -126,8 +126,12 @@ pub fn AdminPostEditPage() -> impl IntoView {
 
     view! {
         <AdminGuard>
-            <Suspense fallback=move || view!{<div class="text-center py-8">Loading post...</div>}>
-                {move || match post_res.get() {
+            <crate::pages::components::sidebar::SidebarProvider default_open=true>
+                <div class="flex gap-0">
+                    <crate::pages::admin::layout::AdminSidebar />
+                    <main class="flex-1 min-h-screen">
+                        <Suspense fallback=move || view!{<div class="text-center py-8">Loading post...</div>}>
+                            {move || match post_res.get() {
                     Some(Ok(post)) => {
                         let format = format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]").unwrap();
                         let meta = format!(
@@ -162,6 +166,9 @@ pub fn AdminPostEditPage() -> impl IntoView {
                     None => view!{<div/>}.into_any()
                 }}
             </Suspense>
+                    </main>
+                </div>
+            </crate::pages::components::sidebar::SidebarProvider>
         </AdminGuard>
     }
 }

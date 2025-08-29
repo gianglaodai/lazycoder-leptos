@@ -1,14 +1,14 @@
 use leptos::prelude::*;
 use leptos::*;
 
+pub mod boolean;
 pub mod date;
+pub mod datetime;
 pub mod float;
+pub mod integer;
 pub mod set;
 pub mod text;
-pub mod integer;
 pub mod time;
-pub mod datetime;
-pub mod boolean;
 
 #[derive(Clone, Debug, Default)]
 pub struct ColumnFilterModel {

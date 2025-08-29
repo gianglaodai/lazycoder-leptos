@@ -1,5 +1,5 @@
 use leptos::prelude::*;
-use time::{PrimitiveDateTime};
+use time::PrimitiveDateTime;
 
 // Keep the simple API, styled like shadcn, using a native input type="datetime-local"
 #[component]
@@ -12,7 +12,7 @@ pub fn DateTimePicker(
     #[prop(optional, default = 5)] _minute_step: u8,
     // legacy props kept for compatibility but ignored in this simplified version
     #[prop(into, optional)] _date_disabled: Option<Callback<time::Date, bool>>,
-    #[prop(optional)] _caption_layout: ()
+    #[prop(optional)] _caption_layout: (),
 ) -> impl IntoView {
     // Controlled/uncontrolled selected state handling
     let (sel_sig, set_sel) = match selected {
@@ -83,8 +83,12 @@ pub fn DateTimePicker(
     fn parse_pdt(s: &str) -> Option<PrimitiveDateTime> {
         let f1 = time::macros::format_description!("[year]-[month]-[day]T[hour]:[minute]");
         let f2 = time::macros::format_description!("[year]-[month]-[day]T[hour]:[minute]:[second]");
-        if let Ok(v) = PrimitiveDateTime::parse(s, &f1) { return Some(v); }
-        if let Ok(v) = PrimitiveDateTime::parse(s, &f2) { return Some(v); }
+        if let Ok(v) = PrimitiveDateTime::parse(s, &f1) {
+            return Some(v);
+        }
+        if let Ok(v) = PrimitiveDateTime::parse(s, &f2) {
+            return Some(v);
+        }
         None
     }
 

@@ -50,7 +50,12 @@ pub fn App() -> impl IntoView {
         <Link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Inter:wght@400;500;600;700&display=swap" />
 
         <Router>
-            <Navigation/>
+            {{
+                use leptos_router::hooks::use_location;
+                let loc = use_location();
+                let is_admin = Signal::derive(move || loc.pathname.get().starts_with("/admin"));
+                view! { <Show when=move || !is_admin.get() fallback=|| view! { <></> }><Navigation/></Show> }.into_any()
+            }}
             <main class="min-h-screen bg-[--color-bg] text-[--color-ink]">
                 <Routes fallback=move || view! { <NotFoundPage/> }>
                     <Route path=StaticSegment("") view=HomePage/>
