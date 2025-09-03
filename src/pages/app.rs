@@ -6,6 +6,7 @@ use crate::pages::admin::post_types::AdminPostTypesPage;
 use crate::pages::admin::post_collections::AdminPostCollectionsPage;
 use crate::pages::admin::taxonomies::AdminTaxonomiesPage;
 use crate::pages::admin::terms::AdminTermsPage;
+use crate::pages::admin::users::AdminUsersPage;
 use crate::pages::articles::ArticlesPage;
 use crate::pages::components::{Footer, Navigation};
 use crate::pages::home::HomePage;
@@ -76,6 +77,7 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/admin/post-collections") view=AdminPostCollectionsPage/>
                     <Route path=path!("/admin/taxonomies") view=AdminTaxonomiesPage/>
                     <Route path=path!("/admin/terms") view=AdminTermsPage/>
+                    <Route path=path!("/admin/users") view=AdminUsersPage/>
                     <Route path=WildcardSegment("any") view=NotFoundPage/>
                 </Routes>
             </main>

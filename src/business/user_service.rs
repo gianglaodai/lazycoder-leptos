@@ -49,6 +49,15 @@ define_struct_with_common_fields!(User {
     pub role: UserRole
 });
 
+impl UserRole {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            UserRole::USER => "USER",
+            UserRole::ADMIN => "ADMIN",
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct UserService<R: UserRepository> {
     user_repository: Arc<R>,

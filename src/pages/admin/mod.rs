@@ -7,3 +7,4 @@ pub mod post_types;
 pub mod post_collections;
 pub mod taxonomies;
 pub mod terms;
+pub mod users;
