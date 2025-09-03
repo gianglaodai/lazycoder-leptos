@@ -66,6 +66,7 @@ define_struct_with_common_fields!(Post {
     pub content: String,
     pub status: PostStatus,
     pub user_id: i32,
+    pub type_id: i32,
 });
 
 define_readonly_struct_with_common_fields!(PostInfo {

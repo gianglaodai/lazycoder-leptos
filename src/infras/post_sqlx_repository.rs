@@ -22,6 +22,7 @@ define_orm_with_common_fields!(Post {
     pub content: String,
     pub status: i32,
     pub user_id: i32,
+    pub type_id: i32,
 });
 
 impl PostOrm {
@@ -44,6 +45,7 @@ impl From<PostOrm> for Post {
             content: orm.content,
             status: PostStatus::from(orm.status),
             user_id: orm.user_id,
+            type_id: orm.type_id,
         }
     }
 }
@@ -93,7 +95,7 @@ impl Repository<Post, PostCreate> for PostSqlxRepository {
     async fn create(&self, post_create: &PostCreate) -> Result<Post, CoreError> {
         let now = time::OffsetDateTime::now_utc();
         let row: PostOrm = sqlx::query_as::<_, PostOrm>(
-            "INSERT INTO posts (uid, created_at, updated_at, slug, title, summary, content, status, user_id) values ($1, $2, $3, $4, $5, $6, $7, $8, $9) returning *",
+            "INSERT INTO posts (uid, created_at, updated_at, slug, title, summary, content, status, user_id, type_id) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning *",
         )
             .bind(Uuid::now_v7())
             .bind(&now)
@@ -104,6 +106,7 @@ impl Repository<Post, PostCreate> for PostSqlxRepository {
             .bind(&post_create.content)
             .bind(&post_create.status.as_i32())
             .bind(&post_create.user_id)
+            .bind(&post_create.type_id)
             .fetch_one(&self.pool)
             .await?;
         Ok(Post::from(row))
@@ -112,13 +115,14 @@ impl Repository<Post, PostCreate> for PostSqlxRepository {
     async fn update(&self, post: &Post) -> Result<Post, CoreError> {
         let now = time::OffsetDateTime::now_utc();
         let post = sqlx::query_as::<_, PostOrm>(
-            "UPDATE posts SET slug=$1, title=$2, summary=$3, content=$4, status=$5, updated_at=$6 WHERE id=$7 RETURNING *",
+            "UPDATE posts SET slug=$1, title=$2, summary=$3, content=$4, status=$5, type_id=$6, updated_at=$7 WHERE id=$8 RETURNING *",
         )
             .bind(&post.slug)
             .bind(&post.title)
             .bind(&post.summary)
             .bind(&post.content)
             .bind(post.status.as_i32())
+            .bind(post.type_id)
             .bind(now)
             .bind(post.id)
             .fetch_one(&self.pool)

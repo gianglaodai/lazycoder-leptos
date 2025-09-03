@@ -71,5 +71,11 @@ pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Respon
 }
 
 pub fn routes(cfg: &mut ServiceConfig) {
-    cfg.service(scope("/api/post-types").service(get_many).service(count).service(get_by_id).service(get_by_uid));
+    cfg.service(
+        scope("/api/post_types")
+            .service(get_many)
+            .service(count)
+            .service(get_by_id)
+            .service(get_by_uid),
+    );
 }

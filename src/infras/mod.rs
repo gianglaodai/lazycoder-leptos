@@ -21,3 +21,9 @@ pub mod post_collection_info_sqlx_repository;
 pub mod post_taxonomy_info_sqlx_repository;
 #[cfg(feature = "ssr")]
 pub mod attribute_sqlx_repository;
+#[cfg(feature = "ssr")]
+pub mod post_collection_item_info_sqlx_repository;
+#[cfg(feature = "ssr")]
+pub mod post_term_info_sqlx_repository;
+#[cfg(feature = "ssr")]
+pub mod post_relation_info_sqlx_repository;
