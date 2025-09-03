@@ -37,7 +37,21 @@ pub async fn run(pool: PgPool) -> std::io::Result<()> {
         App::new()
             .app_data(state.clone())
             .wrap(Logger::default())
-            .wrap(SessionMiddleware::new(CookieSessionStore::default(), secret_key.clone()))
+            .wrap({
+                use actix_session::SessionMiddleware;
+                use actix_web::cookie::{Key, SameSite, time::Duration};
+                let mut session_mw = SessionMiddleware::builder(CookieSessionStore::default(), secret_key.clone())
+                    // Make cookie HTTP-only to mitigate XSS
+                    .cookie_http_only(true)
+                    // Lax is a good default for session cookies protecting from CSRF on cross-site POST
+                    .cookie_same_site(SameSite::Lax)
+                    // Set a custom, stable cookie name
+                    .cookie_name("lazycoder.sid".into())
+                    // Set secure only in non-DEV environments (requires HTTPS)
+                    .cookie_secure(std::env::var("RUST_ENV").map(|v| v != "DEV").unwrap_or(false))
+                    .build();
+                session_mw
+            })
             .wrap(NormalizePath::trim())
             .service(Files::new("/pkg", format!("{site_root}/pkg")))
             .service(Files::new("/assets", &site_root))

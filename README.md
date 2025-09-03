@@ -3,7 +3,9 @@
     <img src="https://raw.githubusercontent.com/leptos-rs/leptos/main/docs/logos/Leptos_logo_RGB.svg" alt="Leptos Logo">
 </picture>
 
-# Leptos Starter Template
+# LazyCoder Leptos
+
+This project is a Leptos + Actix full‑stack app (server-side rendering + hydration) with TailwindCSS. Below are the commands and required environment variables to run it locally and in production.
 
 This is a template for use with the [Leptos](https://github.com/leptos-rs/leptos) web framework and the [cargo-leptos](https://github.com/akesson/cargo-leptos) tool.
 
@@ -26,6 +28,15 @@ to go to your newly created project.
 Of course, you should explore around the project structure, but the best place to start with your application code is in `src/app.rs`.
 
 ## Running your project
+
+1. Copy .env.example to .env and fill in DATABASE_URL and SECRET_KEY.
+2. Install Rust toolchain and cargo-leptos (see below), plus Node/Bun deps: npm i or bun i.
+3. In one terminal, build Tailwind once or run watch:
+   - npm run start
+4. In another terminal, run the SSR dev server:
+   - npm run watch:ssr
+
+By default, you can access your local project at http://localhost:3000
 
 `cargo leptos watch`  
 By default, you can access your local project at `http://localhost:3000`
@@ -62,6 +73,25 @@ By default, `cargo-leptos` uses `nightly` Rust, `cargo-generate`, and `sass`. If
 2. `rustup target add wasm32-unknown-unknown` - add the ability to compile Rust to WebAssembly
 3. `cargo install cargo-generate` - install `cargo-generate` binary (should be installed automatically in future)
 4. `npm install -g sass` - install `dart-sass` (should be optional in future)
+
+## Environment Variables
+
+Create a .env file in the project root (you can start from .env.example):
+
+Required
+- DATABASE_URL: PostgreSQL connection string used by sqlx on the server.
+  Example: postgres://USER:PASSWORD@localhost:5432/DATABASE
+- SECRET_KEY: 32-byte secret used by Actix SessionMiddleware for signing/encrypting cookies.
+  Generate securely, e.g.:
+  - openssl rand -base64 32
+  - node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+Optional (Leptos runtime config; usually not needed locally because Cargo.toml already sets these)
+- LEPTOS_OUTPUT_NAME: default lazycoder_leptos
+- LEPTOS_SITE_ROOT: default target/site
+- LEPTOS_SITE_PKG_DIR: default pkg
+- LEPTOS_SITE_ADDR: default 127.0.0.1:3000
+- LEPTOS_RELOAD_PORT: default 3001
 
 ## Executing a Server on a Remote Machine Without the Toolchain
 After running a `cargo leptos build --release` the minimum files needed are:
