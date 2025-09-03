@@ -114,8 +114,6 @@ pub fn AdminPostEditPage() -> impl IntoView {
                 summary: String::new(),
                 content: String::new(),
                 status: String::new(),
-                user_id: 0,
-                type_id: 0
             },
         };
         to.title = vals.title.clone();

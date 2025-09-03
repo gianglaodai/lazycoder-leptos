@@ -4,6 +4,7 @@ use crate::define_to_with_common_fields_fe;
 use leptos::prelude::ServerFnError;
 use leptos::*;
 use std::str::FromStr;
+use crate::pages::rest::post_info_api::PostInfoTO;
 
 define_to_with_common_fields_fe!(Post {
     pub slug: String,
@@ -11,8 +12,6 @@ define_to_with_common_fields_fe!(Post {
     pub summary: String,
     pub content: String,
     pub status: String,
-    pub user_id: i32,
-    pub type_id: i32,
 });
 
 impl From<PostTO> for Post {
@@ -28,8 +27,8 @@ impl From<PostTO> for Post {
             summary: to.summary,
             content: to.content,
             status: PostStatus::from_str(&to.status).unwrap_or(PostStatus::DRAFT),
-            user_id: to.user_id,
-            type_id: to.type_id,
+            user_id: -1,
+            type_id: -1,
         }
     }
 }
@@ -47,20 +46,18 @@ impl From<Post> for PostTO {
             summary: entity.summary,
             content: entity.content,
             status: entity.status.as_str().to_string(),
-            user_id: entity.user_id,
-            type_id: entity.type_id,
         }
     }
 }
 #[server(name=LoadPosts,prefix="/load", endpoint="/posts")]
-pub async fn load_posts(first_result: i64, max_results: i32) -> Result<Vec<PostTO>, ServerFnError> {
+pub async fn load_posts(first_result: i64, max_results: i32) -> Result<Vec<PostInfoTO>, ServerFnError> {
     use crate::business::sort::SortCriterion;
     use crate::state::AppState;
     use leptos_actix::extract;
 
     let state: actix_web::web::Data<AppState> = extract().await?;
     let result = state
-        .post_service
+        .post_info_service
         .get_many(
             vec![SortCriterion {
                 field: "updated_at".to_owned(),
@@ -71,7 +68,7 @@ pub async fn load_posts(first_result: i64, max_results: i32) -> Result<Vec<PostT
             vec![],
         )
         .await
-        .map(|posts| posts.into_iter().map(PostTO::from).collect::<Vec<PostTO>>())
+        .map(|posts| posts.into_iter().map(PostInfoTO::from).collect::<Vec<PostInfoTO>>())
         .map_err(|e| ServerFnError::ServerError(e.to_json()));
     result
 }
@@ -82,7 +79,7 @@ pub async fn count_posts() -> Result<i64, ServerFnError> {
 
     let state: actix_web::web::Data<AppState> = extract().await?;
     state
-        .post_service
+        .post_info_service
         .count(vec![])
         .await
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
@@ -120,7 +117,7 @@ fn slugify(input: &str) -> String {
     }
 }
 #[server(name=CreatePost, prefix="/load", endpoint="/posts/create")]
-pub async fn create_post(title: String, user_id: i32) -> Result<PostTO, ServerFnError> {
+pub async fn create_post(title: String, type_id: i32, user_id: i32) -> Result<PostTO, ServerFnError> {
     use crate::business::post_service::{PostCreate, PostStatus};
     use crate::state::AppState;
     use actix_session::SessionExt as _;
@@ -154,7 +151,7 @@ pub async fn create_post(title: String, user_id: i32) -> Result<PostTO, ServerFn
         content: "".to_string(),
         status: PostStatus::DRAFT,
         user_id,
-        type_id: 1,
+        type_id,
     };
     state
         .post_service

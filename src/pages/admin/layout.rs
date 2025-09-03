@@ -34,6 +34,10 @@ pub fn AdminSidebar() -> impl IntoView {
                 <nav class="flex flex-col gap-1 text-sm">
                     <A href="/admin" attr:class="rounded px-2 py-1 hover:bg-accent hover:text-accent-foreground">Dashboard</A>
                     <A href="/admin/posts" attr:class="rounded px-2 py-1 hover:bg-accent hover:text-accent-foreground">Posts</A>
+                    <A href="/admin/post-types" attr:class="rounded px-2 py-1 hover:bg-accent hover:text-accent-foreground">Post Types</A>
+                    <A href="/admin/post-collections" attr:class="rounded px-2 py-1 hover:bg-accent hover:text-accent-foreground">Post Collections</A>
+                    <A href="/admin/taxonomies" attr:class="rounded px-2 py-1 hover:bg-accent hover:text-accent-foreground">Taxonomies</A>
+                    <A href="/admin/terms" attr:class="rounded px-2 py-1 hover:bg-accent hover:text-accent-foreground">Terms</A>
                     <A href="/admin/users" attr:class="rounded px-2 py-1 hover:bg-accent hover:text-accent-foreground">Users</A>
                     <A href="/settings" attr:class="rounded px-2 py-1 hover:bg-accent hover:text-accent-foreground">Settings</A>
                     <Separator class="my-2" />

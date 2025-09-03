@@ -3,3 +3,7 @@ pub mod home;
 pub mod layout;
 pub mod post_form;
 pub mod posts;
+pub mod post_types;
+pub mod post_collections;
+pub mod taxonomies;
+pub mod terms;

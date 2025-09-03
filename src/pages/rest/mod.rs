@@ -3,3 +3,7 @@ mod error;
 mod macros;
 pub mod post_api;
 pub mod post_info_api;
+pub mod post_type_info_api;
+pub mod post_collection_info_api;
+pub mod post_taxonomy_info_api;
+pub mod term_info_api;

@@ -37,7 +37,7 @@ fn NewPostDialog() -> impl IntoView {
     let create_action = Action::new(move |t: &String| {
         let title_val = t.clone();
         let user_id = user_ctx.get_untracked().map(|u| u.id).unwrap_or(0);
-        async move { create_post(title_val, user_id).await }
+        async move { create_post(title_val, 1, user_id).await }
     });
 
     Effect::new({

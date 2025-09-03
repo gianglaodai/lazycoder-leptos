@@ -2,12 +2,13 @@ use crate::pages::components::button::ButtonVariant;
 use crate::pages::components::Button;
 use crate::pages::components::Paginator;
 use crate::pages::rest::auth_api::UserTO;
-use crate::pages::rest::post_api::{count_posts, load_posts, PostTO};
+use crate::pages::rest::post_api::{count_posts, load_posts};
 use leptos::control_flow::Show;
 use leptos::prelude::*;
 use leptos_router::components::A;
 use leptos_router::hooks::use_query_map;
 use time::format_description;
+use crate::pages::rest::post_info_api::PostInfoTO;
 
 #[component]
 pub fn ArticlesPage() -> impl IntoView {
@@ -84,7 +85,7 @@ pub fn ArticlesPage() -> impl IntoView {
 }
 
 #[component]
-fn Article(post: PostTO) -> impl IntoView {
+fn Article(post: PostInfoTO) -> impl IntoView {
     let user_ctx: RwSignal<Option<UserTO>> = expect_context();
     let format =
         format_description::parse("[year]-[month]-[day] [hour]:[minute]:[second]").unwrap();
