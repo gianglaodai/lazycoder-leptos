@@ -61,6 +61,7 @@ pub fn Input(
     #[prop(into, optional, default = Signal::from(String::new()))] value: Signal<String>,
     #[prop(into, optional)] on_input: Option<Callback<ev::Event, ()>>,
     #[prop(into, optional)] on_change: Option<Callback<ev::Event, ()>>,
+    #[prop(into, optional)] on_blur: Option<Callback<ev::FocusEvent, ()>>,
     #[prop(optional)] size: InputSize,
 ) -> impl IntoView {
     let tv = input_tv();
@@ -100,6 +101,7 @@ pub fn Input(
             prop:value=value
             on:input=move |ev| if let Some(cb) = on_input { cb.run(ev) }
             on:change=move |ev| if let Some(cb) = on_change { cb.run(ev) }
+            on:blur=move |ev| if let Some(cb) = on_blur { cb.run(ev) }
         />
     }
 }

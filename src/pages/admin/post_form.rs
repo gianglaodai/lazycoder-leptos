@@ -1,12 +1,11 @@
 use crate::pages::admin::guard::AdminGuard;
-use crate::pages::components::button::{ButtonIntent, ButtonVariant};
-use crate::pages::components::Button;
 use crate::pages::components::Input;
 use crate::pages::components::MarkdownEditor;
 use crate::pages::components::Select;
 use crate::pages::rest::post_api::{load_post_by_id, update_post, PostTO};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
+use leptos_router::components::A;
 use leptos_router::hooks::use_params_map;
 use time::format_description;
 
@@ -29,8 +28,7 @@ pub fn AdminPostForm(
     initial_content: String,
     initial_status: String,
     meta: Option<String>,
-    submit_label: String,
-    cancel_href: String,
+    saved_post: Signal<Option<PostTO>>,
     on_submit: Callback<PostFormValues, ()>,
 ) -> impl IntoView {
     let slug = RwSignal::new(initial_slug);
@@ -49,20 +47,34 @@ pub fn AdminPostForm(
         })
     };
 
+    // Sync local fields with saved data from server after update
+    create_effect(move |_| {
+        if let Some(p) = saved_post.get() {
+            slug.set(p.slug.clone());
+            title.set(p.title.clone());
+            summary.set(p.summary.clone());
+            content.set(p.content.clone());
+            status.set(p.status.clone());
+        }
+    });
+
     view! {
         <div class="container-page py-10 font-serif">
             <div class="flex items-center justify-between mb-6">
-                <h1 class="text-3xl font-bold">{heading.clone()}</h1>
+                <div class="flex items-center gap-3">
+                    <A href="/admin/posts" attr:class="text-sm text-stone-500 hover:text-stone-700">Back</A>
+                    <h1 class="text-3xl font-bold">{heading.clone()}</h1>
+                </div>
             </div>
             <div class="p-4 bg-white rounded-lg border border-stone-200">
                 {move || meta.clone().map(|m| view!{ <div class="text-sm text-stone-500 mb-3">{m}</div> }.into_any()).unwrap_or_else(|| view!{<div/>}.into_any())}
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {move || if show_slug { view!{
-                        <Input placeholder="Slug" value=slug on_input=Callback::new(move |ev: leptos::ev::Event| slug.set(event_target_value(&ev))) />
+                        <Input placeholder="Slug" value=slug on_input=Callback::new(move |ev: leptos::ev::Event| slug.set(event_target_value(&ev))) on_blur=Callback::new(move |_| submit()) />
                     }.into_any() } else { view!{}.into_any() }}
-                    <Input placeholder="Title" value=title on_input=Callback::new(move |ev: leptos::ev::Event| title.set(event_target_value(&ev))) />
-                    <Input class="md:col-span-2" placeholder="Summary" value=summary on_input=Callback::new(move |ev: leptos::ev::Event| summary.set(event_target_value(&ev))) />
-                    <Select value=status on_change=Callback::new(move |ev: leptos::ev::Event| status.set(event_target_value(&ev)))>
+                    <Input placeholder="Title" value=title on_input=Callback::new(move |ev: leptos::ev::Event| title.set(event_target_value(&ev))) on_blur=Callback::new(move |_| submit()) />
+                    <Input class="md:col-span-2" placeholder="Summary" value=summary on_input=Callback::new(move |ev: leptos::ev::Event| summary.set(event_target_value(&ev))) on_blur=Callback::new(move |_| submit()) />
+                    <Select value=status on_change=Callback::new(move |ev: leptos::ev::Event| { status.set(event_target_value(&ev)); submit(); })>
                         <option value="DRAFT">DRAFT</option>
                         <option value="REVIEW">REVIEW</option>
                         <option value="PUBLISHED">PUBLISHED</option>
@@ -74,13 +86,13 @@ pub fn AdminPostForm(
                             initial_content=content.get()
                             on_submit=Callback::new({
                                 let content = content.clone();
-                                move |md: String| content.set(md)
+                                let submit_cb = submit.clone();
+                                move |md: String| {
+                                    content.set(md);
+                                    submit_cb();
+                                }
                             })
                         />
-                    </div>
-                    <div class="flex gap-2">
-                        <Button href=cancel_href.clone() variant=ButtonVariant::Outline>Cancel</Button>
-                        <Button variant=ButtonVariant::Outline intent=ButtonIntent::Primary on_click=Callback::new(move |_| submit())>{submit_label.clone()}</Button>
                     </div>
                 </div>
             </div>
@@ -150,8 +162,10 @@ pub fn AdminPostEditPage() -> impl IntoView {
                                 initial_content=post.content.clone()
                                 initial_status=post.status.clone()
                                 meta=Some(meta)
-                                submit_label="Save".to_string()
-                                cancel_href="/admin/posts".to_string()
+                                saved_post=Signal::derive({
+                                    let v = update_action.value();
+                                    move || v.get().and_then(|r| r.ok())
+                                })
                                 on_submit=Callback::new({
                                     let update_action = update_action.clone();
                                     move |vals: PostFormValues| {
