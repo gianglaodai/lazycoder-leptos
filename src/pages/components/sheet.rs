@@ -26,7 +26,7 @@ pub fn Sheet(
     children: Children,
 ) -> impl IntoView {
     let (u_open, u_set_open) = signal(default_open.unwrap_or(false));
-    let (is_open, setter) = match open {
+    let (is_open, _setter) = match open {
         Some(sig) => {
             let cb = on_open_change.unwrap_or_else(|| Callback::new(|_| {}));
             (sig, cb)

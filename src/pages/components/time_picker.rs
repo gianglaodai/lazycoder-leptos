@@ -35,7 +35,7 @@ pub fn TimePicker(
 
     // Text value bound to the input (HH:MM:SS)
     let (text, set_text) = signal(String::new());
-    create_effect(move |_| {
+    Effect::new(move |_| {
         let v = sel_sig.get();
         if let Some(t) = v {
             set_text.set(format!(

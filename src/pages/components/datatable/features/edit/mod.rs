@@ -9,7 +9,7 @@ pub trait ICellEditor<T> {
     fn start_value(&self, v: &Value) -> Value {
         v.clone()
     }
-    fn view(&self, cx: Scope, _row: &T) -> AnyView {
+    fn view(&self, _cx: Scope, _row: &T) -> AnyView {
         // Safe no-op editor view to avoid panics when invoked before editing is fully wired.
         view! { <span></span> }.into_any()
     }

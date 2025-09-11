@@ -12,7 +12,7 @@ impl ChipRenderer {
 }
 
 impl<T> ICellRenderer<T> for ChipRenderer {
-    fn view(&self, cx: Scope, value: &Value, _row: &T) -> AnyView {
+    fn view(&self, _cx: Scope, value: &Value, _row: &T) -> AnyView {
         let text = value.to_string();
         view! { <span class="px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 text-xs">{text}</span> }.into_any()
     }

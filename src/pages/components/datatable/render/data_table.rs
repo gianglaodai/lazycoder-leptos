@@ -21,8 +21,8 @@ pub fn DataTable<T: Clone + Send + Sync + 'static>(
     #[prop(into)] state: Arc<TableState<T>>,
     #[prop(optional)] height: Option<String>,
     #[prop(optional)] row_height: Option<i32>,
-    #[prop(optional)] client_side_sorting: Option<bool>,
-    #[prop(optional)] client_side_filtering: Option<bool>,
+    #[prop(optional)] _client_side_sorting: Option<bool>,
+    #[prop(optional)] _client_side_filtering: Option<bool>,
 ) -> impl IntoView {
     // height is intentionally ignored to avoid fixed height; keep it to preserve API compatibility.
     let _height = height.unwrap_or_else(|| "auto".to_string());

@@ -35,7 +35,7 @@ impl ValueDataType {
 }
 
 // Helper to deserialize either a single string or a list of strings into Option<Vec<String>>
-use serde::de::{Deserializer as _, MapAccess, Visitor};
+use serde::de::{MapAccess, Visitor};
 use serde::Deserializer as SerdeDeserializer;
 
 #[derive(Deserialize)]

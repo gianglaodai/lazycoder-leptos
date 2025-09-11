@@ -12,7 +12,7 @@ impl MoneyRenderer {
 }
 
 impl<T> ICellRenderer<T> for MoneyRenderer {
-    fn view(&self, cx: Scope, value: &Value, _row: &T) -> AnyView {
+    fn view(&self, _cx: Scope, value: &Value, _row: &T) -> AnyView {
         let text = match value {
             Value::Number(n) => format!("${:.2}", n),
             _ => value.to_string(),

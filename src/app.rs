@@ -9,7 +9,6 @@ pub async fn run(pool: PgPool) -> std::io::Result<()> {
     use crate::state::new_app_state;
     use actix_files::Files;
     use actix_session::storage::CookieSessionStore;
-    use actix_session::SessionMiddleware;
     use actix_web::cookie::Key;
     use actix_web::middleware::Logger;
     use actix_web::{App, HttpServer};
@@ -39,8 +38,8 @@ pub async fn run(pool: PgPool) -> std::io::Result<()> {
             .wrap(Logger::default())
             .wrap({
                 use actix_session::SessionMiddleware;
-                use actix_web::cookie::{Key, SameSite, time::Duration};
-                let mut session_mw = SessionMiddleware::builder(CookieSessionStore::default(), secret_key.clone())
+                use actix_web::cookie::SameSite;
+                let session_mw = SessionMiddleware::builder(CookieSessionStore::default(), secret_key.clone())
                     // Make cookie HTTP-only to mitigate XSS
                     .cookie_http_only(true)
                     // Lax is a good default for session cookies protecting from CSRF on cross-site POST

@@ -48,7 +48,7 @@ pub fn AdminPostForm(
     };
 
     // Sync local fields with saved data from server after update
-    create_effect(move |_| {
+    Effect::new(move |_| {
         if let Some(p) = saved_post.get() {
             slug.set(p.slug.clone());
             title.set(p.title.clone());
