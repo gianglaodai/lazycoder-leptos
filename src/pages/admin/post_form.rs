@@ -8,6 +8,8 @@ use leptos::{component, view, IntoView};
 use leptos_router::components::A;
 use leptos_router::hooks::use_params_map;
 use time::format_description;
+use crate::pages::components::sidebar::SidebarProvider;
+use crate::pages::admin::layout::AdminSidebar;
 
 #[derive(Clone, Debug)]
 pub struct PostFormValues {
@@ -48,7 +50,7 @@ pub fn AdminPostForm(
     };
 
     // Sync local fields with saved data from server after update
-    create_effect(move |_| {
+    Effect::new(move |_| {
         if let Some(p) = saved_post.get() {
             slug.set(p.slug.clone());
             title.set(p.title.clone());
@@ -137,9 +139,9 @@ pub fn AdminPostEditPage() -> impl IntoView {
 
     view! {
         <AdminGuard>
-            <crate::pages::components::sidebar::SidebarProvider default_open=true>
+            <SidebarProvider default_open=true>
                 <div class="flex gap-0">
-                    <crate::pages::admin::layout::AdminSidebar />
+                    <AdminSidebar />
                     <main class="flex-1 min-h-screen">
                         <Suspense fallback=move || view!{<div class="text-center py-8">Loading post...</div>}>
                             {move || match post_res.get() {
@@ -181,7 +183,7 @@ pub fn AdminPostEditPage() -> impl IntoView {
             </Suspense>
                     </main>
                 </div>
-            </crate::pages::components::sidebar::SidebarProvider>
+            </SidebarProvider>
         </AdminGuard>
     }
 }

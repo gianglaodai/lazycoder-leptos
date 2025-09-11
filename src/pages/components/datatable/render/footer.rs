@@ -14,7 +14,7 @@ pub fn StatusBar<T: Send + Sync + 'static>(
     let current_page = state.current_page;
 
     let selected_count = move || selected.with(|s| s.selected_row_ids.len());
-    let rows_count = move || rows.with(|v| v.len());
+    let _rows_count = move || rows.with(|v| v.len());
 
     // Determine page count based on total_rows when provided, else based on local rows length.
     let page_count = move || {
@@ -25,7 +25,7 @@ pub fn StatusBar<T: Send + Sync + 'static>(
         pages.max(1)
     };
 
-    let total_text =
+    let _total_text =
         move || total.with(|t| t.map(|n| n.to_string()).unwrap_or_else(|| "unknown".into()));
 
     let can_prev = move || current_page.get() > 1;

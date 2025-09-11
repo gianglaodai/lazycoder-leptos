@@ -3,7 +3,7 @@ use crate::pages::components::datatable::core::data_source::{FilterModel, SortMo
 use crate::pages::components::datatable::core::render_value::Value;
 use crate::pages::components::datatable::core::row::RowNode;
 use crate::pages::components::datatable::core::state::TableState;
-use leptos::prelude::{GetUntracked, ReadUntracked, Set, Update, With};
+use leptos::prelude::{GetUntracked, ReadUntracked, Set, Update};
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -133,10 +133,6 @@ impl<T: Clone + Send + Sync + 'static> GridApi<T> {
                 opts.delimiter
             };
             let include_headers = opts.include_headers;
-            let file_name = opts
-                .file_name
-                .clone()
-                .unwrap_or_else(|| "export.csv".to_string());
 
             let (cols, col_state) = (
                 state_for_export.columns.read_untracked(),
@@ -203,6 +199,10 @@ impl<T: Clone + Send + Sync + 'static> GridApi<T> {
             {
                 // WASM: skip direct download to avoid web_sys/js_sys deps; log length instead.
                 // A proper download can be reintroduced later via a helper that depends on web-sys.
+                let file_name = opts
+                    .file_name
+                    .clone()
+                    .unwrap_or_else(|| "export.csv".to_string());
                 let _ = (&file_name, out.len());
             }
             #[cfg(not(target_arch = "wasm32"))]

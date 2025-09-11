@@ -54,8 +54,9 @@ pub async fn load_posts(first_result: i64, max_results: i32) -> Result<Vec<PostI
     use crate::business::sort::SortCriterion;
     use crate::state::AppState;
     use leptos_actix::extract;
+    use actix_web::web::Data;
 
-    let state: actix_web::web::Data<AppState> = extract().await?;
+    let state: Data<AppState> = extract().await?;
     let result = state
         .post_info_service
         .get_many(
@@ -76,8 +77,9 @@ pub async fn load_posts(first_result: i64, max_results: i32) -> Result<Vec<PostI
 pub async fn count_posts() -> Result<i64, ServerFnError> {
     use crate::state::AppState;
     use leptos_actix::extract;
+    use actix_web::web::Data;
 
-    let state: actix_web::web::Data<AppState> = extract().await?;
+    let state: Data<AppState> = extract().await?;
     state
         .post_info_service
         .count(vec![])
@@ -122,9 +124,11 @@ pub async fn create_post(title: String, type_id: i32, user_id: i32) -> Result<Po
     use crate::state::AppState;
     use actix_session::SessionExt as _;
     use leptos_actix::extract;
+    use actix_web::HttpRequest;
+    use actix_web::web::Data;
 
     // Guard: require ADMIN role from server session
-    let req: actix_web::HttpRequest = extract().await?;
+    let req: HttpRequest = extract().await?;
     let session = req.get_session();
     let role: Option<String> = match session.get("role") {
         Ok(v) => v,
@@ -143,7 +147,7 @@ pub async fn create_post(title: String, type_id: i32, user_id: i32) -> Result<Po
         }
     }
 
-    let state: actix_web::web::Data<AppState> = extract().await?;
+    let state: Data<AppState> = extract().await?;
     let create = PostCreate {
         slug: slugify(&title),
         title,
@@ -167,9 +171,11 @@ pub async fn update_post(post: PostTO) -> Result<PostTO, ServerFnError> {
     use crate::state::AppState;
     use actix_session::SessionExt as _;
     use leptos_actix::extract;
+    use actix_web::HttpRequest;
+    use actix_web::web::Data;
 
     // Guard: require ADMIN role from server session
-    let req: actix_web::HttpRequest = extract().await?;
+    let req: HttpRequest = extract().await?;
     let session = req.get_session();
     let role: Option<String> = match session.get("role") {
         Ok(v) => v,
@@ -188,7 +194,7 @@ pub async fn update_post(post: PostTO) -> Result<PostTO, ServerFnError> {
         }
     }
 
-    let state: actix_web::web::Data<AppState> = extract().await?;
+    let state: Data<AppState> = extract().await?;
     let entity: Post = post.into();
     state
         .post_service
@@ -204,9 +210,11 @@ pub async fn delete_post(id: i32) -> Result<u64, ServerFnError> {
     use crate::state::AppState;
     use actix_session::SessionExt as _;
     use leptos_actix::extract;
+    use actix_web::HttpRequest;
+    use actix_web::web::Data;
 
     // Guard: require ADMIN role from server session
-    let req: actix_web::HttpRequest = extract().await?;
+    let req: HttpRequest = extract().await?;
     let session = req.get_session();
     let role: Option<String> = match session.get("role") {
         Ok(v) => v,
@@ -225,7 +233,7 @@ pub async fn delete_post(id: i32) -> Result<u64, ServerFnError> {
         }
     }
 
-    let state: actix_web::web::Data<AppState> = extract().await?;
+    let state: Data<AppState> = extract().await?;
     state
         .post_service
         .delete_by_id(id)
@@ -238,8 +246,9 @@ pub async fn delete_post(id: i32) -> Result<u64, ServerFnError> {
 pub async fn load_post_by_id(id: i32) -> Result<PostTO, ServerFnError> {
     use crate::state::AppState;
     use leptos_actix::extract;
+    use actix_web::web::Data;
 
-    let state: actix_web::web::Data<AppState> = extract().await?;
+    let state: Data<AppState> = extract().await?;
     let result = state.post_service.get_by_id(id).await;
     match result {
         Ok(Some(p)) => Ok(PostTO::from(p)),

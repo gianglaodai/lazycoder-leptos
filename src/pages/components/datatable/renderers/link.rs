@@ -12,7 +12,7 @@ impl LinkRenderer {
 }
 
 impl<T> ICellRenderer<T> for LinkRenderer {
-    fn view(&self, cx: Scope, value: &Value, _row: &T) -> AnyView {
+    fn view(&self, _cx: Scope, value: &Value, _row: &T) -> AnyView {
         let txt = value.to_string();
         // naive URL detection
         let is_url = txt.starts_with("http://") || txt.starts_with("https://");

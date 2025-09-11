@@ -46,9 +46,10 @@ pub async fn load_post_infos(
     use crate::presentation::query_options::QueryOptions;
     use crate::state::AppState;
     use leptos_actix::extract;
+    use actix_web::web::Data;
 
     // Extract app state
-    let state: actix_web::web::Data<AppState> = extract().await?;
+    let state: Data<AppState> = extract().await?;
     let query_options = QueryOptions {
         first_result: Some(first_result as i32),
         max_results: Some(max_results),
@@ -59,7 +60,6 @@ pub async fn load_post_infos(
     };
 
     // Build sorts and filters using QueryOptions utilities on the server
-
     let result = state
         .post_info_service
         .get_many(
@@ -88,8 +88,9 @@ pub async fn count_post_infos(
     use crate::presentation::query_options::QueryOptions;
     use crate::state::AppState;
     use leptos_actix::extract;
+    use actix_web::web::Data;
 
-    let state: actix_web::web::Data<AppState> = extract().await?;
+    let state: Data<AppState> = extract().await?;
     let query_options = QueryOptions {
         first_result: None,
         max_results: None,
@@ -109,8 +110,9 @@ pub async fn count_post_infos(
 pub async fn load_post_info_by_id(id: i32) -> Result<PostInfoTO, ServerFnError> {
     use crate::state::AppState;
     use leptos_actix::extract;
+    use actix_web::web::Data;
 
-    let state: actix_web::web::Data<AppState> = extract().await?;
+    let state: Data<AppState> = extract().await?;
     let result = state.post_info_service.get_by_id(id).await;
     match result {
         Ok(Some(p)) => Ok(PostInfoTO::from(p)),

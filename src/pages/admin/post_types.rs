@@ -1,12 +1,20 @@
 use crate::pages::admin::guard::AdminGuard;
-use crate::pages::components::datatable::core::column::{ColumnDef, Pinned};
+use crate::pages::components::button::{ButtonIntent, ButtonVariant};
+use crate::pages::components::datatable::core::column::{ColumnDef, DataType, Pinned};
 use crate::pages::components::datatable::core::render_value::Value;
 use crate::pages::components::datatable::core::row::RowNode;
 use crate::pages::components::datatable::core::state::TableState;
+use crate::pages::components::{Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Form, FormControl, FormField, FormItem, FormLabel, FormMessage, Input, SidebarProvider};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
 use std::sync::Arc;
+use leptos_router::NavigateOptions;
+use crate::pages::admin::layout::AdminSidebar;
+use crate::pages::rest::post_type_info_api::PostTypeInfoTO;
+use crate::pages::components::datatable::DataTable;
+use crate::pages::rest::post_type_info_api::{load_post_type_infos, count_post_type_infos};
+use crate::pages::components::datatable::core::query_sync::{sync_table_query_to_url, SyncOptions};
 
 use crate::pages::components::{
     Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader,
@@ -17,8 +25,7 @@ use crate::pages::components::button::{ButtonIntent, ButtonVariant};
 
 #[component]
 fn DataTableCtx() -> impl IntoView {
-    use crate::pages::components::datatable::DataTable;
-    let ts: Arc<TableState<crate::pages::rest::post_type_info_api::PostTypeInfoTO>> = expect_context();
+    let ts: Arc<TableState<PostTypeInfoTO>> = expect_context();
     view! { <DataTable state=ts height="600px".to_string() row_height=36 /> }
 }
 
@@ -125,7 +132,7 @@ fn NewPostTypeDialog(on_created: Callback<()>) -> impl IntoView {
 pub fn AdminPostTypesPage() -> impl IntoView {
     let query = use_query_map();
 
-    let table_state: Arc<TableState<crate::pages::rest::post_type_info_api::PostTypeInfoTO>> = Arc::new(TableState::new());
+    let table_state: Arc<TableState<PostTypeInfoTO>> = Arc::new(TableState::new());
     provide_context(table_state.clone());
 
     table_state.client_side_sorting.set(false);
@@ -174,10 +181,9 @@ pub fn AdminPostTypesPage() -> impl IntoView {
 
     // sync URL with table query
     {
-        use crate::pages::components::datatable::core::query_sync::{sync_table_query_to_url, SyncOptions};
         let nav = use_navigate();
         let st = table_state.clone();
-        sync_table_query_to_url(st, move |qs| { nav(&qs, leptos_router::NavigateOptions { replace: true, ..Default::default() }); }, SyncOptions { include_sort: true, include_p_filters: false, include_a_filters: false, include_search: false, ..Default::default() });
+        sync_table_query_to_url(st, move |qs| { nav(&qs, NavigateOptions { replace: true, ..Default::default() }); }, SyncOptions { include_sort: true, include_p_filters: false, include_a_filters: false, include_search: false, ..Default::default() });
     }
 
     // apply resource results
@@ -194,9 +200,9 @@ pub fn AdminPostTypesPage() -> impl IntoView {
 
     view! {
         <AdminGuard>
-            <crate::pages::components::sidebar::SidebarProvider default_open=true>
+            <SidebarProvider default_open=true>
                 <div class="flex gap-0">
-                    <crate::pages::admin::layout::AdminSidebar />
+                    <AdminSidebar />
                     <main class="flex-1 min-h-screen">
                         <div class="container-page py-10 font-serif">
                             <div class="flex items-center justify-between mb-6">
@@ -209,7 +215,7 @@ pub fn AdminPostTypesPage() -> impl IntoView {
                         </div>
                     </main>
                 </div>
-            </crate::pages::components::sidebar::SidebarProvider>
+            </SidebarProvider>
         </AdminGuard>
     }
 }

@@ -3,6 +3,7 @@ use crate::pages::rest::auth_api::{UserRole, UserTO};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::use_navigate;
+use crate::pages::admin::layout::AdminLayout;
 
 #[component]
 pub fn AdminHomePage() -> impl IntoView {
@@ -30,7 +31,7 @@ pub fn AdminHomePage() -> impl IntoView {
 
     view! {
         <AdminGuard>
-            <crate::pages::admin::layout::AdminLayout>
+            <AdminLayout>
                 <div class="container-page py-10 font-serif">
                     <h1 class="text-3xl font-bold mb-4">"Admin Dashboard"</h1>
                     <p>"Welcome, Admin!"</p>
@@ -38,7 +39,7 @@ pub fn AdminHomePage() -> impl IntoView {
                         <a href="/admin/posts" class="inline-flex items-center rounded-full bg-stone-800 text-white px-4 py-2 text-sm font-medium shadow-sm hover:bg-stone-900 transition-colors">Manage Posts</a>
                     </div>
                 </div>
-            </crate::pages::admin::layout::AdminLayout>
+            </AdminLayout>
         </AdminGuard>
     }
 }

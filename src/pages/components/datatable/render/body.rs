@@ -45,7 +45,7 @@ pub fn VirtualizedBody<T: Clone + Send + Sync + 'static>(
             })
         })
     };
-    let template_style = move || {
+    let _template_style = move || {
         let widths = visible_cols()
             .into_iter()
             .map(|c| format!("{}px", c.width))

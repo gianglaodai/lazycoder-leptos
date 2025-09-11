@@ -4,7 +4,7 @@ use leptos::prelude::AnyView;
 use leptos::prelude::*;
 
 pub trait ICellRenderer<T> {
-    fn view(&self, cx: Scope, value: &Value, _row: &T) -> AnyView {
+    fn view(&self, _cx: Scope, value: &Value, _row: &T) -> AnyView {
         // Safe default: render value as text
         let text = value.to_string();
         view! { <span class="truncate">{text}</span> }.into_any()

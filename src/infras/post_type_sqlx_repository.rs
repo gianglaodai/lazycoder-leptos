@@ -10,6 +10,8 @@ use crate::business::repository::{Repository, ViewRepository};
 use crate::business::sort::SortCriterion;
 use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::{SqlxRepository, SqlxViewRepository};
+use sqlx::PgPool;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct PostTypeSqlxRepository {
@@ -51,6 +53,7 @@ impl ViewRepository<PostType> for PostTypeSqlxRepository {
     async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
         SqlxViewRepository::count(self, filters).await
     }
+
     async fn find_many(
         &self,
         sort_criteria: Vec<SortCriterion>,
@@ -60,9 +63,11 @@ impl ViewRepository<PostType> for PostTypeSqlxRepository {
     ) -> Result<Vec<PostType>, CoreError> {
         SqlxViewRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
     }
+
     async fn find_by_id(&self, id: i32) -> Result<Option<PostType>, CoreError> {
         SqlxViewRepository::find_by_id(self, id).await
     }
+
     async fn find_by_uid(&self, uid: String) -> Result<Option<PostType>, CoreError> {
         SqlxViewRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
@@ -75,13 +80,14 @@ impl Repository<PostType, PostTypeCreate> for PostTypeSqlxRepository {
     async fn delete_by_ids(&self, ids: Vec<i32>) -> Result<u64, CoreError> {
         SqlxRepository::delete_by_ids(self, ids).await
     }
+
     async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
         SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
     async fn create(&self, post_type_create: &PostTypeCreate) -> Result<PostType, CoreError> {
         let now = time::OffsetDateTime::now_utc();
         let row: PostTypeOrm = sqlx::query_as::<_, PostTypeOrm>(
-           "INSERT INTO post_types (uid, created_at, updated_at, code, name) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+            "INSERT INTO post_types (uid, created_at, updated_at, code, name) VALUES ($1, $2, $3, $4, $5) RETURNING *",
         )
             .bind(Uuid::now_v7())
             .bind(&now)
@@ -92,18 +98,19 @@ impl Repository<PostType, PostTypeCreate> for PostTypeSqlxRepository {
             .await?;
         Ok(PostType::from(row))
     }
-    async fn update(&self, post_type: &PostType) -> Result<PostType, CoreError> {
+
+    async fn update(&self, entity: &PostType) -> Result<PostType, CoreError> {
         let now = time::OffsetDateTime::now_utc();
-        let post_type = sqlx::query_as::<_, PostTypeOrm>(
+        let row = sqlx::query_as::<_, PostTypeOrm>(
             "UPDATE post_types SET code=$1, name=$2, updated_at=$3 WHERE id=$4 RETURNING *",
         )
-            .bind(&post_type.code)
-            .bind(&post_type.name)
-            .bind(&now)
-            .bind(post_type.id)
-            .fetch_one(&self.pool)
-            .await?;
-        Ok(PostType::from(post_type))
+        .bind(&entity.code)
+        .bind(&entity.name)
+        .bind(now)
+        .bind(entity.id)
+        .fetch_one(&self.pool)
+        .await?;
+        Ok(PostType::from(row))
     }
 }
 

@@ -105,7 +105,7 @@ pub fn HeaderCell<T: Clone + Send + Sync + 'static>(
 
     let is_filterable = col.filterable;
     // Determine if this column currently has any active filter (text contains or advanced operator/value)
-    let has_filter = {
+    let _has_filter = {
         let st = state_for_filter.clone();
         let cid = col_id_filter.clone();
         move || {
@@ -127,7 +127,7 @@ pub fn HeaderCell<T: Clone + Send + Sync + 'static>(
             })
         }
     };
-    let has_filter_title = {
+    let _has_filter_title = {
         let st = state_for_filter.clone();
         let cid = col_id_filter.clone();
         move || {

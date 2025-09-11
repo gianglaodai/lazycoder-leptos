@@ -1,5 +1,4 @@
 use leptos::prelude::*;
-use leptos::*;
 
 pub mod boolean;
 pub mod date;

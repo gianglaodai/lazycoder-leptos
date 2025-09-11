@@ -29,7 +29,7 @@ impl<R: UserRepository> AuthService<R> {
 
         log::info!("password: {}", &password);
         let hashed = bcrypt::hash(&password, bcrypt::DEFAULT_COST)
-            .map_err(|e| CoreError::internal_server_error("error.encrypt.unknown"))?;
+            .map_err(|_| CoreError::internal_server_error("error.encrypt.unknown"))?;
 
         let user_create = UserCreate {
             username,
