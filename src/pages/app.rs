@@ -1,9 +1,9 @@
 use crate::pages::about::AboutMePage;
 use crate::pages::admin::home::AdminHomePage;
-use crate::pages::admin::post_form::AdminPostEditPage;
-use crate::pages::admin::posts::AdminPostsPage;
-use crate::pages::admin::post_types::AdminPostTypesPage;
 use crate::pages::admin::post_collections::AdminPostCollectionsPage;
+use crate::pages::admin::post_form::AdminPostEditPage;
+use crate::pages::admin::post_types::AdminPostTypesPage;
+use crate::pages::admin::posts::AdminPostsPage;
 use crate::pages::admin::taxonomies::AdminTaxonomiesPage;
 use crate::pages::admin::terms::AdminTermsPage;
 use crate::pages::admin::users::AdminUsersPage;

@@ -1,18 +1,18 @@
 use crate::pages::admin::guard::AdminGuard;
+use crate::pages::admin::layout::AdminSidebar;
 use crate::pages::components::datatable::core::column::{ColumnDef, Pinned};
+use crate::pages::components::datatable::core::query_sync::{sync_table_query_to_url, SyncOptions};
 use crate::pages::components::datatable::core::render_value::Value;
 use crate::pages::components::datatable::core::row::RowNode;
 use crate::pages::components::datatable::core::state::TableState;
+use crate::pages::components::datatable::DataTable;
+use crate::pages::components::sidebar::SidebarProvider;
+use crate::pages::rest::user_info_api::UserInfoTO;
+use crate::pages::rest::user_info_api::{count_user_infos, load_user_infos};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
 use std::sync::Arc;
-use crate::pages::components::sidebar::SidebarProvider;
-use crate::pages::admin::layout::AdminSidebar;
-use crate::pages::rest::user_info_api::UserInfoTO;
-use crate::pages::components::datatable::DataTable;
-use crate::pages::rest::user_info_api::{load_user_infos, count_user_infos};
-use crate::pages::components::datatable::core::query_sync::{sync_table_query_to_url, SyncOptions};
 
 #[component]
 fn DataTableCtx() -> impl IntoView {
@@ -31,11 +31,113 @@ pub fn AdminUsersPage() -> impl IntoView {
     table_state.client_side_filtering.set(false);
 
     table_state.columns.set(vec![
-        ColumnDef { id: "id", header_name: "ID", value_getter: Some(Arc::new(|p: &UserInfoTO| Value::Number(p.id as f64))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: false, pinned: Pinned::None, width: 80, min_width: 60, max_width: Some(140), groupable: false, aggregate: None, comparator: None, field: Some("id"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Int), },
-        ColumnDef { id: "username", header_name: "Username", value_getter: Some(Arc::new(|p: &UserInfoTO| Value::Text(p.username.clone()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: true, pinned: Pinned::None, width: 200, min_width: 120, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("username"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Text), },
-        ColumnDef { id: "email", header_name: "Email", value_getter: Some(Arc::new(|p: &UserInfoTO| Value::Text(p.email.clone()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: true, pinned: Pinned::None, width: 260, min_width: 140, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("email"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Text), },
-        ColumnDef { id: "role", header_name: "Role", value_getter: Some(Arc::new(|p: &UserInfoTO| Value::Text(p.role.clone()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: true, pinned: Pinned::None, width: 140, min_width: 100, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("role"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Text), },
-        ColumnDef { id: "updated_at", header_name: "Updated", value_getter: Some(Arc::new(|p: &UserInfoTO| Value::Text(p.updated_at.to_string()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: false, resizable: true, movable: true, pinned: Pinned::None, width: 180, min_width: 140, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("updated_at"), data_type: Some(crate::pages::components::datatable::core::column::DataType::DateTime), },
+        ColumnDef {
+            id: "id",
+            header_name: "ID",
+            value_getter: Some(Arc::new(|p: &UserInfoTO| Value::Number(p.id as f64))),
+            value_formatter: None,
+            cell_renderer: None,
+            cell_editor: None,
+            sortable: true,
+            filterable: true,
+            resizable: true,
+            movable: false,
+            pinned: Pinned::None,
+            width: 80,
+            min_width: 60,
+            max_width: Some(140),
+            groupable: false,
+            aggregate: None,
+            comparator: None,
+            field: Some("id"),
+            data_type: Some(crate::pages::components::datatable::core::column::DataType::Int),
+        },
+        ColumnDef {
+            id: "username",
+            header_name: "Username",
+            value_getter: Some(Arc::new(|p: &UserInfoTO| Value::Text(p.username.clone()))),
+            value_formatter: None,
+            cell_renderer: None,
+            cell_editor: None,
+            sortable: true,
+            filterable: true,
+            resizable: true,
+            movable: true,
+            pinned: Pinned::None,
+            width: 200,
+            min_width: 120,
+            max_width: None,
+            groupable: false,
+            aggregate: None,
+            comparator: None,
+            field: Some("username"),
+            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
+        },
+        ColumnDef {
+            id: "email",
+            header_name: "Email",
+            value_getter: Some(Arc::new(|p: &UserInfoTO| Value::Text(p.email.clone()))),
+            value_formatter: None,
+            cell_renderer: None,
+            cell_editor: None,
+            sortable: true,
+            filterable: true,
+            resizable: true,
+            movable: true,
+            pinned: Pinned::None,
+            width: 260,
+            min_width: 140,
+            max_width: None,
+            groupable: false,
+            aggregate: None,
+            comparator: None,
+            field: Some("email"),
+            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
+        },
+        ColumnDef {
+            id: "role",
+            header_name: "Role",
+            value_getter: Some(Arc::new(|p: &UserInfoTO| Value::Text(p.role.clone()))),
+            value_formatter: None,
+            cell_renderer: None,
+            cell_editor: None,
+            sortable: true,
+            filterable: true,
+            resizable: true,
+            movable: true,
+            pinned: Pinned::None,
+            width: 140,
+            min_width: 100,
+            max_width: None,
+            groupable: false,
+            aggregate: None,
+            comparator: None,
+            field: Some("role"),
+            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
+        },
+        ColumnDef {
+            id: "updated_at",
+            header_name: "Updated",
+            value_getter: Some(Arc::new(|p: &UserInfoTO| {
+                Value::Text(p.updated_at.to_string())
+            })),
+            value_formatter: None,
+            cell_renderer: None,
+            cell_editor: None,
+            sortable: true,
+            filterable: false,
+            resizable: true,
+            movable: true,
+            pinned: Pinned::None,
+            width: 180,
+            min_width: 140,
+            max_width: None,
+            groupable: false,
+            aggregate: None,
+            comparator: None,
+            field: Some("updated_at"),
+            data_type: Some(crate::pages::components::datatable::core::column::DataType::DateTime),
+        },
     ]);
 
     table_state.page_size.set(10);
@@ -55,24 +157,56 @@ pub fn AdminUsersPage() -> impl IntoView {
         },
         |(first_result_i32, max_results_i32, sort, search)| async move {
             let (a, b) = futures::join!(
-                load_user_infos(first_result_i32 as i64, max_results_i32, sort.clone(), search.clone(), None, None),
+                load_user_infos(
+                    first_result_i32 as i64,
+                    max_results_i32,
+                    sort.clone(),
+                    search.clone(),
+                    None,
+                    None
+                ),
                 count_user_infos(search.clone(), None, None)
             );
-            match (a, b) { (Ok(items), Ok(total)) => Ok((items, total)), (Err(e), _) => Err(e), (_, Err(e)) => Err(e) }
-        }
+            match (a, b) {
+                (Ok(items), Ok(total)) => Ok((items, total)),
+                (Err(e), _) => Err(e),
+                (_, Err(e)) => Err(e),
+            }
+        },
     );
 
     {
         let nav = use_navigate();
         let st = table_state.clone();
-        sync_table_query_to_url(st, move |qs| { nav(&qs, leptos_router::NavigateOptions { replace: true, ..Default::default() }); }, SyncOptions { include_sort: true, include_p_filters: false, include_a_filters: false, include_search: false, ..Default::default() });
+        sync_table_query_to_url(
+            st,
+            move |qs| {
+                nav(
+                    &qs,
+                    leptos_router::NavigateOptions {
+                        replace: true,
+                        ..Default::default()
+                    },
+                );
+            },
+            SyncOptions {
+                include_sort: true,
+                include_p_filters: false,
+                include_a_filters: false,
+                include_search: false,
+                ..Default::default()
+            },
+        );
     }
 
     Effect::new({
         let table_state = table_state.clone();
         move |_| {
             if let Some(Ok((items, total))) = resource.get() {
-                let rows: Vec<RowNode<_>> = items.into_iter().map(|p| RowNode::new(p.id.to_string(), p)).collect();
+                let rows: Vec<RowNode<_>> = items
+                    .into_iter()
+                    .map(|p| RowNode::new(p.id.to_string(), p))
+                    .collect();
                 table_state.set_rows(rows);
                 table_state.set_total_rows(Some(total as usize));
             }

@@ -19,22 +19,80 @@ define_readonly_to_with_common_fields_be!(PostCollectionItemInfo {
 
 impl From<PostCollectionItemInfo> for PostCollectionItemInfoTO {
     fn from(entity: PostCollectionItemInfo) -> Self {
-        Self { id: entity.id, uid: entity.uid, version: entity.version, created_at: entity.created_at, updated_at: entity.updated_at, post_collection_id: entity.post_collection_id, post_id: entity.post_id, position: entity.position, headline: entity.headline, collection_slug: entity.collection_slug, collection_title: entity.collection_title, post_slug: entity.post_slug, post_title: entity.post_title }
+        Self {
+            id: entity.id,
+            uid: entity.uid,
+            version: entity.version,
+            created_at: entity.created_at,
+            updated_at: entity.updated_at,
+            post_collection_id: entity.post_collection_id,
+            post_id: entity.post_id,
+            position: entity.position,
+            headline: entity.headline,
+            collection_slug: entity.collection_slug,
+            collection_title: entity.collection_title,
+            post_slug: entity.post_slug,
+            post_title: entity.post_title,
+        }
     }
 }
 
-#[get("")]
+#[get("/info")]
 pub async fn get_many(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
-    respond_results(state.post_collection_item_info_service.get_many(query.to_sort_criteria(), query.first_result, query.max_results, query.to_filters()).await, PostCollectionItemInfoTO::from)
+    respond_results(
+        state
+            .post_collection_item_info_service
+            .get_many(
+                query.to_sort_criteria(),
+                query.first_result,
+                query.max_results,
+                query.to_filters(),
+            )
+            .await,
+        PostCollectionItemInfoTO::from,
+    )
 }
 
-#[get("/count")]
-pub async fn count(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder { respond_result(state.post_collection_item_info_service.count(query.to_filters()).await) }
+#[get("/info/count")]
+pub async fn count(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
+    respond_result(
+        state
+            .post_collection_item_info_service
+            .count(query.to_filters())
+            .await,
+    )
+}
 
-#[get("/{id}")]
-pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder { respond_result(state.post_collection_item_info_service.get_by_id(id.into_inner()).await.map(|it| it.unwrap()).map(PostCollectionItemInfoTO::from)) }
+#[get("/{id}/info")]
+pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
+    respond_result(
+        state
+            .post_collection_item_info_service
+            .get_by_id(id.into_inner())
+            .await
+            .map(|it| it.unwrap())
+            .map(PostCollectionItemInfoTO::from),
+    )
+}
 
-#[get("/uid/{uid}")]
-pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder { respond_result(state.post_collection_item_info_service.get_by_uid(uid.into_inner()).await.map(|it| it.unwrap()).map(PostCollectionItemInfoTO::from)) }
+#[get("/uid/{uid}/info")]
+pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
+    respond_result(
+        state
+            .post_collection_item_info_service
+            .get_by_uid(uid.into_inner())
+            .await
+            .map(|it| it.unwrap())
+            .map(PostCollectionItemInfoTO::from),
+    )
+}
 
-pub fn routes(cfg: &mut ServiceConfig) { cfg.service(scope("/api/post-collection-items").service(get_many).service(count).service(get_by_id).service(get_by_uid)); }
+pub fn routes(cfg: &mut ServiceConfig) {
+    cfg.service(
+        scope("/api/post_collection_items")
+            .service(get_many)
+            .service(count)
+            .service(get_by_id)
+            .service(get_by_uid),
+    );
+}

@@ -1,9 +1,9 @@
 use crate::pages::admin::guard::AdminGuard;
+use crate::pages::admin::layout::AdminLayout;
 use crate::pages::rest::auth_api::{UserRole, UserTO};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::use_navigate;
-use crate::pages::admin::layout::AdminLayout;
 
 #[component]
 pub fn AdminHomePage() -> impl IntoView {

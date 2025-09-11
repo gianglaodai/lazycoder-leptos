@@ -1,4 +1,4 @@
-use crate::business::taxonomy_service::{PostTaxonomyInfo};
+use crate::business::taxonomy_service::PostTaxonomyInfo;
 use crate::define_readonly_to_with_common_fields_be;
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
@@ -25,7 +25,7 @@ impl From<PostTaxonomyInfo> for PostTaxonomyInfoTO {
     }
 }
 
-#[get("")]
+#[get("/info")]
 pub async fn get_many(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
     respond_results(
         state
@@ -41,7 +41,7 @@ pub async fn get_many(state: Data<AppState>, query: Query<QueryOptions>) -> impl
     )
 }
 
-#[get("/count")]
+#[get("/info/count")]
 pub async fn count(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
     respond_result(
         state
@@ -51,7 +51,7 @@ pub async fn count(state: Data<AppState>, query: Query<QueryOptions>) -> impl Re
     )
 }
 
-#[get("/{id}")]
+#[get("/{id}/info")]
 pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
     respond_result(
         state
@@ -63,7 +63,7 @@ pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
     )
 }
 
-#[get("/uid/{uid}")]
+#[get("/uid/{uid}/info")]
 pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
     respond_result(
         state
@@ -84,4 +84,3 @@ pub fn routes_post_taxonomies(cfg: &mut ServiceConfig) {
             .service(get_by_uid),
     );
 }
-

@@ -1,10 +1,10 @@
 use crate::business::error::CoreError;
 use crate::business::post_service::{Post, PostStatus};
 use crate::define_to_with_common_fields_fe;
+use crate::pages::rest::post_info_api::PostInfoTO;
 use leptos::prelude::ServerFnError;
 use leptos::*;
 use std::str::FromStr;
-use crate::pages::rest::post_info_api::PostInfoTO;
 
 define_to_with_common_fields_fe!(Post {
     pub slug: String,
@@ -50,11 +50,14 @@ impl From<Post> for PostTO {
     }
 }
 #[server(name=LoadPosts,prefix="/load", endpoint="/posts")]
-pub async fn load_posts(first_result: i64, max_results: i32) -> Result<Vec<PostInfoTO>, ServerFnError> {
+pub async fn load_posts(
+    first_result: i64,
+    max_results: i32,
+) -> Result<Vec<PostInfoTO>, ServerFnError> {
     use crate::business::sort::SortCriterion;
     use crate::state::AppState;
-    use leptos_actix::extract;
     use actix_web::web::Data;
+    use leptos_actix::extract;
 
     let state: Data<AppState> = extract().await?;
     let result = state
@@ -69,15 +72,20 @@ pub async fn load_posts(first_result: i64, max_results: i32) -> Result<Vec<PostI
             vec![],
         )
         .await
-        .map(|posts| posts.into_iter().map(PostInfoTO::from).collect::<Vec<PostInfoTO>>())
+        .map(|posts| {
+            posts
+                .into_iter()
+                .map(PostInfoTO::from)
+                .collect::<Vec<PostInfoTO>>()
+        })
         .map_err(|e| ServerFnError::ServerError(e.to_json()));
     result
 }
 #[server(name=CountPosts,prefix="/load", endpoint="/posts/count")]
 pub async fn count_posts() -> Result<i64, ServerFnError> {
     use crate::state::AppState;
-    use leptos_actix::extract;
     use actix_web::web::Data;
+    use leptos_actix::extract;
 
     let state: Data<AppState> = extract().await?;
     state
@@ -119,13 +127,17 @@ fn slugify(input: &str) -> String {
     }
 }
 #[server(name=CreatePost, prefix="/load", endpoint="/posts/create")]
-pub async fn create_post(title: String, type_id: i32, user_id: i32) -> Result<PostTO, ServerFnError> {
+pub async fn create_post(
+    title: String,
+    type_id: i32,
+    user_id: i32,
+) -> Result<PostTO, ServerFnError> {
     use crate::business::post_service::{PostCreate, PostStatus};
     use crate::state::AppState;
     use actix_session::SessionExt as _;
-    use leptos_actix::extract;
-    use actix_web::HttpRequest;
     use actix_web::web::Data;
+    use actix_web::HttpRequest;
+    use leptos_actix::extract;
 
     // Guard: require ADMIN role from server session
     let req: HttpRequest = extract().await?;
@@ -170,9 +182,9 @@ pub async fn create_post(title: String, type_id: i32, user_id: i32) -> Result<Po
 pub async fn update_post(post: PostTO) -> Result<PostTO, ServerFnError> {
     use crate::state::AppState;
     use actix_session::SessionExt as _;
-    use leptos_actix::extract;
-    use actix_web::HttpRequest;
     use actix_web::web::Data;
+    use actix_web::HttpRequest;
+    use leptos_actix::extract;
 
     // Guard: require ADMIN role from server session
     let req: HttpRequest = extract().await?;
@@ -209,9 +221,9 @@ pub async fn update_post(post: PostTO) -> Result<PostTO, ServerFnError> {
 pub async fn delete_post(id: i32) -> Result<u64, ServerFnError> {
     use crate::state::AppState;
     use actix_session::SessionExt as _;
-    use leptos_actix::extract;
-    use actix_web::HttpRequest;
     use actix_web::web::Data;
+    use actix_web::HttpRequest;
+    use leptos_actix::extract;
 
     // Guard: require ADMIN role from server session
     let req: HttpRequest = extract().await?;
@@ -245,8 +257,8 @@ pub async fn delete_post(id: i32) -> Result<u64, ServerFnError> {
 #[server(name=LoadPostById, prefix="/load", endpoint="/posts/get")]
 pub async fn load_post_by_id(id: i32) -> Result<PostTO, ServerFnError> {
     use crate::state::AppState;
-    use leptos_actix::extract;
     use actix_web::web::Data;
+    use leptos_actix::extract;
 
     let state: Data<AppState> = extract().await?;
     let result = state.post_service.get_by_id(id).await;

@@ -1,8 +1,8 @@
 #![cfg(feature = "ssr")]
 
+use crate::business::error::CoreError;
 use log::error;
 use sqlx::Error::{Database, RowNotFound};
-use crate::business::error::CoreError;
 
 impl From<sqlx::Error> for CoreError {
     fn from(error: sqlx::Error) -> Self {

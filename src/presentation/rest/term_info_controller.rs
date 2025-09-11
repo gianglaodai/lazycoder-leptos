@@ -1,10 +1,10 @@
-use actix_web::{get, Responder};
-use actix_web::web::{scope, Data, Path, Query, ServiceConfig};
 use crate::business::taxonomy_service::TermInfo;
 use crate::define_readonly_to_with_common_fields_be;
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
 use crate::state::AppState;
+use actix_web::web::{scope, Data, Path, Query, ServiceConfig};
+use actix_web::{get, Responder};
 
 define_readonly_to_with_common_fields_be!(TermInfo {
     pub taxonomy_id: i32,
@@ -39,7 +39,7 @@ impl From<TermInfo> for TermInfoTO {
     }
 }
 
-#[get("")]
+#[get("/info")]
 pub async fn get_many(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
     respond_results(
         state
@@ -55,12 +55,12 @@ pub async fn get_many(state: Data<AppState>, query: Query<QueryOptions>) -> impl
     )
 }
 
-#[get("/count")]
+#[get("/info/count")]
 pub async fn count(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
     respond_result(state.term_info_service.count(query.to_filters()).await)
 }
 
-#[get("/{id}")]
+#[get("/{id}/info")]
 pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
     respond_result(
         state
@@ -72,7 +72,7 @@ pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
     )
 }
 
-#[get("/uid/{uid}")]
+#[get("/uid/{uid}/info")]
 pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
     respond_result(
         state

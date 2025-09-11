@@ -33,11 +33,18 @@ pub async fn load_post_taxonomy_infos(
 ) -> Result<Vec<PostTaxonomyInfoTO>, ServerFnError> {
     use crate::presentation::query_options::QueryOptions;
     use crate::state::AppState;
-    use leptos_actix::extract;
     use actix_web::web::Data;
+    use leptos_actix::extract;
 
     let state: Data<AppState> = extract().await?;
-    let query_options = QueryOptions { first_result: Some(first_result as i32), max_results: Some(max_results), sort, p_filters, a_filters, search };
+    let query_options = QueryOptions {
+        first_result: Some(first_result as i32),
+        max_results: Some(max_results),
+        sort,
+        p_filters,
+        a_filters,
+        search,
+    };
 
     state
         .post_taxonomy_info_service
@@ -60,11 +67,18 @@ pub async fn count_post_taxonomy_infos(
 ) -> Result<i64, ServerFnError> {
     use crate::presentation::query_options::QueryOptions;
     use crate::state::AppState;
-    use leptos_actix::extract;
     use actix_web::web::Data;
+    use leptos_actix::extract;
 
     let state: Data<AppState> = extract().await?;
-    let query_options = QueryOptions { first_result: None, max_results: None, sort: Some("-updated_at".to_string()), p_filters, a_filters, search };
+    let query_options = QueryOptions {
+        first_result: None,
+        max_results: None,
+        sort: Some("-updated_at".to_string()),
+        p_filters,
+        a_filters,
+        search,
+    };
 
     state
         .post_taxonomy_info_service

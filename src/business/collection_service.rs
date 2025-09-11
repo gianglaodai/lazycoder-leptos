@@ -51,10 +51,7 @@ impl<R: PostCollectionInfoRepository> PostCollectionInfoService<R> {
         self.repository.find_by_id(id).await
     }
 
-    pub async fn get_by_uid(
-        &self,
-        uid: String,
-    ) -> Result<Option<PostCollectionInfo>, CoreError> {
+    pub async fn get_by_uid(&self, uid: String) -> Result<Option<PostCollectionInfo>, CoreError> {
         self.repository.find_by_uid(uid).await
     }
 }

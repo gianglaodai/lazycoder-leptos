@@ -1,8 +1,8 @@
-use leptos::prelude::ServerFnError;
-use leptos::*;
 use crate::business::error::CoreError;
 use crate::business::post_type_service::PostType;
 use crate::define_to_with_common_fields_fe;
+use leptos::prelude::ServerFnError;
+use leptos::*;
 
 define_to_with_common_fields_fe!(PostType {
     pub code: String,
@@ -35,8 +35,8 @@ impl From<PostType> for PostTypeTO {
     }
 }
 #[server(name=CreatePostType, prefix="/load", endpoint="/post_types/create")]
-pub async fn create_post_type(code: String, name: String) -> Result<u64, ServerFnError> {
-    use crate::business::post_type_service::{PostTypeCreate};
+pub async fn create_post_type(code: String, name: String) -> Result<PostTypeTO, ServerFnError> {
+    use crate::business::post_type_service::PostTypeCreate;
     use crate::state::AppState;
     use actix_session::SessionExt as _;
     use leptos_actix::extract;
@@ -61,10 +61,7 @@ pub async fn create_post_type(code: String, name: String) -> Result<u64, ServerF
     }
 
     let state: actix_web::web::Data<AppState> = extract().await?;
-    let create = PostTypeCreate {
-        code,
-        name,
-    };
+    let create = PostTypeCreate { code, name };
     state
         .post_type_service
         .create(&create)

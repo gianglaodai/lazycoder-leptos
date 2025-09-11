@@ -1,8 +1,5 @@
 #![cfg(feature = "ssr")]
 
-use actix_web::web::post;
-use sqlx::PgPool;
-use uuid::Uuid;
 use crate::business::error::CoreError;
 use crate::business::filter::Filter;
 use crate::business::post_type_service::{PostType, PostTypeCreate, PostTypeRepository};
@@ -117,16 +114,25 @@ impl Repository<PostType, PostTypeCreate> for PostTypeSqlxRepository {
 impl SqlxViewRepository for PostTypeSqlxRepository {
     type Entity = PostType;
     type Orm = PostTypeOrm;
-    fn get_table_name(&self) -> &str {"post_types"}
-    fn get_columns(&self) -> Vec<&str> {PostTypeOrm::columns()}
-    fn get_searchable_columns(&self) -> Vec<&str> {PostTypeOrm::searchable_columns()}
-    fn get_pool(&self) -> &PgPool {&self.pool}
-    fn from_orm(orm: Self::Orm) -> Self::Entity {PostType::from(orm)}
+    fn get_table_name(&self) -> &str {
+        "post_types"
+    }
+    fn get_columns(&self) -> Vec<&str> {
+        PostTypeOrm::columns()
+    }
+    fn get_searchable_columns(&self) -> Vec<&str> {
+        PostTypeOrm::searchable_columns()
+    }
+    fn get_pool(&self) -> &PgPool {
+        &self.pool
+    }
+    fn from_orm(orm: Self::Orm) -> Self::Entity {
+        PostType::from(orm)
+    }
 }
 
 impl SqlxRepository for PostTypeSqlxRepository {
     type EntityCreate = PostTypeCreate;
 }
 
-impl PostTypeRepository for PostTypeSqlxRepository {
-}
+impl PostTypeRepository for PostTypeSqlxRepository {}

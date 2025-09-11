@@ -1,8 +1,6 @@
 #![cfg(feature = "ssr")]
 
-use crate::business::collection_service::{
-    PostCollectionInfo, PostCollectionInfoRepository,
-};
+use crate::business::collection_service::{PostCollectionInfo, PostCollectionInfoRepository};
 use crate::business::error::CoreError;
 use crate::business::filter::Filter;
 use crate::business::repository::ViewRepository;

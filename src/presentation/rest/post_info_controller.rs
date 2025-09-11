@@ -37,7 +37,7 @@ impl From<PostInfo> for PostInfoTO {
     }
 }
 
-#[get("")]
+#[get("/info")]
 pub async fn get_many(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
     respond_results(
         state
@@ -53,12 +53,12 @@ pub async fn get_many(state: Data<AppState>, query: Query<QueryOptions>) -> impl
     )
 }
 
-#[get("/count")]
+#[get("/info/count")]
 pub async fn count(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
     respond_result(state.post_info_service.count(query.to_filters()).await)
 }
 
-#[get("/{id}")]
+#[get("/{id}/info")]
 pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
     respond_result(
         state
@@ -70,7 +70,7 @@ pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
     )
 }
 
-#[get("/uid/{uid}")]
+#[get("/uid/{uid}/info")]
 pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
     respond_result(
         state
@@ -84,7 +84,7 @@ pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Respon
 
 pub fn routes(cfg: &mut ServiceConfig) {
     cfg.service(
-        scope("/api/posts-info")
+        scope("/api/posts")
             .service(get_many)
             .service(count)
             .service(get_by_id)

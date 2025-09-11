@@ -20,8 +20,8 @@ pub async fn load_user_infos(
 ) -> Result<Vec<UserInfoTO>, ServerFnError> {
     use crate::presentation::query_options::QueryOptions;
     use crate::state::AppState;
-    use leptos_actix::extract;
     use actix_web::web::Data;
+    use leptos_actix::extract;
 
     let state: Data<AppState> = extract().await?;
     let query_options = QueryOptions {
@@ -68,8 +68,8 @@ pub async fn count_user_infos(
 ) -> Result<i64, ServerFnError> {
     use crate::presentation::query_options::QueryOptions;
     use crate::state::AppState;
-    use leptos_actix::extract;
     use actix_web::web::Data;
+    use leptos_actix::extract;
 
     let state: Data<AppState> = extract().await?;
     let query_options = QueryOptions {

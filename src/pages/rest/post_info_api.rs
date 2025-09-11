@@ -45,8 +45,8 @@ pub async fn load_post_infos(
 ) -> Result<Vec<PostInfoTO>, ServerFnError> {
     use crate::presentation::query_options::QueryOptions;
     use crate::state::AppState;
-    use leptos_actix::extract;
     use actix_web::web::Data;
+    use leptos_actix::extract;
 
     // Extract app state
     let state: Data<AppState> = extract().await?;
@@ -87,8 +87,8 @@ pub async fn count_post_infos(
 ) -> Result<i64, ServerFnError> {
     use crate::presentation::query_options::QueryOptions;
     use crate::state::AppState;
-    use leptos_actix::extract;
     use actix_web::web::Data;
+    use leptos_actix::extract;
 
     let state: Data<AppState> = extract().await?;
     let query_options = QueryOptions {
@@ -109,8 +109,8 @@ pub async fn count_post_infos(
 #[server(name=LoadPostInfoById, prefix="/load", endpoint="/posts/id/info")]
 pub async fn load_post_info_by_id(id: i32) -> Result<PostInfoTO, ServerFnError> {
     use crate::state::AppState;
-    use leptos_actix::extract;
     use actix_web::web::Data;
+    use leptos_actix::extract;
 
     let state: Data<AppState> = extract().await?;
     let result = state.post_info_service.get_by_id(id).await;

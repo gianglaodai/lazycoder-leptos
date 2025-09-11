@@ -1,9 +1,12 @@
 use crate::pages::admin::guard::AdminGuard;
+use crate::pages::admin::layout::AdminSidebar;
 use crate::pages::components::button::{ButtonIntent, ButtonVariant};
 use crate::pages::components::datatable::core::column::{ColumnDef, DataType, Pinned};
+use crate::pages::components::datatable::core::query_sync::{sync_table_query_to_url, SyncOptions};
 use crate::pages::components::datatable::core::render_value::Value;
 use crate::pages::components::datatable::core::row::RowNode;
 use crate::pages::components::datatable::core::state::TableState;
+use crate::pages::components::sidebar::SidebarProvider;
 use crate::pages::components::{
     Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader,
     DialogTitle, DialogTrigger, Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
@@ -16,11 +19,6 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
 use std::sync::Arc;
-use crate::pages::components::datatable::core::query_sync::{
-    sync_table_query_to_url, SyncOptions,
-};
-use crate::pages::components::sidebar::SidebarProvider;
-use crate::pages::admin::layout::AdminSidebar;
 
 #[component]
 fn DataTableCtx() -> impl IntoView {
@@ -142,8 +140,7 @@ pub fn AdminPostsPage() -> impl IntoView {
 
     // Build datatable state and columns
 
-    let table_state: Arc<TableState<PostInfoTO>> =
-        Arc::new(TableState::new());
+    let table_state: Arc<TableState<PostInfoTO>> = Arc::new(TableState::new());
     // Provide table_state in context to avoid moving it into child closures that require Fn
     provide_context(table_state.clone());
 
@@ -276,9 +273,7 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "id",
             header_name: "ID",
-            value_getter: Some(Arc::new(
-                |p: &PostInfoTO| Value::Number(p.id as f64),
-            )),
+            value_getter: Some(Arc::new(|p: &PostInfoTO| Value::Number(p.id as f64))),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -299,9 +294,7 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "title",
             header_name: "Title",
-            value_getter: Some(Arc::new(
-                |p: &PostInfoTO| Value::Text(p.title.clone()),
-            )),
+            value_getter: Some(Arc::new(|p: &PostInfoTO| Value::Text(p.title.clone()))),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -322,9 +315,7 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "slug",
             header_name: "Slug",
-            value_getter: Some(Arc::new(
-                |p: &PostInfoTO| Value::Text(p.slug.clone()),
-            )),
+            value_getter: Some(Arc::new(|p: &PostInfoTO| Value::Text(p.slug.clone()))),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -345,9 +336,7 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "status",
             header_name: "Status",
-            value_getter: Some(Arc::new(
-                |p: &PostInfoTO| Value::Text(p.status.clone()),
-            )),
+            value_getter: Some(Arc::new(|p: &PostInfoTO| Value::Text(p.status.clone()))),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -368,9 +357,7 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "username",
             header_name: "Author",
-            value_getter: Some(Arc::new(
-                |p: &PostInfoTO| Value::Text(p.username.clone()),
-            )),
+            value_getter: Some(Arc::new(|p: &PostInfoTO| Value::Text(p.username.clone()))),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -391,9 +378,7 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "email",
             header_name: "Email",
-            value_getter: Some(Arc::new(
-                |p: &PostInfoTO| Value::Text(p.email.clone()),
-            )),
+            value_getter: Some(Arc::new(|p: &PostInfoTO| Value::Text(p.email.clone()))),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -414,11 +399,9 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "created_at",
             header_name: "Created",
-            value_getter: Some(Arc::new(
-                |p: &PostInfoTO| {
-                    Value::Text(p.created_at.to_string())
-                },
-            )),
+            value_getter: Some(Arc::new(|p: &PostInfoTO| {
+                Value::Text(p.created_at.to_string())
+            })),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -439,11 +422,9 @@ pub fn AdminPostsPage() -> impl IntoView {
         ColumnDef {
             id: "updated_at",
             header_name: "Updated",
-            value_getter: Some(Arc::new(
-                |p: &PostInfoTO| {
-                    Value::Text(p.updated_at.to_string())
-                },
-            )),
+            value_getter: Some(Arc::new(|p: &PostInfoTO| {
+                Value::Text(p.updated_at.to_string())
+            })),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
