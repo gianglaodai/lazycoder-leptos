@@ -1,6 +1,11 @@
 #![cfg(feature = "ssr")]
 
+use crate::routes::config;
+use actix_files::NamedFile;
 use actix_web::middleware::NormalizePath;
+use actix_web::web::Data;
+use actix_web::{get, Result};
+use leptos::config::LeptosOptions;
 use leptos_actix::handle_server_fns;
 use sqlx::PgPool;
 
@@ -56,7 +61,7 @@ pub async fn run(pool: PgPool) -> std::io::Result<()> {
             .service(Files::new("/assets", &site_root))
             .service(favicon)
             .route("/api/{tail:.*}", handle_server_fns())
-            .configure(crate::routes::config)
+            .configure(config)
             .leptos_routes(routes, {
                 let leptos_options = leptos_options.clone();
                 move || {
@@ -77,7 +82,7 @@ pub async fn run(pool: PgPool) -> std::io::Result<()> {
                     }
                 }
             })
-        .app_data(actix_web::web::Data::new(leptos_options.to_owned()))
+        .app_data(Data::new(leptos_options.to_owned()))
         //.wrap(middleware::Compress::default())
     })
         .bind(&addr)?
@@ -85,13 +90,9 @@ pub async fn run(pool: PgPool) -> std::io::Result<()> {
         .await
 }
 
-#[actix_web::get("favicon.ico")]
-async fn favicon(
-    leptos_options: actix_web::web::Data<leptos::config::LeptosOptions>,
-) -> actix_web::Result<actix_files::NamedFile> {
+#[get("favicon.ico")]
+async fn favicon(leptos_options: Data<LeptosOptions>) -> Result<NamedFile> {
     let leptos_options = leptos_options.into_inner();
     let site_root = &leptos_options.site_root;
-    Ok(actix_files::NamedFile::open(format!(
-        "{site_root}/favicon.ico"
-    ))?)
+    Ok(NamedFile::open(format!("{site_root}/favicon.ico"))?)
 }

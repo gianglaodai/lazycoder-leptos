@@ -29,7 +29,7 @@ impl From<Attribute> for AttributeTO {
     }
 }
 
-#[get("")]
+#[get("/")]
 pub async fn get_many_attributes(
     state: Data<AppState>,
     query: Query<QueryOptions>,
