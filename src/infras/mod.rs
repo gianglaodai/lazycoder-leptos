@@ -27,3 +27,5 @@ pub mod post_collection_item_info_sqlx_repository;
 pub mod post_term_info_sqlx_repository;
 #[cfg(feature = "ssr")]
 pub mod post_relation_info_sqlx_repository;
+#[cfg(feature = "ssr")]
+pub mod post_type_sqlx_repository;

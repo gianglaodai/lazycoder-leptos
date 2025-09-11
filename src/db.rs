@@ -13,7 +13,7 @@ pub async fn init_pool() -> Result<PgPool, sqlx::Error> {
 }
 
 pub async fn run_migrations(pool: &PgPool) -> Result<(), sqlx::Error> {
-    let schema_sql = include_str!("migrations/create_tables_v1.sql");
+    let schema_sql = include_str!("migrations/create_tables.sql");
     run_statements_from_str(pool, schema_sql).await
 }
 
