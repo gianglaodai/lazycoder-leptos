@@ -1,17 +1,24 @@
 use crate::pages::admin::guard::AdminGuard;
-use crate::pages::components::datatable::core::column::{ColumnDef, Pinned};
+use crate::pages::components::button::{ButtonIntent, ButtonVariant};
+use crate::pages::components::datatable::core::column::{ColumnDef, DataType, Pinned};
 use crate::pages::components::datatable::core::render_value::Value;
 use crate::pages::components::datatable::core::row::RowNode;
 use crate::pages::components::datatable::core::state::TableState;
+use crate::pages::components::{Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger, Form, FormControl, FormField, FormItem, FormLabel, FormMessage, Input, SidebarProvider};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
 use std::sync::Arc;
+use leptos_router::NavigateOptions;
+use crate::pages::admin::layout::AdminSidebar;
+use crate::pages::rest::post_type_info_api::PostTypeInfoTO;
+use crate::pages::components::datatable::DataTable;
+use crate::pages::rest::post_type_info_api::{load_post_type_infos, count_post_type_infos};
+use crate::pages::components::datatable::core::query_sync::{sync_table_query_to_url, SyncOptions};
 
 #[component]
 fn DataTableCtx() -> impl IntoView {
-    use crate::pages::components::datatable::DataTable;
-    let ts: Arc<TableState<crate::pages::rest::post_type_info_api::PostTypeInfoTO>> = expect_context();
+    let ts: Arc<TableState<PostTypeInfoTO>> = expect_context();
     view! { <DataTable state=ts height="600px".to_string() row_height=36 /> }
 }
 
@@ -19,17 +26,17 @@ fn DataTableCtx() -> impl IntoView {
 pub fn AdminPostTypesPage() -> impl IntoView {
     let query = use_query_map();
 
-    let table_state: Arc<TableState<crate::pages::rest::post_type_info_api::PostTypeInfoTO>> = Arc::new(TableState::new());
+    let table_state: Arc<TableState<PostTypeInfoTO>> = Arc::new(TableState::new());
     provide_context(table_state.clone());
 
     table_state.client_side_sorting.set(false);
     table_state.client_side_filtering.set(false);
 
     table_state.columns.set(vec![
-        ColumnDef { id: "id", header_name: "ID", value_getter: Some(Arc::new(|p: &crate::pages::rest::post_type_info_api::PostTypeInfoTO| Value::Number(p.id as f64))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: false, pinned: Pinned::None, width: 80, min_width: 60, max_width: Some(140), groupable: false, aggregate: None, comparator: None, field: Some("id"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Int), },
-        ColumnDef { id: "code", header_name: "Code", value_getter: Some(Arc::new(|p: &crate::pages::rest::post_type_info_api::PostTypeInfoTO| Value::Text(p.code.clone()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: true, pinned: Pinned::None, width: 200, min_width: 120, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("code"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Text), },
-        ColumnDef { id: "name", header_name: "Name", value_getter: Some(Arc::new(|p: &crate::pages::rest::post_type_info_api::PostTypeInfoTO| Value::Text(p.name.clone()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: true, pinned: Pinned::None, width: 260, min_width: 120, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("name"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Text), },
-        ColumnDef { id: "updated_at", header_name: "Updated", value_getter: Some(Arc::new(|p: &crate::pages::rest::post_type_info_api::PostTypeInfoTO| Value::Text(p.updated_at.to_string()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: false, resizable: true, movable: true, pinned: Pinned::None, width: 180, min_width: 140, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("updated_at"), data_type: Some(crate::pages::components::datatable::core::column::DataType::DateTime), },
+        ColumnDef { id: "id", header_name: "ID", value_getter: Some(Arc::new(|p: &PostTypeInfoTO| Value::Number(p.id as f64))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: false, pinned: Pinned::None, width: 80, min_width: 60, max_width: Some(140), groupable: false, aggregate: None, comparator: None, field: Some("id"), data_type: Some(DataType::Int), },
+        ColumnDef { id: "code", header_name: "Code", value_getter: Some(Arc::new(|p: &PostTypeInfoTO| Value::Text(p.code.clone()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: true, pinned: Pinned::None, width: 200, min_width: 120, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("code"), data_type: Some(DataType::Text), },
+        ColumnDef { id: "name", header_name: "Name", value_getter: Some(Arc::new(|p: &PostTypeInfoTO| Value::Text(p.name.clone()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: true, pinned: Pinned::None, width: 260, min_width: 120, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("name"), data_type: Some(DataType::Text), },
+        ColumnDef { id: "updated_at", header_name: "Updated", value_getter: Some(Arc::new(|p: &PostTypeInfoTO| Value::Text(p.updated_at.to_string()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: false, resizable: true, movable: true, pinned: Pinned::None, width: 180, min_width: 140, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("updated_at"), data_type: Some(DataType::DateTime), },
     ]);
 
     // pagination init
@@ -50,7 +57,6 @@ pub fn AdminPostTypesPage() -> impl IntoView {
             }
         },
         |(first_result_i32, max_results_i32, sort, search)| async move {
-            use crate::pages::rest::post_type_info_api::{load_post_type_infos, count_post_type_infos};
             let (a, b) = futures::join!(
                 load_post_type_infos(first_result_i32 as i64, max_results_i32, sort.clone(), search.clone(), None, None),
                 count_post_type_infos(search.clone(), None, None)
@@ -61,10 +67,9 @@ pub fn AdminPostTypesPage() -> impl IntoView {
 
     // sync URL with table query
     {
-        use crate::pages::components::datatable::core::query_sync::{sync_table_query_to_url, SyncOptions};
         let nav = use_navigate();
         let st = table_state.clone();
-        sync_table_query_to_url(st, move |qs| { nav(&qs, leptos_router::NavigateOptions { replace: true, ..Default::default() }); }, SyncOptions { include_sort: true, include_p_filters: false, include_a_filters: false, include_search: false, ..Default::default() });
+        sync_table_query_to_url(st, move |qs| { nav(&qs, NavigateOptions { replace: true, ..Default::default() }); }, SyncOptions { include_sort: true, include_p_filters: false, include_a_filters: false, include_search: false, ..Default::default() });
     }
 
     // apply resource results
@@ -81,13 +86,14 @@ pub fn AdminPostTypesPage() -> impl IntoView {
 
     view! {
         <AdminGuard>
-            <crate::pages::components::sidebar::SidebarProvider default_open=true>
+            <SidebarProvider default_open=true>
                 <div class="flex gap-0">
-                    <crate::pages::admin::layout::AdminSidebar />
+                    <AdminSidebar />
                     <main class="flex-1 min-h-screen">
                         <div class="container-page py-10 font-serif">
                             <div class="flex items-center justify-between mb-6">
                                 <h1 class="text-3xl font-bold">Post Types</h1>
+                                <NewPostTypeDialog />
                             </div>
                             <div class="mt-4">
                                 <DataTableCtx />
@@ -95,7 +101,103 @@ pub fn AdminPostTypesPage() -> impl IntoView {
                         </div>
                     </main>
                 </div>
-            </crate::pages::components::sidebar::SidebarProvider>
+            </SidebarProvider>
         </AdminGuard>
+    }
+}
+
+#[component]
+fn NewPostTypeDialog() -> impl IntoView {
+    let code = RwSignal::new(String::new());
+    let name = RwSignal::new(String::new());
+    let error = RwSignal::new(String::new());
+
+    let disabled: Signal<bool> = Signal::derive({
+        let code = code.clone();
+        let name = name.clone();
+        move || code.get().trim().is_empty() || name.get().trim().is_empty()
+    });
+
+    // Map error String -> Option<String> for FormField context (mirrors posts.rs pattern)
+    let error_sig: Signal<Option<String>> = Signal::derive({
+        let error = error.clone();
+        move || {
+            let e = error.get();
+            if e.is_empty() { None } else { Some(e) }
+        }
+    });
+
+    let on_submit = Callback::new({
+        let code = code.clone();
+        let name = name.clone();
+        let error = error.clone();
+        let disabled = disabled.clone();
+        move |_| {
+            // Basic client validation only. No server API available yet.
+            if disabled.get_untracked() {
+                error.set("Please fill in both Code and Name".to_string());
+            } else {
+                error.set(String::new());
+                code.set(String::new());
+                name.set(String::new());
+            }
+        }
+    });
+
+    view! {
+        <Dialog>
+            <DialogTrigger variant=ButtonVariant::Primary intent=ButtonIntent::Primary>New Post Type</DialogTrigger>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>New Post Type</DialogTitle>
+                    <DialogDescription>Enter a unique code and a display name to create a new post type.</DialogDescription>
+                </DialogHeader>
+                <Form prevent_default=true on_submit=on_submit>
+                    <FormField name="code".to_string() error=error_sig>
+                        <FormItem>
+                            <FormLabel>Code</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Code" value=code on_input=Callback::new(move |ev: leptos::ev::Event| code.set(event_target_value(&ev))) />
+                            </FormControl>
+                            <FormMessage>{move || error.get()}</FormMessage>
+                        </FormItem>
+                    </FormField>
+                    <FormField name="name".to_string() error=error_sig>
+                        <FormItem>
+                            <FormLabel>Name</FormLabel>
+                            <FormControl>
+                                <Input placeholder="Name" value=name on_input=Callback::new(move |ev: leptos::ev::Event| name.set(event_target_value(&ev))) />
+                            </FormControl>
+                            <FormMessage>{move || error.get()}</FormMessage>
+                        </FormItem>
+                    </FormField>
+                </Form>
+                <DialogFooter>
+                    <DialogClose>Cancel</DialogClose>
+                    <Button
+                        variant=ButtonVariant::Outline
+                        intent=ButtonIntent::Primary
+                        disabled_signal=disabled
+                        on_click={
+                            let disabled = disabled.clone();
+                            let code = code.clone();
+                            let name = name.clone();
+                            let error = error.clone();
+                            Callback::new(move |_| {
+                                if disabled.get_untracked() {
+                                    error.set("Please fill in both Code and Name".to_string());
+                                } else {
+                                    error.set(String::new());
+                                    code.set(String::new());
+                                    name.set(String::new());
+                                }
+                            })
+                        }
+                    >
+                        Create
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     }
 }

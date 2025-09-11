@@ -7,7 +7,8 @@ use std::str::FromStr;
 use time::format_description::well_known::Rfc3339;
 use time::macros::format_description;
 use time::{Date, OffsetDateTime, Time};
-
+use serde::de::{MapAccess, Visitor};
+use serde::Deserializer as SerdeDeserializer;
 use crate::value_data_type::ValueDataType;
 
 impl ValueDataType {
@@ -35,9 +36,6 @@ impl ValueDataType {
 }
 
 // Helper to deserialize either a single string or a list of strings into Option<Vec<String>>
-use serde::de::{MapAccess, Visitor};
-use serde::Deserializer as SerdeDeserializer;
-
 #[derive(Deserialize)]
 #[serde(untagged)]
 enum StringOrVec {

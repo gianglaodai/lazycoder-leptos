@@ -21,8 +21,9 @@ pub async fn load_user_infos(
     use crate::presentation::query_options::QueryOptions;
     use crate::state::AppState;
     use leptos_actix::extract;
+    use actix_web::web::Data;
 
-    let state: actix_web::web::Data<AppState> = extract().await?;
+    let state: Data<AppState> = extract().await?;
     let query_options = QueryOptions {
         first_result: Some(first_result as i32),
         max_results: Some(max_results),
@@ -68,8 +69,9 @@ pub async fn count_user_infos(
     use crate::presentation::query_options::QueryOptions;
     use crate::state::AppState;
     use leptos_actix::extract;
+    use actix_web::web::Data;
 
-    let state: actix_web::web::Data<AppState> = extract().await?;
+    let state: Data<AppState> = extract().await?;
     let query_options = QueryOptions {
         first_result: None,
         max_results: None,

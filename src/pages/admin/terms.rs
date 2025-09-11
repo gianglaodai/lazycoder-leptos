@@ -7,11 +7,16 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
 use std::sync::Arc;
+use crate::pages::components::datatable::DataTable;
+use crate::pages::rest::term_info_api::TermInfoTO;
+use crate::pages::rest::term_info_api::{load_term_infos, count_term_infos};
+use crate::pages::components::datatable::core::query_sync::{sync_table_query_to_url, SyncOptions};
+use crate::pages::components::sidebar::SidebarProvider;
+use crate::pages::admin::layout::AdminSidebar;
 
 #[component]
 fn DataTableCtx() -> impl IntoView {
-    use crate::pages::components::datatable::DataTable;
-    let ts: Arc<TableState<crate::pages::rest::term_info_api::TermInfoTO>> = expect_context();
+    let ts: Arc<TableState<TermInfoTO>> = expect_context();
     view! { <DataTable state=ts height="600px".to_string() row_height=36 /> }
 }
 
@@ -19,19 +24,19 @@ fn DataTableCtx() -> impl IntoView {
 pub fn AdminTermsPage() -> impl IntoView {
     let query = use_query_map();
 
-    let table_state: Arc<TableState<crate::pages::rest::term_info_api::TermInfoTO>> = Arc::new(TableState::new());
+    let table_state: Arc<TableState<TermInfoTO>> = Arc::new(TableState::new());
     provide_context(table_state.clone());
 
     table_state.client_side_sorting.set(false);
     table_state.client_side_filtering.set(false);
 
     table_state.columns.set(vec![
-        ColumnDef { id: "id", header_name: "ID", value_getter: Some(Arc::new(|p: &crate::pages::rest::term_info_api::TermInfoTO| Value::Number(p.id as f64))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: false, pinned: Pinned::None, width: 80, min_width: 60, max_width: Some(140), groupable: false, aggregate: None, comparator: None, field: Some("id"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Int), },
-        ColumnDef { id: "taxonomy_code", header_name: "Taxonomy", value_getter: Some(Arc::new(|p: &crate::pages::rest::term_info_api::TermInfoTO| Value::Text(p.taxonomy_code.clone()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: true, pinned: Pinned::None, width: 160, min_width: 100, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("taxonomy_code"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Text), },
-        ColumnDef { id: "parent_slug", header_name: "Parent", value_getter: Some(Arc::new(|p: &crate::pages::rest::term_info_api::TermInfoTO| Value::Text(p.parent_slug.clone().unwrap_or_default()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: true, pinned: Pinned::None, width: 160, min_width: 100, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("parent_slug"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Text), },
-        ColumnDef { id: "slug", header_name: "Slug", value_getter: Some(Arc::new(|p: &crate::pages::rest::term_info_api::TermInfoTO| Value::Text(p.slug.clone()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: true, pinned: Pinned::None, width: 220, min_width: 120, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("slug"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Text), },
-        ColumnDef { id: "name", header_name: "Name", value_getter: Some(Arc::new(|p: &crate::pages::rest::term_info_api::TermInfoTO| Value::Text(p.name.clone()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: true, pinned: Pinned::None, width: 220, min_width: 120, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("name"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Text), },
-        ColumnDef { id: "updated_at", header_name: "Updated", value_getter: Some(Arc::new(|p: &crate::pages::rest::term_info_api::TermInfoTO| Value::Text(p.updated_at.to_string()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: false, resizable: true, movable: true, pinned: Pinned::None, width: 180, min_width: 140, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("updated_at"), data_type: Some(crate::pages::components::datatable::core::column::DataType::DateTime), },
+        ColumnDef { id: "id", header_name: "ID", value_getter: Some(Arc::new(|p: &TermInfoTO| Value::Number(p.id as f64))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: false, pinned: Pinned::None, width: 80, min_width: 60, max_width: Some(140), groupable: false, aggregate: None, comparator: None, field: Some("id"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Int), },
+        ColumnDef { id: "taxonomy_code", header_name: "Taxonomy", value_getter: Some(Arc::new(|p: &TermInfoTO| Value::Text(p.taxonomy_code.clone()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: true, pinned: Pinned::None, width: 160, min_width: 100, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("taxonomy_code"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Text), },
+        ColumnDef { id: "parent_slug", header_name: "Parent", value_getter: Some(Arc::new(|p: &TermInfoTO| Value::Text(p.parent_slug.clone().unwrap_or_default()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: true, pinned: Pinned::None, width: 160, min_width: 100, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("parent_slug"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Text), },
+        ColumnDef { id: "slug", header_name: "Slug", value_getter: Some(Arc::new(|p: &TermInfoTO| Value::Text(p.slug.clone()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: true, pinned: Pinned::None, width: 220, min_width: 120, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("slug"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Text), },
+        ColumnDef { id: "name", header_name: "Name", value_getter: Some(Arc::new(|p: &TermInfoTO| Value::Text(p.name.clone()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: true, resizable: true, movable: true, pinned: Pinned::None, width: 220, min_width: 120, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("name"), data_type: Some(crate::pages::components::datatable::core::column::DataType::Text), },
+        ColumnDef { id: "updated_at", header_name: "Updated", value_getter: Some(Arc::new(|p: &TermInfoTO| Value::Text(p.updated_at.to_string()))), value_formatter: None, cell_renderer: None, cell_editor: None, sortable: true, filterable: false, resizable: true, movable: true, pinned: Pinned::None, width: 180, min_width: 140, max_width: None, groupable: false, aggregate: None, comparator: None, field: Some("updated_at"), data_type: Some(crate::pages::components::datatable::core::column::DataType::DateTime), },
     ]);
 
     table_state.page_size.set(10);
@@ -50,7 +55,6 @@ pub fn AdminTermsPage() -> impl IntoView {
             }
         },
         |(first_result_i32, max_results_i32, sort, search)| async move {
-            use crate::pages::rest::term_info_api::{load_term_infos, count_term_infos};
             let (a, b) = futures::join!(
                 load_term_infos(first_result_i32 as i64, max_results_i32, sort.clone(), search.clone(), None, None),
                 count_term_infos(search.clone(), None, None)
@@ -60,7 +64,6 @@ pub fn AdminTermsPage() -> impl IntoView {
     );
 
     {
-        use crate::pages::components::datatable::core::query_sync::{sync_table_query_to_url, SyncOptions};
         let nav = use_navigate();
         let st = table_state.clone();
         sync_table_query_to_url(st, move |qs| { nav(&qs, leptos_router::NavigateOptions { replace: true, ..Default::default() }); }, SyncOptions { include_sort: true, include_p_filters: false, include_a_filters: false, include_search: false, ..Default::default() });
@@ -79,9 +82,9 @@ pub fn AdminTermsPage() -> impl IntoView {
 
     view! {
         <AdminGuard>
-            <crate::pages::components::sidebar::SidebarProvider default_open=true>
+            <SidebarProvider default_open=true>
                 <div class="flex gap-0">
-                    <crate::pages::admin::layout::AdminSidebar />
+                    <AdminSidebar />
                     <main class="flex-1 min-h-screen">
                         <div class="container-page py-10 font-serif">
                             <div class="flex items-center justify-between mb-6">
@@ -93,7 +96,7 @@ pub fn AdminTermsPage() -> impl IntoView {
                         </div>
                     </main>
                 </div>
-            </crate::pages::components::sidebar::SidebarProvider>
+            </SidebarProvider>
         </AdminGuard>
     }
 }

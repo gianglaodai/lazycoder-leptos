@@ -1,6 +1,6 @@
 use crate::pages::admin::guard::AdminGuard;
 use crate::pages::components::button::{ButtonIntent, ButtonVariant};
-use crate::pages::components::datatable::core::column::{ColumnDef, Pinned};
+use crate::pages::components::datatable::core::column::{ColumnDef, DataType, Pinned};
 use crate::pages::components::datatable::core::render_value::Value;
 use crate::pages::components::datatable::core::row::RowNode;
 use crate::pages::components::datatable::core::state::TableState;
@@ -11,18 +11,23 @@ use crate::pages::components::{
 };
 use crate::pages::rest::auth_api::UserTO;
 use crate::pages::rest::post_api::{create_post, delete_post, update_post, PostTO};
-use crate::pages::rest::post_info_api::{count_post_infos, load_post_infos};
+use crate::pages::rest::post_info_api::{count_post_infos, load_post_infos, PostInfoTO};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
 use std::sync::Arc;
+use crate::pages::components::datatable::core::query_sync::{
+    sync_table_query_to_url, SyncOptions,
+};
+use crate::pages::components::sidebar::SidebarProvider;
+use crate::pages::admin::layout::AdminSidebar;
 
 #[component]
 fn DataTableCtx() -> impl IntoView {
     use crate::pages::components::datatable::core::state::TableState;
     use crate::pages::components::datatable::DataTable;
     use std::sync::Arc;
-    let ts: Arc<TableState<crate::pages::rest::post_info_api::PostInfoTO>> = expect_context();
+    let ts: Arc<TableState<PostInfoTO>> = expect_context();
     view! { <DataTable state=ts height="600px".to_string() row_height=36 /> }
 }
 
@@ -137,7 +142,7 @@ pub fn AdminPostsPage() -> impl IntoView {
 
     // Build datatable state and columns
 
-    let table_state: Arc<TableState<crate::pages::rest::post_info_api::PostInfoTO>> =
+    let table_state: Arc<TableState<PostInfoTO>> =
         Arc::new(TableState::new());
     // Provide table_state in context to avoid moving it into child closures that require Fn
     provide_context(table_state.clone());
@@ -272,7 +277,7 @@ pub fn AdminPostsPage() -> impl IntoView {
             id: "id",
             header_name: "ID",
             value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Number(p.id as f64),
+                |p: &PostInfoTO| Value::Number(p.id as f64),
             )),
             value_formatter: None,
             cell_renderer: None,
@@ -289,13 +294,13 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("id"),
-            data_type: Some(crate::pages::components::datatable::core::column::DataType::Int),
+            data_type: Some(DataType::Int),
         },
         ColumnDef {
             id: "title",
             header_name: "Title",
             value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.title.clone()),
+                |p: &PostInfoTO| Value::Text(p.title.clone()),
             )),
             value_formatter: None,
             cell_renderer: None,
@@ -312,13 +317,13 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("title"),
-            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
+            data_type: Some(DataType::Text),
         },
         ColumnDef {
             id: "slug",
             header_name: "Slug",
             value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.slug.clone()),
+                |p: &PostInfoTO| Value::Text(p.slug.clone()),
             )),
             value_formatter: None,
             cell_renderer: None,
@@ -335,13 +340,13 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("slug"),
-            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
+            data_type: Some(DataType::Text),
         },
         ColumnDef {
             id: "status",
             header_name: "Status",
             value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.status.clone()),
+                |p: &PostInfoTO| Value::Text(p.status.clone()),
             )),
             value_formatter: None,
             cell_renderer: None,
@@ -358,13 +363,13 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("status"),
-            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
+            data_type: Some(DataType::Text),
         },
         ColumnDef {
             id: "username",
             header_name: "Author",
             value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.username.clone()),
+                |p: &PostInfoTO| Value::Text(p.username.clone()),
             )),
             value_formatter: None,
             cell_renderer: None,
@@ -381,13 +386,13 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("username"),
-            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
+            data_type: Some(DataType::Text),
         },
         ColumnDef {
             id: "email",
             header_name: "Email",
             value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_info_api::PostInfoTO| Value::Text(p.email.clone()),
+                |p: &PostInfoTO| Value::Text(p.email.clone()),
             )),
             value_formatter: None,
             cell_renderer: None,
@@ -404,13 +409,13 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("email"),
-            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
+            data_type: Some(DataType::Text),
         },
         ColumnDef {
             id: "created_at",
             header_name: "Created",
             value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_info_api::PostInfoTO| {
+                |p: &PostInfoTO| {
                     Value::Text(p.created_at.to_string())
                 },
             )),
@@ -429,13 +434,13 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("created_at"),
-            data_type: Some(crate::pages::components::datatable::core::column::DataType::DateTime),
+            data_type: Some(DataType::DateTime),
         },
         ColumnDef {
             id: "updated_at",
             header_name: "Updated",
             value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_info_api::PostInfoTO| {
+                |p: &PostInfoTO| {
                     Value::Text(p.updated_at.to_string())
                 },
             )),
@@ -454,15 +459,12 @@ pub fn AdminPostsPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("updated_at"),
-            data_type: Some(crate::pages::components::datatable::core::column::DataType::DateTime),
+            data_type: Some(DataType::DateTime),
         },
     ]);
 
     // Reflect table query (sort/filter/page) into URL for server-side fetching
     {
-        use crate::pages::components::datatable::core::query_sync::{
-            sync_table_query_to_url, SyncOptions,
-        };
         let nav = use_navigate();
         let st = table_state.clone();
         sync_table_query_to_url(
@@ -503,9 +505,9 @@ pub fn AdminPostsPage() -> impl IntoView {
 
     view! {
         <AdminGuard>
-            <crate::pages::components::sidebar::SidebarProvider default_open=true>
+            <SidebarProvider default_open=true>
                 <div class="flex gap-0">
-                    <crate::pages::admin::layout::AdminSidebar />
+                    <AdminSidebar />
                     <main class="flex-1 min-h-screen">
                         <div class="container-page py-10 font-serif">
                             <div class="flex items-center justify-between mb-6">
@@ -518,7 +520,7 @@ pub fn AdminPostsPage() -> impl IntoView {
                         </div>
                     </main>
                 </div>
-            </crate::pages::components::sidebar::SidebarProvider>
+            </SidebarProvider>
         </AdminGuard>
     }
 }

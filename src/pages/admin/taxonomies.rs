@@ -7,6 +7,8 @@ use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
 use std::sync::Arc;
+use crate::pages::components::sidebar::SidebarProvider;
+use crate::pages::admin::layout::AdminSidebar;
 
 #[component]
 fn DataTableCtx() -> impl IntoView {
@@ -77,9 +79,9 @@ pub fn AdminTaxonomiesPage() -> impl IntoView {
 
     view! {
         <AdminGuard>
-            <crate::pages::components::sidebar::SidebarProvider default_open=true>
+            <SidebarProvider default_open=true>
                 <div class="flex gap-0">
-                    <crate::pages::admin::layout::AdminSidebar />
+                    <AdminSidebar />
                     <main class="flex-1 min-h-screen">
                         <div class="container-page py-10 font-serif">
                             <div class="flex items-center justify-between mb-6">
@@ -91,7 +93,7 @@ pub fn AdminTaxonomiesPage() -> impl IntoView {
                         </div>
                     </main>
                 </div>
-            </crate::pages::components::sidebar::SidebarProvider>
+            </SidebarProvider>
         </AdminGuard>
     }
 }
