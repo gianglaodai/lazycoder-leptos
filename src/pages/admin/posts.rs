@@ -1,3 +1,4 @@
+use std::iter::once;
 use crate::pages::admin::guard::AdminGuard;
 use crate::pages::components::button::{ButtonIntent, ButtonVariant};
 use crate::pages::components::datatable::core::column::{ColumnDef, DataType, Pinned};
@@ -9,6 +10,8 @@ use crate::pages::components::{
     DialogTitle, DialogTrigger, Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
     Input,
 };
+use crate::pages::components::select::{Select, SelectSize, SelectOption};
+use crate::pages::rest::post_type_info_api::{load_post_type_infos, PostTypeInfoTO};
 use crate::pages::rest::auth_api::UserTO;
 use crate::pages::rest::post_api::{create_post, delete_post, update_post, PostTO};
 use crate::pages::rest::post_info_api::{count_post_infos, load_post_infos, PostInfoTO};
@@ -38,11 +41,38 @@ fn NewPostDialog() -> impl IntoView {
 
     let title = RwSignal::new(String::new());
     let error = RwSignal::new(String::new());
+    let selected_post_type_id: RwSignal<Option<i32>> = RwSignal::new(None);
 
-    let create_action = Action::new(move |t: &String| {
-        let title_val = t.clone();
+    // Lazy-load post types only when the select is interacted with
+    let post_types_trigger = RwSignal::new(false);
+    let post_types_res = Resource::new(
+        move || post_types_trigger.get(),
+        |should_load| async move {
+            if should_load {
+                load_post_type_infos(0, 100, Some("name".to_string()), None, None, None).await
+            } else {
+                Ok(Vec::<PostTypeInfoTO>::new())
+            }
+        },
+    );
+
+    // Unified select loader for post types
+    let load_post_type_options: Arc<dyn Fn() -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<SelectOption>, String>> + Send>> + Send + Sync> = Arc::new(|| {
+        Box::pin(async move {
+            match load_post_type_infos(0, 100, Some("name".to_string()), None, None, None).await {
+                Ok(items) => Ok(items
+                    .into_iter()
+                    .map(|pt| SelectOption { value: pt.id.to_string(), label: format!("{} ({})", pt.name, pt.code), disabled: false })
+                    .collect()),
+                Err(e) => Err(e.to_string()),
+            }
+        })
+    });
+
+    let create_action = Action::new(move |payload: &(String, i32)| {
+        let (title_val, pt_id) = payload.clone();
         let user_id = user_ctx.get_untracked().map(|u| u.id).unwrap_or(0);
-        async move { create_post(title_val, 1, user_id).await }
+        async move { create_post(title_val, pt_id, user_id).await }
     });
 
     Effect::new({
@@ -51,6 +81,7 @@ fn NewPostDialog() -> impl IntoView {
             if let Some(Ok(post)) = create_action.value().get() {
                 error.set(String::new());
                 title.set(String::new());
+                selected_post_type_id.set(None);
                 navigate(&format!("/admin/posts/{}", post.id), Default::default());
             } else if let Some(Err(e)) = create_action.value().get() {
                 error.set(e.to_string());
@@ -58,19 +89,21 @@ fn NewPostDialog() -> impl IntoView {
         }
     });
 
-    let disabled =
-        Signal::derive(move || title.get().trim().is_empty() || create_action.pending().get());
+    let disabled = Signal::derive({
+        let selected_post_type_id = selected_post_type_id.clone();
+        move || {
+            title.get().trim().is_empty()
+                || selected_post_type_id.get().is_none()
+                || create_action.pending().get()
+        }
+    });
 
     // Map error String -> Option<String> for FormField context
     let error_sig: Signal<Option<String>> = Signal::derive({
         let error = error.clone();
         move || {
             let e = error.get();
-            if e.is_empty() {
-                None
-            } else {
-                Some(e)
-            }
+            if e.is_empty() { None } else { Some(e) }
         }
     });
 
@@ -80,13 +113,20 @@ fn NewPostDialog() -> impl IntoView {
             <DialogContent>
                 <DialogHeader>
                     <DialogTitle>New Post</DialogTitle>
-                    <DialogDescription>Enter a title to create a new post. You can edit details afterward.</DialogDescription>
+                    <DialogDescription>Enter a title and choose a post type to create a new post. You can edit details afterward.</DialogDescription>
                 </DialogHeader>
                 <Form prevent_default=true on_submit=Callback::new({
                     let disabled = disabled.clone();
                     let create_action = create_action.clone();
                     let title = title.clone();
-                    move |_| { if !disabled.get_untracked() { create_action.dispatch(title.get_untracked()); } }
+                    let selected_post_type_id = selected_post_type_id.clone();
+                    move |_| {
+                        if !disabled.get_untracked() {
+                            if let Some(pt_id) = selected_post_type_id.get_untracked() {
+                                create_action.dispatch((title.get_untracked(), pt_id));
+                            }
+                        }
+                    }
                 })>
                     <FormField name="title".to_string() error=error_sig>
                         <FormItem>
@@ -97,6 +137,75 @@ fn NewPostDialog() -> impl IntoView {
                             <FormMessage>{move || error.get()}</FormMessage>
                         </FormItem>
                     </FormField>
+
+                    <FormField name="post_type".to_string()>
+                        <FormItem>
+                            <FormLabel>Post Type</FormLabel>
+                            <FormControl>
+                                <Select
+                                    size=SelectSize::Default
+                                    class="max-w-xs"
+                                    name="post_type"
+                                    required=true
+                                    placeholder="Select a Post Type".to_string()
+                                    load_options=load_post_type_options.clone()
+                                    on_focus=Callback::new({
+                                        let post_types_trigger = post_types_trigger.clone();
+                                        move |_| {
+                                            if !post_types_trigger.get_untracked() {
+                                                post_types_trigger.set(true);
+                                            }
+                                        }
+                                    })
+                                    on_click=Callback::new({
+                                        let post_types_trigger = post_types_trigger.clone();
+                                        move |_| {
+                                            if !post_types_trigger.get_untracked() {
+                                                post_types_trigger.set(true);
+                                            }
+                                        }
+                                    })
+                                    on_change=Callback::new({
+                                        let selected_post_type_id = selected_post_type_id.clone();
+                                        move |ev: leptos::ev::Event| {
+                                            let v = event_target_value(&ev);
+                                            let parsed = v.parse::<i32>().ok();
+                                            selected_post_type_id.set(parsed);
+                                        }
+                                    })
+                                >
+                                    // Placeholder option
+                                    <option value="" selected=move || selected_post_type_id.get().is_none() disabled=true hidden=true>
+                                        Select a Post Type
+                                    </option>
+                                    {move || {
+                                        if !post_types_trigger.get() {
+                                            once(view! { <option value={String::new()} disabled=true>{String::from("Click to load post types")}</option> }).collect_view()
+                                        } else {
+                                            match post_types_res.get() {
+                                                Some(Ok(items)) => {
+                                                    items
+                                                        .into_iter()
+                                                        .map(|pt| {
+                                                            let id = pt.id;
+                                                            let label = format!("{} ({})", pt.name, pt.code);
+                                                            view! { <option value={id.to_string()} disabled=false>{label}</option> }
+                                                        })
+                                                        .collect_view()
+                                                }
+                                                Some(Err(_e)) => once(view! { <option value={String::new()} disabled=true>{String::from("Failed to load post types")}</option> }).collect_view(),
+                                                None => once(view! { <option value={String::new()} disabled=true>{String::from("Loading...")}</option> }).collect_view(),
+                                            }
+                                        }
+                                    }}
+                                </Select>
+                            </FormControl>
+                            <FormMessage>{
+                                let selected_post_type_id = selected_post_type_id.clone();
+                                move || if selected_post_type_id.get().is_none() { "Please select a post type".to_string() } else { String::new() }
+                            }</FormMessage>
+                        </FormItem>
+                    </FormField>
                 </Form>
                 <DialogFooter>
                     <DialogClose>Cancel</DialogClose>
@@ -105,7 +214,19 @@ fn NewPostDialog() -> impl IntoView {
                         intent=ButtonIntent::Primary
                         disabled_signal=disabled
                         loading_signal=create_action.pending().into()
-                        on_click=Callback::new(move |_| { if !disabled.get_untracked() { create_action.dispatch(title.get_untracked()); } })
+                        on_click=Callback::new({
+                            let disabled = disabled.clone();
+                            let create_action = create_action.clone();
+                            let title = title.clone();
+                            let selected_post_type_id = selected_post_type_id.clone();
+                            move |_| {
+                                if !disabled.get_untracked() {
+                                    if let Some(pt_id) = selected_post_type_id.get_untracked() {
+                                        create_action.dispatch((title.get_untracked(), pt_id));
+                                    }
+                                }
+                            }
+                        })
                     >
                         {move || if create_action.pending().get() { "Creating...".to_string() } else { "Create".to_string() }}
                     </Button>

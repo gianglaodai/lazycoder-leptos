@@ -1,6 +1,10 @@
 use leptos::ev;
 use leptos::prelude::*;
 use std::collections::HashMap;
+use std::future::Future;
+use std::pin::Pin;
+use serde::{Deserialize, Serialize};
+use std::sync::Arc;
 
 use crate::utils::tv::{Tv, TvConfig, TvProps, TvResult, VariantClass, VariantDef};
 
@@ -14,6 +18,19 @@ pub enum SelectSize {
 impl Default for SelectSize {
     fn default() -> Self {
         SelectSize::Default
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+pub struct SelectOption {
+    pub value: String,
+    pub label: String,
+    pub disabled: bool,
+}
+
+impl SelectOption {
+    pub fn new(value: impl Into<String>, label: impl Into<String>) -> Self {
+        Self { value: value.into(), label: label.into(), disabled: false }
     }
 }
 
@@ -55,6 +72,11 @@ pub fn Select(
     #[prop(optional)] required: bool,
     #[prop(into, optional, default = Signal::from(String::new()))] value: Signal<String>,
     #[prop(into, optional)] on_change: Option<Callback<ev::Event, ()>>,
+    #[prop(into, optional)] on_focus: Option<Callback<ev::FocusEvent, ()>>,
+    #[prop(into, optional)] on_click: Option<Callback<ev::MouseEvent, ()>>,
+    // New: lazy-loaded options
+    #[prop(optional)] placeholder: Option<String>,
+    #[prop(optional)] load_options: Option<Arc<dyn Fn() -> Pin<Box<dyn Future<Output = Result<Vec<SelectOption>, String>> + Send>> + Send + Sync>>,
     #[prop(optional)] size: SelectSize,
     children: Children,
 ) -> impl IntoView {
@@ -81,17 +103,117 @@ pub fn Select(
         TvResult::Slots(_) => String::new(),
     };
 
-    view! {
-        <select
-            class=classes
-            id=id
-            name=name
-            disabled=disabled
-            required=required
-            prop:value=value
-            on:change=move |ev| if let Some(cb) = on_change { cb.run(ev) }
-        >
-            {children()}
-        </select>
+    // Internal lazy-load trigger if a loader is provided
+    let has_loader = load_options.is_some();
+    let trigger = RwSignal::new(false);
+
+    let options_res = Resource::new(
+        {
+            let trigger = trigger.clone();
+            move || trigger.get()
+        },
+        {
+            let load_options = load_options.clone();
+            move |should_load| {
+                let load_options = load_options.clone();
+                async move {
+                    if should_load {
+                        if let Some(loader) = load_options {
+                            loader().await
+                        } else {
+                            Ok(vec![])
+                        }
+                    } else {
+                        Ok(vec![])
+                    }
+                }
+            }
+        },
+    );
+
+    let placeholder_text = placeholder.unwrap_or_else(|| "Select an option".to_string());
+
+    // Cache children view to avoid moving `children()` into reactive closures
+    let children_any = children().into_any();
+
+    if has_loader {
+        view! {
+            <select
+                class=classes
+                id=id
+                name=name
+                disabled=disabled
+                required=required
+                prop:value=value
+                on:change=move |ev| if let Some(cb) = on_change { cb.run(ev) }
+                on:focus=move |ev| {
+                    if !trigger.get_untracked() { trigger.set(true); }
+                    if let Some(cb) = on_focus { cb.run(ev) }
+                }
+                on:click=move |ev| {
+                    if !trigger.get_untracked() { trigger.set(true); }
+                    if let Some(cb) = on_click { cb.run(ev) }
+                }
+            >
+                {move || {
+                    if !trigger.get() {
+                        view! {
+                            <>
+                                <option value="" selected=move || value.get().is_empty() disabled=true hidden=true>{placeholder_text.clone()}</option>
+                                <option value="" disabled=true>{"Click to load options"}</option>
+                            </>
+                        }.into_any()
+                    } else {
+                        match options_res.get() {
+                            Some(Ok(items)) => {
+                                view! {
+                                    <>
+                                        <option value="" selected=move || value.get().is_empty() disabled=true hidden=true>{placeholder_text.clone()}</option>
+                                        {items.into_iter().map(|opt| {
+                                            let v = opt.value;
+                                            let l = opt.label;
+                                            let dis = opt.disabled;
+                                            view! { <option value={v} disabled=dis>{l}</option> }
+                                        }).collect_view()}
+                                    </>
+                                }.into_any()
+                            }
+                            Some(Err(_e)) => {
+                                view! {
+                                    <>
+                                        <option value="" selected=move || value.get().is_empty() disabled=true hidden=true>{placeholder_text.clone()}</option>
+                                        <option value="" disabled=true>{"Failed to load options"}</option>
+                                    </>
+                                }.into_any()
+                            }
+                            None => {
+                                view! {
+                                    <>
+                                        <option value="" selected=move || value.get().is_empty() disabled=true hidden=true>{placeholder_text.clone()}</option>
+                                        <option value="" disabled=true>{"Loading..."}</option>
+                                    </>
+                                }.into_any()
+                            }
+                        }
+                    }
+                }}
+            </select>
+        }.into_any()
+    } else {
+        view! {
+            <select
+                class=classes
+                id=id
+                name=name
+                disabled=disabled
+                required=required
+                prop:value=value
+                on:change=move |ev| if let Some(cb) = on_change { cb.run(ev) }
+                on:focus=move |ev| if let Some(cb) = on_focus { cb.run(ev) }
+                on:click=move |ev| if let Some(cb) = on_click { cb.run(ev) }
+            >
+                {children_any}
+            </select>
+        }.into_any()
     }
 }

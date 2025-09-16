@@ -12,7 +12,7 @@ use crate::business::collection_item_service::PostCollectionItemInfoService;
 use crate::business::collection_service::PostCollectionInfoService;
 use crate::business::post_relation_service::PostRelationInfoService;
 use crate::business::post_term_service::PostTermInfoService;
-use crate::business::post_type_service::PostTypeInfoService;
+use crate::business::post_type_service::{PostTypeInfoService, PostTypeService};
 use crate::business::taxonomy_service::{PostTaxonomyInfoService, TermInfoService};
 use crate::infras::attribute_sqlx_repository::AttributeSqlxRepository;
 use crate::infras::attribute_value_info_sqlx_repository::AttributeValueInfoSqlxRepository;
@@ -22,6 +22,7 @@ use crate::infras::post_relation_info_sqlx_repository::PostRelationInfoSqlxRepos
 use crate::infras::post_taxonomy_info_sqlx_repository::PostTaxonomyInfoSqlxRepository;
 use crate::infras::post_term_info_sqlx_repository::PostTermInfoSqlxRepository;
 use crate::infras::post_type_info_sqlx_repository::PostTypeInfoSqlxRepository;
+use crate::infras::post_type_sqlx_repository::PostTypeSqlxRepository;
 use crate::infras::term_info_sqlx_repository::TermInfoSqlxRepository;
 
 pub struct AppState {
@@ -38,6 +39,7 @@ pub struct AppState {
     pub post_relation_info_service: PostRelationInfoService<PostRelationInfoSqlxRepository>,
     pub post_term_info_service: PostTermInfoService<PostTermInfoSqlxRepository>,
     pub post_collection_item_info_service: PostCollectionItemInfoService<PostCollectionItemInfoSqlxRepository>,
+    pub post_type_service: PostTypeService<PostTypeSqlxRepository>,
 }
 
 #[cfg(feature = "ssr")]
@@ -66,6 +68,8 @@ pub async fn new_app_state(pool: PgPool) -> actix_web::web::Data<AppState> {
     let post_term_info_service = PostTermInfoService::new(post_term_info_repository);
     let post_collection_item_info_repository = Arc::new(PostCollectionItemInfoSqlxRepository::new(pool.clone()));
     let post_collection_item_info_service = PostCollectionItemInfoService::new(post_collection_item_info_repository);
+    let post_type_repository = Arc::new(PostTypeSqlxRepository::new(pool.clone()));
+    let post_type_service = PostTypeService::new(post_type_repository);
     let auth_service = AuthService::new(user_service.clone());
 
     actix_web::web::Data::new(AppState {
@@ -82,5 +86,6 @@ pub async fn new_app_state(pool: PgPool) -> actix_web::web::Data<AppState> {
         post_relation_info_service,
         post_term_info_service,
         post_collection_item_info_service,
+        post_type_service,
     })
 }

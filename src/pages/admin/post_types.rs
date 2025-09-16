@@ -12,6 +12,7 @@ use std::sync::Arc;
 use leptos_router::NavigateOptions;
 use crate::pages::admin::layout::AdminSidebar;
 use crate::pages::rest::post_type_info_api::PostTypeInfoTO;
+use crate::pages::rest::post_type_api::create_post_type;
 use crate::pages::components::datatable::DataTable;
 use crate::pages::rest::post_type_info_api::{load_post_type_infos, count_post_type_infos};
 use crate::pages::components::datatable::core::query_sync::{sync_table_query_to_url, SyncOptions};
@@ -28,6 +29,10 @@ pub fn AdminPostTypesPage() -> impl IntoView {
 
     let table_state: Arc<TableState<PostTypeInfoTO>> = Arc::new(TableState::new());
     provide_context(table_state.clone());
+
+    // reload signal to force refetch of resource after create/delete
+    let reload = RwSignal::new(0u32);
+    provide_context(reload);
 
     table_state.client_side_sorting.set(false);
     table_state.client_side_filtering.set(false);
@@ -46,17 +51,19 @@ pub fn AdminPostTypesPage() -> impl IntoView {
     let posts_and_total_resource = Resource::new(
         {
             let table_state = table_state.clone();
+            let reload = reload.clone();
             move || {
                 let sort: Option<String> = query.with(|q| q.get("sort").map(|s| s.to_string()));
                 let search: Option<String> = query.with(|q| q.get("search").map(|s| s.to_string()));
                 let ps = table_state.page_size.get();
                 let cp = table_state.current_page.get();
+                let tick = reload.get();
                 let first_result_i32 = ((cp.saturating_sub(1) * ps) as i32).max(0);
                 let max_results_i32 = ps as i32;
-                (first_result_i32, max_results_i32, sort, search)
+                (first_result_i32, max_results_i32, sort, search, tick)
             }
         },
-        |(first_result_i32, max_results_i32, sort, search)| async move {
+        |(first_result_i32, max_results_i32, sort, search, _tick)| async move {
             let (a, b) = futures::join!(
                 load_post_type_infos(first_result_i32 as i64, max_results_i32, sort.clone(), search.clone(), None, None),
                 count_post_type_infos(search.clone(), None, None)
@@ -111,11 +118,34 @@ fn NewPostTypeDialog() -> impl IntoView {
     let code = RwSignal::new(String::new());
     let name = RwSignal::new(String::new());
     let error = RwSignal::new(String::new());
+    let navigate = use_navigate();
+
+    let create_action = Action::new(move |payload: &(String, String)| {
+        let (c, n) = payload.clone();
+        async move { create_post_type(c, n).await }
+    });
+
+    Effect::new({
+        let code = code.clone();
+        let name = name.clone();
+        let error = error.clone();
+        move |_| {
+            if let Some(Ok(post_type)) = create_action.value().get() {
+                error.set(String::new());
+                code.set(String::new());
+                name.set(String::new());
+                navigate(&format!("/admin/post_types/{}", post_type.id), Default::default());
+            } else if let Some(Err(e)) = create_action.value().get() {
+                error.set(e.to_string());
+            }
+        }
+    });
 
     let disabled: Signal<bool> = Signal::derive({
         let code = code.clone();
         let name = name.clone();
-        move || code.get().trim().is_empty() || name.get().trim().is_empty()
+        let pending = create_action.pending();
+        move || code.get().trim().is_empty() || name.get().trim().is_empty() || pending.get()
     });
 
     // Map error String -> Option<String> for FormField context (mirrors posts.rs pattern)
@@ -127,23 +157,6 @@ fn NewPostTypeDialog() -> impl IntoView {
         }
     });
 
-    let on_submit = Callback::new({
-        let code = code.clone();
-        let name = name.clone();
-        let error = error.clone();
-        let disabled = disabled.clone();
-        move |_| {
-            // Basic client validation only. No server API available yet.
-            if disabled.get_untracked() {
-                error.set("Please fill in both Code and Name".to_string());
-            } else {
-                error.set(String::new());
-                code.set(String::new());
-                name.set(String::new());
-            }
-        }
-    });
-
     view! {
         <Dialog>
             <DialogTrigger variant=ButtonVariant::Primary intent=ButtonIntent::Primary>New Post Type</DialogTrigger>
@@ -152,7 +165,17 @@ fn NewPostTypeDialog() -> impl IntoView {
                     <DialogTitle>New Post Type</DialogTitle>
                     <DialogDescription>Enter a unique code and a display name to create a new post type.</DialogDescription>
                 </DialogHeader>
-                <Form prevent_default=true on_submit=on_submit>
+                <Form prevent_default=true on_submit=Callback::new({
+                    let disabled = disabled.clone();
+                    let create_action = create_action.clone();
+                    let code = code.clone();
+                    let name = name.clone();
+                    move |_| {
+                        if !disabled.get_untracked() {
+                            create_action.dispatch((code.get_untracked(), name.get_untracked()));
+                        }
+                    }
+                })>
                     <FormField name="code".to_string() error=error_sig>
                         <FormItem>
                             <FormLabel>Code</FormLabel>
@@ -178,23 +201,20 @@ fn NewPostTypeDialog() -> impl IntoView {
                         variant=ButtonVariant::Outline
                         intent=ButtonIntent::Primary
                         disabled_signal=disabled
+                        loading_signal=create_action.pending().into()
                         on_click={
                             let disabled = disabled.clone();
+                            let create_action = create_action.clone();
                             let code = code.clone();
                             let name = name.clone();
-                            let error = error.clone();
                             Callback::new(move |_| {
-                                if disabled.get_untracked() {
-                                    error.set("Please fill in both Code and Name".to_string());
-                                } else {
-                                    error.set(String::new());
-                                    code.set(String::new());
-                                    name.set(String::new());
+                                if !disabled.get_untracked() {
+                                    create_action.dispatch((code.get_untracked(), name.get_untracked()));
                                 }
                             })
                         }
                     >
-                        Create
+                        {move || if create_action.pending().get() { "Creating...".to_string() } else { "Create".to_string() }}
                     </Button>
                 </DialogFooter>
             </DialogContent>
