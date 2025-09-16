@@ -104,20 +104,21 @@ pub fn Select(
     };
 
     // Internal lazy-load trigger if a loader is provided
+    // Changed: use a tick counter so options are reloaded on every interaction
     let has_loader = load_options.is_some();
-    let trigger = RwSignal::new(false);
+    let tick = RwSignal::new(0u32);
 
     let options_res = Resource::new(
         {
-            let trigger = trigger.clone();
-            move || trigger.get()
+            let tick = tick.clone();
+            move || tick.get()
         },
         {
             let load_options = load_options.clone();
-            move |should_load| {
+            move |t| {
                 let load_options = load_options.clone();
                 async move {
-                    if should_load {
+                    if t > 0 {
                         if let Some(loader) = load_options {
                             loader().await
                         } else {
@@ -147,16 +148,16 @@ pub fn Select(
                 prop:value=value
                 on:change=move |ev| if let Some(cb) = on_change { cb.run(ev) }
                 on:focus=move |ev| {
-                    if !trigger.get_untracked() { trigger.set(true); }
+                    tick.update(|v| *v = v.saturating_add(1));
                     if let Some(cb) = on_focus { cb.run(ev) }
                 }
                 on:click=move |ev| {
-                    if !trigger.get_untracked() { trigger.set(true); }
+                    tick.update(|v| *v = v.saturating_add(1));
                     if let Some(cb) = on_click { cb.run(ev) }
                 }
             >
                 {move || {
-                    if !trigger.get() {
+                    if tick.get() == 0 {
                         view! {
                             <>
                                 <option value="" selected=move || value.get().is_empty() disabled=true hidden=true>{placeholder_text.clone()}</option>
