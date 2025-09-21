@@ -1,13 +1,15 @@
 #![cfg(feature = "ssr")]
 
 use crate::business::error::CoreError;
-use crate::business::filter::Filter;
+use crate::business::filter::{Filter, ScalarValue};
 use crate::business::post_service::{Post, PostCreate, PostRepository, PostStatus};
 use crate::business::repository::{Repository, ViewRepository};
 use crate::business::sort::SortCriterion;
 use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::{SqlxRepository, SqlxViewRepository};
 use sqlx::PgPool;
+use std::collections::HashMap;
+use std::future::Future;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -57,8 +59,21 @@ impl PostSqlxRepository {
 }
 
 impl ViewRepository<Post> for PostSqlxRepository {
+    fn get_table_name(&self) -> &str {
+        "posts"
+    }
+    fn get_columns(&self) -> Vec<&str> {
+        PostOrm::columns()
+    }
+    fn get_searchable_columns(&self) -> Vec<&str> {
+        PostOrm::searchable_columns()
+    }
     async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
         SqlxViewRepository::count(self, filters).await
+    }
+
+    async fn get_column_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
+        SqlxViewRepository::get_column_type_map(self).await
     }
 
     async fn find_many(
@@ -130,20 +145,17 @@ impl Repository<Post, PostCreate> for PostSqlxRepository {
 
         Ok(Post::from(post))
     }
+
+    fn get_attribute_type_map(
+        &self,
+    ) -> impl Future<Output = Result<HashMap<String, ScalarValue>, CoreError>> {
+        SqlxRepository::get_attribute_type_map(self)
+    }
 }
 
 impl SqlxViewRepository for PostSqlxRepository {
     type Entity = Post;
     type Orm = PostOrm;
-    fn get_table_name(&self) -> &str {
-        "posts"
-    }
-    fn get_columns(&self) -> Vec<&str> {
-        PostOrm::columns()
-    }
-    fn get_searchable_columns(&self) -> Vec<&str> {
-        PostOrm::searchable_columns()
-    }
     fn get_pool(&self) -> &PgPool {
         &self.pool
     }
@@ -178,7 +190,7 @@ impl PostRepository for PostSqlxRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::business::filter::{Filter, FilterOperator, FilterValue};
+    use crate::business::filter::{Filter, FilterOperator, FilterValue, ScalarValue};
     use crate::business::sort::SortCriterion;
     use sqlx::{postgres::PgPoolOptions, PgPool};
 
@@ -192,22 +204,22 @@ mod tests {
             Filter::Property {
                 property_name: "title".into(),
                 operator: FilterOperator::Equal,
-                value: FilterValue::String("test".into()),
+                value: FilterValue::Single(ScalarValue::String("test".into())),
             },
             Filter::Property {
                 property_name: "slug".into(),
                 operator: FilterOperator::Equal,
-                value: FilterValue::String("test".into()),
+                value: FilterValue::Single(ScalarValue::String("test".into())),
             },
             Filter::Attribute {
                 attr_name: "status".into(),
                 operator: FilterOperator::Equal,
-                value: FilterValue::Int(1),
+                value: FilterValue::Single(ScalarValue::Int(1)),
             },
             Filter::Attribute {
                 attr_name: "status".into(),
                 operator: FilterOperator::In,
-                value: FilterValue::ListInt(vec![2, 3]),
+                value: FilterValue::List(vec![ScalarValue::Int(2), ScalarValue::Int(3)]),
             },
             Filter::Search {
                 value: "abc xyz".to_owned(),

@@ -79,6 +79,18 @@ impl<R: PostTypeRepository> PostTypeService<R> {
     }
 }
 
+impl<R: PostTypeRepository> crate::business::service::ViewService for PostTypeService<R> {
+    type Entity = PostType;
+    type Repo = R;
+    fn get_repository(&self) -> &Self::Repo {
+        &self.repository
+    }
+}
+
+impl<R: PostTypeRepository> crate::business::service::Service for PostTypeService<R> {
+    type Create = PostTypeCreate;
+}
+
 #[derive(Clone)]
 pub struct PostTypeInfoService<R: PostTypeInfoRepository> {
     repository: Arc<R>,
@@ -115,5 +127,13 @@ impl<R: PostTypeInfoRepository> PostTypeInfoService<R> {
 
     pub async fn get_by_uid(&self, uid: String) -> Result<Option<PostTypeInfo>, CoreError> {
         self.repository.find_by_uid(uid).await
+    }
+}
+
+impl<R: PostTypeInfoRepository> crate::business::service::ViewService for PostTypeInfoService<R> {
+    type Entity = PostTypeInfo;
+    type Repo = R;
+    fn get_repository(&self) -> &Self::Repo {
+        &self.repository
     }
 }

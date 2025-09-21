@@ -1,4 +1,4 @@
-use crate::business::filter::{FilterOperator, FilterValue};
+use crate::business::filter::{FilterOperator, FilterValue, ScalarValue};
 use crate::pages::components::datatable::core::column::DataType;
 use crate::pages::components::datatable::core::data_source::{SortModel, SortOrder};
 use crate::pages::components::datatable::core::state::TableState;
@@ -129,7 +129,6 @@ pub fn build_p_filters<T: Send + Sync + 'static>(state: &Arc<TableState<T>>) -> 
             FilterOperator::LessThanOrEqual => "<=",
             FilterOperator::Like => "~",
             FilterOperator::NotLike => "!~",
-            FilterOperator::Is => "is",
             FilterOperator::In => "[]",
             FilterOperator::NotIn => "![]",
             FilterOperator::IsNull => "=null",
@@ -140,78 +139,99 @@ pub fn build_p_filters<T: Send + Sync + 'static>(state: &Arc<TableState<T>>) -> 
     };
     let val_to_s = |v: &FilterValue| -> (String, u8) {
         match v {
-            FilterValue::Int(i) => (i.to_string(), 1),
-            FilterValue::Float(f) => (f.to_string(), 2),
-            FilterValue::String(s) => (s.clone(), 0),
-            FilterValue::Bool(b) => (b.to_string(), 3),
-            FilterValue::Date(d) => (
-                d.format(&time::macros::format_description!("[year]-[month]-[day]"))
-                    .unwrap_or_default(),
-                4,
-            ),
-            FilterValue::DateTime(dt) => (
-                dt.format(&time::format_description::well_known::Rfc3339)
-                    .unwrap_or_default(),
-                5,
-            ),
-            FilterValue::Time(t) => (
-                t.format(&time::macros::format_description!(
-                    "[hour]:[minute]:[second]"
-                ))
-                .unwrap_or_default(),
-                6,
-            ),
-            FilterValue::IntRange(a, b) => (format!("{}|{}", a, b), 1),
-            FilterValue::FloatRange(a, b) => (format!("{}|{}", a, b), 2),
-            FilterValue::DateRange(a, b) => (
-                format!(
-                    "{}|{}",
-                    a.format(&time::macros::format_description!("[year]-[month]-[day]"))
+            FilterValue::Single(sv) => match sv {
+                ScalarValue::Int(i) => (i.to_string(), 1),
+                ScalarValue::Float(f) => (f.to_string(), 2),
+                ScalarValue::String(s) => (s.clone(), 0),
+                ScalarValue::Bool(b) => (b.to_string(), 3),
+                ScalarValue::Date(d) => (
+                    d.format(&time::macros::format_description!("[year]-[month]-[day]"))
                         .unwrap_or_default(),
-                    b.format(&time::macros::format_description!("[year]-[month]-[day]"))
-                        .unwrap_or_default()
+                    4,
                 ),
-                4,
-            ),
-            FilterValue::DateTimeRange(a, b) => (
-                format!(
-                    "{}|{}",
-                    a.format(&time::format_description::well_known::Rfc3339)
+                ScalarValue::DateTime(dt) => (
+                    dt.format(&time::format_description::well_known::Rfc3339)
                         .unwrap_or_default(),
-                    b.format(&time::format_description::well_known::Rfc3339)
-                        .unwrap_or_default()
+                    5,
                 ),
-                5,
-            ),
-            FilterValue::TimeRange(a, b) => (
-                format!(
-                    "{}|{}",
-                    a.format(&time::macros::format_description!(
+                ScalarValue::Time(t) => (
+                    t.format(&time::macros::format_description!(
                         "[hour]:[minute]:[second]"
                     ))
                     .unwrap_or_default(),
-                    b.format(&time::macros::format_description!(
-                        "[hour]:[minute]:[second]"
-                    ))
-                    .unwrap_or_default()
+                    6,
                 ),
-                6,
-            ),
-            FilterValue::ListInt(vs) => (
-                vs.iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join("|"),
-                1,
-            ),
-            FilterValue::ListFloat(vs) => (
-                vs.iter()
-                    .map(|x| x.to_string())
-                    .collect::<Vec<_>>()
-                    .join("|"),
-                2,
-            ),
-            FilterValue::ListString(vs) => (vs.join("|"), 0),
+            },
+            FilterValue::Range((a, b)) => match (a, b) {
+                (ScalarValue::Int(x), ScalarValue::Int(y)) => (format!("{}|{}", x, y), 1),
+                (ScalarValue::Float(x), ScalarValue::Float(y)) => (format!("{}|{}", x, y), 2),
+                (ScalarValue::Date(x), ScalarValue::Date(y)) => (
+                    format!(
+                        "{}|{}",
+                        x.format(&time::macros::format_description!("[year]-[month]-[day]"))
+                            .unwrap_or_default(),
+                        y.format(&time::macros::format_description!("[year]-[month]-[day]"))
+                            .unwrap_or_default()
+                    ),
+                    4,
+                ),
+                (ScalarValue::DateTime(x), ScalarValue::DateTime(y)) => (
+                    format!(
+                        "{}|{}",
+                        x.format(&time::format_description::well_known::Rfc3339)
+                            .unwrap_or_default(),
+                        y.format(&time::format_description::well_known::Rfc3339)
+                            .unwrap_or_default()
+                    ),
+                    5,
+                ),
+                (ScalarValue::Time(x), ScalarValue::Time(y)) => (
+                    format!(
+                        "{}|{}",
+                        x.format(&time::macros::format_description!(
+                            "[hour]:[minute]:[second]"
+                        ))
+                        .unwrap_or_default(),
+                        y.format(&time::macros::format_description!(
+                            "[hour]:[minute]:[second]"
+                        ))
+                        .unwrap_or_default()
+                    ),
+                    6,
+                ),
+                _ => (String::new(), 0),
+            },
+            FilterValue::List(vs) => {
+                if let Some(first) = vs.first() {
+                    match first {
+                        ScalarValue::Int(_) => (
+                            vs.iter()
+                                .filter_map(|s| match s { ScalarValue::Int(i) => Some(i.to_string()), _ => None })
+                                .collect::<Vec<_>>()
+                                .join("|"),
+                            1,
+                        ),
+                        ScalarValue::Float(_) => (
+                            vs.iter()
+                                .filter_map(|s| match s { ScalarValue::Float(f) => Some(f.to_string()), _ => None })
+                                .collect::<Vec<_>>()
+                                .join("|"),
+                            2,
+                        ),
+                        ScalarValue::String(_) => (
+                            vs.iter()
+                                .filter_map(|s| match s { ScalarValue::String(st) => Some(st.clone()), _ => None })
+                                .collect::<Vec<_>>()
+                                .join("|"),
+                            0,
+                        ),
+                        _ => (String::new(), 0),
+                    }
+                } else {
+                    (String::new(), 0)
+                }
+            }
+            FilterValue::None => (String::new(), 0),
         }
     };
 

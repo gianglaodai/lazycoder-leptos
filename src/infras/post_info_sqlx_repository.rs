@@ -59,6 +59,16 @@ impl PostInfoSqlxRepository {
 }
 
 impl ViewRepository<PostInfo> for PostInfoSqlxRepository {
+    fn get_table_name(&self) -> &str {
+        "posts_info"
+    }
+    fn get_columns(&self) -> Vec<&str> {
+        PostInfoOrm::columns()
+    }
+    fn get_searchable_columns(&self) -> Vec<&str> {
+        PostInfoOrm::searchable_columns()
+    }
+
     async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
         SqlxViewRepository::count(self, filters).await
     }
@@ -80,20 +90,18 @@ impl ViewRepository<PostInfo> for PostInfoSqlxRepository {
     async fn find_by_uid(&self, uid: String) -> Result<Option<PostInfo>, CoreError> {
         SqlxViewRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
+
+    async fn get_column_type_map(
+        &self,
+    ) -> Result<std::collections::HashMap<String, crate::business::filter::ScalarValue>, CoreError>
+    {
+        SqlxViewRepository::get_column_type_map(self).await
+    }
 }
 
 impl SqlxViewRepository for PostInfoSqlxRepository {
     type Entity = PostInfo;
     type Orm = PostInfoOrm;
-    fn get_table_name(&self) -> &str {
-        "posts_info"
-    }
-    fn get_columns(&self) -> Vec<&'static str> {
-        PostInfoOrm::columns()
-    }
-    fn get_searchable_columns(&self) -> Vec<&str> {
-        PostInfoOrm::searchable_columns()
-    }
     fn get_pool(&self) -> &PgPool {
         &self.pool
     }

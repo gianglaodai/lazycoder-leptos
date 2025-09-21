@@ -46,6 +46,16 @@ impl<R: PostTaxonomyInfoRepository> PostTaxonomyInfoService<R> {
     }
 }
 
+impl<R: PostTaxonomyInfoRepository> crate::business::service::ViewService
+    for PostTaxonomyInfoService<R>
+{
+    type Entity = PostTaxonomyInfo;
+    type Repo = R;
+    fn get_repository(&self) -> &Self::Repo {
+        &self.repository
+    }
+}
+
 // terms_info
 
 define_readonly_struct_with_common_fields!(TermInfo {
@@ -90,5 +100,13 @@ impl<R: TermInfoRepository> TermInfoService<R> {
     }
     pub async fn get_by_uid(&self, uid: String) -> Result<Option<TermInfo>, CoreError> {
         self.repository.find_by_uid(uid).await
+    }
+}
+
+impl<R: TermInfoRepository> crate::business::service::ViewService for TermInfoService<R> {
+    type Entity = TermInfo;
+    type Repo = R;
+    fn get_repository(&self) -> &Self::Repo {
+        &self.repository
     }
 }

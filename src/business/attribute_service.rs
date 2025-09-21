@@ -46,6 +46,14 @@ impl<R: AttributeRepository> AttributeService<R> {
     }
 }
 
+impl<R: AttributeRepository> crate::business::service::ViewService for AttributeService<R> {
+    type Entity = Attribute;
+    type Repo = R;
+    fn get_repository(&self) -> &Self::Repo {
+        &self.repository
+    }
+}
+
 // attribute_values_info
 
 define_readonly_struct_with_common_fields!(AttributeValueInfo {
@@ -94,5 +102,15 @@ impl<R: AttributeValueInfoRepository> AttributeValueInfoService<R> {
     }
     pub async fn get_by_uid(&self, uid: String) -> Result<Option<AttributeValueInfo>, CoreError> {
         self.repository.find_by_uid(uid).await
+    }
+}
+
+impl<R: AttributeValueInfoRepository> crate::business::service::ViewService
+    for AttributeValueInfoService<R>
+{
+    type Entity = AttributeValueInfo;
+    type Repo = R;
+    fn get_repository(&self) -> &Self::Repo {
+        &self.repository
     }
 }

@@ -43,6 +43,16 @@ impl PostTaxonomyInfoSqlxRepository {
 }
 
 impl ViewRepository<PostTaxonomyInfo> for PostTaxonomyInfoSqlxRepository {
+    fn get_table_name(&self) -> &str {
+        "post_taxonomies_info"
+    }
+    fn get_columns(&self) -> Vec<&str> {
+        PostTaxonomyInfoOrm::columns()
+    }
+    fn get_searchable_columns(&self) -> Vec<&str> {
+        PostTaxonomyInfoOrm::searchable_columns()
+    }
+
     async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
         SqlxViewRepository::count(self, filters).await
     }
@@ -61,20 +71,17 @@ impl ViewRepository<PostTaxonomyInfo> for PostTaxonomyInfoSqlxRepository {
     async fn find_by_uid(&self, uid: String) -> Result<Option<PostTaxonomyInfo>, CoreError> {
         SqlxViewRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
+    async fn get_column_type_map(
+        &self,
+    ) -> Result<std::collections::HashMap<String, crate::business::filter::ScalarValue>, CoreError>
+    {
+        SqlxViewRepository::get_column_type_map(self).await
+    }
 }
 
 impl SqlxViewRepository for PostTaxonomyInfoSqlxRepository {
     type Entity = PostTaxonomyInfo;
     type Orm = PostTaxonomyInfoOrm;
-    fn get_table_name(&self) -> &str {
-        "post_taxonomies_info"
-    }
-    fn get_columns(&self) -> Vec<&'static str> {
-        PostTaxonomyInfoOrm::columns()
-    }
-    fn get_searchable_columns(&self) -> Vec<&str> {
-        PostTaxonomyInfoOrm::searchable_columns()
-    }
     fn get_pool(&self) -> &PgPool {
         &self.pool
     }

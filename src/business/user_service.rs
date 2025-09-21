@@ -118,3 +118,15 @@ impl<R: UserRepository> UserService<R> {
             .await
     }
 }
+
+impl<R: UserRepository> crate::business::service::ViewService for UserService<R> {
+    type Entity = User;
+    type Repo = R;
+    fn get_repository(&self) -> &Self::Repo {
+        &self.user_repository
+    }
+}
+
+impl<R: UserRepository> crate::business::service::Service for UserService<R> {
+    type Create = UserCreate;
+}

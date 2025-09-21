@@ -1,6 +1,7 @@
 use crate::business::error::CoreError;
 use crate::business::filter::Filter;
 use crate::business::repository::{Repository, ViewRepository};
+use crate::business::service::{Service, ViewService};
 use crate::business::sort::SortCriterion;
 use crate::{define_readonly_struct_with_common_fields, define_struct_with_common_fields};
 use std::future::Future;
@@ -137,6 +138,19 @@ impl<R: PostRepository> PostService<R> {
     }
 }
 
+impl<R: PostRepository> ViewService for PostService<R> {
+    type Entity = Post;
+    type Repo = R;
+
+    fn get_repository(&self) -> &Self::Repo {
+        &self.repository
+    }
+}
+
+impl<R: PostRepository> Service for PostService<R> {
+    type Create = PostCreate;
+}
+
 pub trait PostInfoRepository: ViewRepository<PostInfo> + Send + Sync {}
 
 #[derive(Clone)]
@@ -177,5 +191,13 @@ impl<R: PostInfoRepository> PostInfoService<R> {
 
     pub async fn get_by_uid(&self, uid: String) -> Result<Option<PostInfo>, CoreError> {
         self.post_info_repository.find_by_uid(uid).await
+    }
+}
+
+impl<R: PostInfoRepository> crate::business::service::ViewService for PostInfoService<R> {
+    type Entity = PostInfo;
+    type Repo = R;
+    fn get_repository(&self) -> &Self::Repo {
+        &self.post_info_repository
     }
 }

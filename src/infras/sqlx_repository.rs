@@ -1,19 +1,21 @@
 #![cfg(feature = "ssr")]
 
 use crate::business::error::CoreError;
-use crate::business::filter::{Filter, FilterOperator, FilterValue};
+use crate::business::filter::{Filter, FilterOperator, FilterValue, ScalarValue};
 use crate::business::repository::{Creatable, Repository, ViewRepository};
+// cache moved to service layer; repository focuses on DB access only
 use crate::business::sort::SortCriterion;
 use crate::define_orm_with_common_fields;
 use sqlx::postgres::PgRow;
-use sqlx::{FromRow, PgPool, Postgres, QueryBuilder};
+use sqlx::{FromRow, PgPool, Postgres, QueryBuilder, Row};
+use std::collections::HashMap;
 use uuid::Uuid;
 
 #[derive(Debug, sqlx::Type)]
 #[sqlx(type_name = "attribute_datatype", rename_all = "lowercase")]
 pub enum AttributeDataType {
     Int,
-    Double,
+    Float,
     String,
     Boolean,
     Date,
@@ -43,16 +45,61 @@ define_orm_with_common_fields!(AttributeValue {
 pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
     type Entity;
     type Orm: for<'r> FromRow<'r, PgRow> + Send + Unpin;
-    fn get_table_name(&self) -> &str;
-    fn get_columns(&self) -> Vec<&str>;
-    fn get_searchable_columns(&self) -> Vec<&str>;
+
     fn get_pool(&self) -> &PgPool;
 
     /// List of columns that are stored as textual types (e.g., text/varchar)
     /// This is used to avoid type-mismatch when a numeric-looking literal is provided for a string column.
     /// Default: empty list.
-    fn get_string_columns(&self) -> Vec<&str> {
+    fn get_string_properties(&self) -> Vec<&str> {
         vec![]
+    }
+
+    async fn get_column_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
+        // Repository: fetch directly from DB; caching is handled at the service layer
+        let table = self.get_table_name().to_string();
+        let pool = self.get_pool();
+        let cols = self.get_columns();
+
+        let rows = sqlx::query(
+            "SELECT column_name, data_type, udt_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1"
+        )
+        .bind(&table)
+        .fetch_all(pool)
+        .await?;
+
+        let wanted_set: std::collections::HashSet<&str> = cols.into_iter().collect();
+
+        let mut map: HashMap<String, ScalarValue> = HashMap::new();
+        for row in rows.into_iter() {
+            let col: String = row.get("column_name");
+            if !wanted_set.is_empty() && !wanted_set.contains(col.as_str()) {
+                continue;
+            }
+            let data_type: String = row.get("data_type");
+            let udt_name: String = row.get("udt_name");
+            let scalar = match data_type.as_str() {
+                "integer" | "smallint" | "bigint" => ScalarValue::Int(0),
+                "double precision" | "real" | "numeric" => ScalarValue::Float(0.0),
+                "boolean" => ScalarValue::Bool(false),
+                "date" => ScalarValue::Date(
+                    time::Date::from_calendar_date(1970, time::Month::January, 1).unwrap(),
+                ),
+                "timestamp with time zone" | "timestamp without time zone" => {
+                    ScalarValue::DateTime(time::OffsetDateTime::UNIX_EPOCH)
+                }
+                "time without time zone" | "time with time zone" => {
+                    ScalarValue::Time(time::Time::from_hms(0, 0, 0).unwrap())
+                }
+                "character varying" | "character" | "text" => ScalarValue::String(String::new()),
+                _ => match udt_name.as_str() {
+                    "uuid" => ScalarValue::String(String::new()),
+                    _ => ScalarValue::String(String::new()),
+                },
+            };
+            map.insert(col, scalar);
+        }
+        Ok(map)
     }
 
     fn from_orm(orm: Self::Orm) -> Self::Entity;
@@ -260,39 +307,63 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
         operator: FilterOperator,
         value: FilterValue,
     ) {
-        let is_string_col = self.get_string_columns().contains(&field);
-        // For textual columns, ensure we compare as text and bind a string value to avoid type mismatches
+        let is_string_col = self.get_string_properties().contains(&field);
         if is_string_col {
-            // Render column cast to text for safe comparisons
+            // Compare on the left side as text to avoid type mismatch
             builder.push(format!("{}::text ", field));
-            // Coerce value to string for EQ/NE/LIKE/NOT LIKE operators
+            // Coerce value to string-based representations
             let coerced = match value {
-                FilterValue::String(s) => FilterValue::String(s),
-                FilterValue::Int(v) => FilterValue::String(v.to_string()),
-                FilterValue::Float(v) => FilterValue::String(v.to_string()),
-                FilterValue::Bool(v) => FilterValue::String(v.to_string()),
-                FilterValue::Date(v) => FilterValue::String(v.to_string()),
-                FilterValue::DateTime(v) => FilterValue::String(v.to_string()),
-                FilterValue::Time(v) => FilterValue::String(v.to_string()),
-                FilterValue::IntRange(a, b) => FilterValue::String(format!("{}..{}", a, b)),
-                FilterValue::FloatRange(a, b) => FilterValue::String(format!("{}..{}", a, b)),
-                FilterValue::ListInt(vs) => {
-                    FilterValue::ListString(vs.into_iter().map(|v| v.to_string()).collect())
-                }
-                FilterValue::ListFloat(vs) => {
-                    FilterValue::ListString(vs.into_iter().map(|v| v.to_string()).collect())
-                }
-                FilterValue::ListString(vs) => FilterValue::ListString(vs),
-                FilterValue::DateRange(a, b) => FilterValue::String(format!("{}..{}", a, b)),
-                FilterValue::DateTimeRange(a, b) => FilterValue::String(format!("{}..{}", a, b)),
-                FilterValue::TimeRange(a, b) => FilterValue::String(format!("{}..{}", a, b)),
+                FilterValue::Single(s) => FilterValue::Single(ScalarValue::String(match s {
+                    ScalarValue::String(v) => v,
+                    ScalarValue::Int(v) => v.to_string(),
+                    ScalarValue::Float(v) => v.to_string(),
+                    ScalarValue::Bool(v) => v.to_string(),
+                    ScalarValue::Date(v) => v.to_string(),
+                    ScalarValue::DateTime(v) => v.to_string(),
+                    ScalarValue::Time(v) => v.to_string(),
+                })),
+                FilterValue::List(vs) => FilterValue::List(
+                    vs.into_iter()
+                        .map(|s| {
+                            ScalarValue::String(match s {
+                                ScalarValue::String(v) => v,
+                                ScalarValue::Int(v) => v.to_string(),
+                                ScalarValue::Float(v) => v.to_string(),
+                                ScalarValue::Bool(v) => v.to_string(),
+                                ScalarValue::Date(v) => v.to_string(),
+                                ScalarValue::DateTime(v) => v.to_string(),
+                                ScalarValue::Time(v) => v.to_string(),
+                            })
+                        })
+                        .collect(),
+                ),
+                FilterValue::Range((a, b)) => FilterValue::Range((
+                    ScalarValue::String(match a {
+                        ScalarValue::String(v) => v,
+                        ScalarValue::Int(v) => v.to_string(),
+                        ScalarValue::Float(v) => v.to_string(),
+                        ScalarValue::Bool(v) => v.to_string(),
+                        ScalarValue::Date(v) => v.to_string(),
+                        ScalarValue::DateTime(v) => v.to_string(),
+                        ScalarValue::Time(v) => v.to_string(),
+                    }),
+                    ScalarValue::String(match b {
+                        ScalarValue::String(v) => v,
+                        ScalarValue::Int(v) => v.to_string(),
+                        ScalarValue::Float(v) => v.to_string(),
+                        ScalarValue::Bool(v) => v.to_string(),
+                        ScalarValue::Date(v) => v.to_string(),
+                        ScalarValue::DateTime(v) => v.to_string(),
+                        ScalarValue::Time(v) => v.to_string(),
+                    }),
+                )),
+                FilterValue::None => FilterValue::None,
             };
             Self::handle_operator(builder, operator, coerced);
         } else {
             // Default behavior for non-text columns
-            // If we're comparing a datetime for equality, align both sides to second precision
             let use_trunc = matches!(operator, FilterOperator::Equal | FilterOperator::NotEqual)
-                && matches!(value, FilterValue::DateTime(_));
+                && matches!(value, FilterValue::Single(ScalarValue::DateTime(_)));
             if use_trunc {
                 builder.push(format!("date_trunc('second', {}::timestamptz) ", field));
             } else {
@@ -312,23 +383,47 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
         builder.push(" AND a.name = ");
         builder.push_bind(attr_name);
 
-        let value_column = match value {
-            FilterValue::Int(_) | FilterValue::IntRange(_, _) | FilterValue::ListInt(_) => {
-                "int_value"
+        let value_column = match &value {
+            FilterValue::Single(s) => match s {
+                ScalarValue::Int(_) => "int_value",
+                ScalarValue::Float(_) => "double_value",
+                ScalarValue::String(_) => "string_value",
+                ScalarValue::Bool(_) => "boolean_value",
+                ScalarValue::Date(_) => "date_value",
+                ScalarValue::DateTime(_) => "datetime_value",
+                ScalarValue::Time(_) => "time_value",
+            },
+            FilterValue::List(vs) => {
+                if let Some(first) = vs.first() {
+                    match first {
+                        ScalarValue::Int(_) => "int_value",
+                        ScalarValue::Float(_) => "double_value",
+                        ScalarValue::String(_) => "string_value",
+                        // lists of bool/date/time aren't supported by parser, but default safely
+                        ScalarValue::Bool(_) => "boolean_value",
+                        ScalarValue::Date(_) => "date_value",
+                        ScalarValue::DateTime(_) => "datetime_value",
+                        ScalarValue::Time(_) => "time_value",
+                    }
+                } else {
+                    "string_value"
+                }
             }
-            FilterValue::Float(_) | FilterValue::FloatRange(_, _) | FilterValue::ListFloat(_) => {
-                "double_value"
-            }
-            FilterValue::String(_) | FilterValue::ListString(_) => "string_value",
-            FilterValue::Bool(_) => "boolean_value",
-            FilterValue::Date(_) | FilterValue::DateRange(_, _) => "date_value",
-            FilterValue::DateTime(_) | FilterValue::DateTimeRange(_, _) => "datetime_value",
-            FilterValue::Time(_) | FilterValue::TimeRange(_, _) => "time_value",
+            FilterValue::Range((a, _)) => match a {
+                ScalarValue::Int(_) => "int_value",
+                ScalarValue::Float(_) => "double_value",
+                ScalarValue::String(_) => "string_value",
+                ScalarValue::Bool(_) => "boolean_value",
+                ScalarValue::Date(_) => "date_value",
+                ScalarValue::DateTime(_) => "datetime_value",
+                ScalarValue::Time(_) => "time_value",
+            },
+            FilterValue::None => "string_value",
         };
 
         // If comparing datetime equality on attribute value, align to seconds on the column side
         let use_trunc_attr = matches!(operator, FilterOperator::Equal | FilterOperator::NotEqual)
-            && matches!(value, FilterValue::DateTime(_));
+            && matches!(value, FilterValue::Single(ScalarValue::DateTime(_)));
         if use_trunc_attr && value_column == "datetime_value" {
             builder.push(" AND date_trunc('second', av.datetime_value::timestamptz) ");
         } else {
@@ -346,175 +441,283 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
             FilterOperator::Equal => {
                 builder.push("= ");
                 match value {
-                    FilterValue::Int(v) => builder.push_bind(v),
-                    FilterValue::String(v) => builder.push_bind(v),
-                    FilterValue::Bool(v) => builder.push_bind(v),
-                    FilterValue::Float(v) => builder.push_bind(v),
-                    FilterValue::Date(v) => builder.push_bind(v),
-                    FilterValue::DateTime(v) => builder
-                        .push("date_trunc('second', ")
-                        .push_bind(v)
-                        .push("::timestamptz)"),
-                    FilterValue::Time(v) => builder.push_bind(v),
-                    _ => unimplemented!("Equal not supported for this value type"),
+                    FilterValue::Single(s) => {
+                        match s {
+                            ScalarValue::Int(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Float(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::String(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Bool(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Date(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::DateTime(v) => {
+                                builder.push("date_trunc('second', ");
+                                builder.push_bind(v);
+                                builder.push("::timestamptz)");
+                            }
+                            ScalarValue::Time(v) => {
+                                builder.push_bind(v);
+                            }
+                        };
+                    }
+                    _ => unimplemented!("Equal expects a single scalar value"),
                 }
             }
 
             FilterOperator::NotEqual => {
                 builder.push("!= ");
                 match value {
-                    FilterValue::Int(v) => builder.push_bind(v),
-                    FilterValue::String(v) => builder.push_bind(v),
-                    FilterValue::Bool(v) => builder.push_bind(v),
-                    FilterValue::Float(v) => builder.push_bind(v),
-                    FilterValue::Date(v) => builder.push_bind(v),
-                    FilterValue::DateTime(v) => builder
-                        .push("date_trunc('second', ")
-                        .push_bind(v)
-                        .push("::timestamptz)"),
-                    FilterValue::Time(v) => builder.push_bind(v),
-                    _ => unimplemented!("NotEqual not supported for this value type"),
+                    FilterValue::Single(s) => {
+                        match s {
+                            ScalarValue::Int(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Float(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::String(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Bool(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Date(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::DateTime(v) => {
+                                builder.push("date_trunc('second', ");
+                                builder.push_bind(v);
+                                builder.push("::timestamptz)");
+                            }
+                            ScalarValue::Time(v) => {
+                                builder.push_bind(v);
+                            }
+                        };
+                    }
+                    _ => unimplemented!("NotEqual expects a single scalar value"),
                 }
             }
 
             FilterOperator::Like => match value {
-                FilterValue::String(v) => builder.push("LIKE ").push_bind(format!("%{}%", v)),
-                _ => unimplemented!("Like only supports string"),
+                FilterValue::Single(ScalarValue::String(v)) => {
+                    builder.push("LIKE ");
+                    builder.push_bind(format!("%{}%", v));
+                }
+                _ => unimplemented!("Like only supports string single value"),
             },
 
             FilterOperator::NotLike => match value {
-                FilterValue::String(v) => builder.push("NOT LIKE ").push_bind(format!("%{}%", v)),
-                _ => unimplemented!("NotLike only supports string"),
+                FilterValue::Single(ScalarValue::String(v)) => {
+                    builder.push("NOT LIKE ");
+                    builder.push_bind(format!("%{}%", v));
+                }
+                _ => unimplemented!("NotLike only supports string single value"),
             },
 
             FilterOperator::GreaterThan => {
                 builder.push("> ");
                 match value {
-                    FilterValue::Int(v) => builder.push_bind(v),
-                    FilterValue::Float(v) => builder.push_bind(v),
-                    FilterValue::Date(v) => builder.push_bind(v),
-                    FilterValue::DateTime(v) => builder.push_bind(v),
-                    FilterValue::Time(v) => builder.push_bind(v),
-                    _ => unimplemented!("GreaterThan not supported for this value type"),
+                    FilterValue::Single(s) => {
+                        match s {
+                            ScalarValue::Int(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Float(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Date(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::DateTime(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Time(v) => {
+                                builder.push_bind(v);
+                            }
+                            _ => unimplemented!("GreaterThan unsupported scalar"),
+                        };
+                    }
+                    _ => unimplemented!("GreaterThan expects a single scalar"),
                 }
             }
 
             FilterOperator::GreaterThanOrEqual => {
                 builder.push(">= ");
                 match value {
-                    FilterValue::Int(v) => builder.push_bind(v),
-                    FilterValue::Float(v) => builder.push_bind(v),
-                    FilterValue::Date(v) => builder.push_bind(v),
-                    FilterValue::DateTime(v) => builder.push_bind(v),
-                    FilterValue::Time(v) => builder.push_bind(v),
-                    _ => unimplemented!("GreaterThanOrEqual not supported for this value type"),
+                    FilterValue::Single(s) => {
+                        match s {
+                            ScalarValue::Int(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Float(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Date(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::DateTime(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Time(v) => {
+                                builder.push_bind(v);
+                            }
+                            _ => unimplemented!("GreaterThanOrEqual unsupported scalar"),
+                        };
+                    }
+                    _ => unimplemented!("GreaterThanOrEqual expects a single scalar"),
                 }
             }
 
             FilterOperator::LessThan => {
                 builder.push("< ");
                 match value {
-                    FilterValue::Int(v) => builder.push_bind(v),
-                    FilterValue::Float(v) => builder.push_bind(v),
-                    FilterValue::Date(v) => builder.push_bind(v),
-                    FilterValue::DateTime(v) => builder.push_bind(v),
-                    FilterValue::Time(v) => builder.push_bind(v),
-                    _ => unimplemented!("LessThan not supported for this value type"),
+                    FilterValue::Single(s) => {
+                        match s {
+                            ScalarValue::Int(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Float(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Date(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::DateTime(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Time(v) => {
+                                builder.push_bind(v);
+                            }
+                            _ => unimplemented!("LessThan unsupported scalar"),
+                        };
+                    }
+                    _ => unimplemented!("LessThan expects a single scalar"),
                 }
             }
 
             FilterOperator::LessThanOrEqual => {
                 builder.push("<= ");
                 match value {
-                    FilterValue::Int(v) => builder.push_bind(v),
-                    FilterValue::Float(v) => builder.push_bind(v),
-                    FilterValue::Date(v) => builder.push_bind(v),
-                    FilterValue::DateTime(v) => builder.push_bind(v),
-                    FilterValue::Time(v) => builder.push_bind(v),
-                    _ => unimplemented!("LessThanOrEqual not supported for this value type"),
+                    FilterValue::Single(s) => {
+                        match s {
+                            ScalarValue::Int(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Float(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Date(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::DateTime(v) => {
+                                builder.push_bind(v);
+                            }
+                            ScalarValue::Time(v) => {
+                                builder.push_bind(v);
+                            }
+                            _ => unimplemented!("LessThanOrEqual unsupported scalar"),
+                        };
+                    }
+                    _ => unimplemented!("LessThanOrEqual expects a single scalar"),
                 }
             }
 
-            FilterOperator::Is => match value {
-                FilterValue::Bool(v) => builder.push("= ").push_bind(v),
-                _ => unimplemented!("Is not supported for this value type"),
-            },
-
             FilterOperator::In => match value {
-                FilterValue::ListInt(vs) => builder.push("IN ").push_tuples(vs, |mut b, v| {
-                    b.push_bind(v);
-                }),
-                FilterValue::ListFloat(vs) => builder.push("IN ").push_tuples(vs, |mut b, v| {
-                    b.push_bind(v);
-                }),
-                FilterValue::ListString(vs) => builder.push("IN ").push_tuples(vs, |mut b, v| {
-                    b.push_bind(v);
-                }),
-                _ => unimplemented!("In only supports list values"),
+                FilterValue::List(vs) => {
+                    builder.push("IN ");
+                    builder.push_tuples(vs, |mut b, v| {
+                        match v {
+                            ScalarValue::Int(i) => b.push_bind(i),
+                            ScalarValue::Float(f) => b.push_bind(f),
+                            ScalarValue::String(s) => b.push_bind(s),
+                            _ => unimplemented!("Unsupported element type in IN list"),
+                        };
+                    });
+                }
+                _ => unimplemented!("In expects a list"),
             },
 
             FilterOperator::NotIn => match value {
-                FilterValue::ListInt(vs) => builder.push("NOT IN ").push_tuples(vs, |mut b, v| {
-                    b.push_bind(v);
-                }),
-                FilterValue::ListFloat(vs) => {
-                    builder.push("NOT IN ").push_tuples(vs, |mut b, v| {
-                        b.push_bind(v);
-                    })
+                FilterValue::List(vs) => {
+                    builder.push("NOT IN ");
+                    builder.push_tuples(vs, |mut b, v| {
+                        match v {
+                            ScalarValue::Int(i) => b.push_bind(i),
+                            ScalarValue::Float(f) => b.push_bind(f),
+                            ScalarValue::String(s) => b.push_bind(s),
+                            _ => unimplemented!("Unsupported element type in NOT IN list"),
+                        };
+                    });
                 }
-                FilterValue::ListString(vs) => {
-                    builder.push("NOT IN ").push_tuples(vs, |mut b, v| {
-                        b.push_bind(v);
-                    })
-                }
-                _ => unimplemented!("NotIn only supports list values"),
+                _ => unimplemented!("NotIn expects a list"),
             },
 
-            FilterOperator::IsNull => builder.push("IS NULL"),
+            FilterOperator::IsNull => {
+                builder.push("IS NULL");
+            }
 
-            FilterOperator::NotNull => builder.push("IS NOT NULL"),
+            FilterOperator::NotNull => {
+                builder.push("IS NOT NULL");
+            }
 
             FilterOperator::Between => {
                 builder.push("BETWEEN ");
                 match value {
-                    FilterValue::IntRange(from, to) => {
-                        builder.push_bind(from).push(" AND ").push_bind(to)
+                    FilterValue::Range((a, b)) => {
+                        match a {
+                            // types are guaranteed comparable and same kind by construction
+                            ScalarValue::Int(v1) => builder.push_bind(v1),
+                            ScalarValue::Float(v1) => builder.push_bind(v1),
+                            ScalarValue::Date(v1) => builder.push_bind(v1),
+                            ScalarValue::DateTime(v1) => builder.push_bind(v1),
+                            ScalarValue::Time(v1) => builder.push_bind(v1),
+                            _ => unimplemented!("Unsupported start type for BETWEEN"),
+                        };
+                        builder.push(" AND ");
+                        match b {
+                            ScalarValue::Int(v2) => builder.push_bind(v2),
+                            ScalarValue::Float(v2) => builder.push_bind(v2),
+                            ScalarValue::Date(v2) => builder.push_bind(v2),
+                            ScalarValue::DateTime(v2) => builder.push_bind(v2),
+                            ScalarValue::Time(v2) => builder.push_bind(v2),
+                            _ => unimplemented!("Unsupported end type for BETWEEN"),
+                        };
                     }
-                    FilterValue::FloatRange(from, to) => {
-                        builder.push_bind(from).push(" AND ").push_bind(to)
-                    }
-                    FilterValue::DateRange(from, to) => {
-                        builder.push_bind(from).push(" AND ").push_bind(to)
-                    }
-                    FilterValue::DateTimeRange(from, to) => {
-                        builder.push_bind(from).push(" AND ").push_bind(to)
-                    }
-                    FilterValue::TimeRange(from, to) => {
-                        builder.push_bind(from).push(" AND ").push_bind(to)
-                    }
-                    _ => unimplemented!("Between only supports range types"),
+                    _ => unimplemented!("Between expects a range"),
                 }
             }
 
             FilterOperator::NotBetween => {
                 builder.push("NOT BETWEEN ");
                 match value {
-                    FilterValue::IntRange(from, to) => {
-                        builder.push_bind(from).push(" AND ").push_bind(to)
+                    FilterValue::Range((a, b)) => {
+                        match a {
+                            ScalarValue::Int(v1) => builder.push_bind(v1),
+                            ScalarValue::Float(v1) => builder.push_bind(v1),
+                            ScalarValue::Date(v1) => builder.push_bind(v1),
+                            ScalarValue::DateTime(v1) => builder.push_bind(v1),
+                            ScalarValue::Time(v1) => builder.push_bind(v1),
+                            _ => unimplemented!("Unsupported start type for NOT BETWEEN"),
+                        };
+                        builder.push(" AND ");
+                        match b {
+                            ScalarValue::Int(v2) => builder.push_bind(v2),
+                            ScalarValue::Float(v2) => builder.push_bind(v2),
+                            ScalarValue::Date(v2) => builder.push_bind(v2),
+                            ScalarValue::DateTime(v2) => builder.push_bind(v2),
+                            ScalarValue::Time(v2) => builder.push_bind(v2),
+                            _ => unimplemented!("Unsupported end type for NOT BETWEEN"),
+                        };
                     }
-                    FilterValue::FloatRange(from, to) => {
-                        builder.push_bind(from).push(" AND ").push_bind(to)
-                    }
-                    FilterValue::DateRange(from, to) => {
-                        builder.push_bind(from).push(" AND ").push_bind(to)
-                    }
-                    FilterValue::DateTimeRange(from, to) => {
-                        builder.push_bind(from).push(" AND ").push_bind(to)
-                    }
-                    FilterValue::TimeRange(from, to) => {
-                        builder.push_bind(from).push(" AND ").push_bind(to)
-                    }
-                    _ => unimplemented!("NotBetween only supports range types"),
+                    _ => unimplemented!("NotBetween expects a range"),
                 }
             }
         };
@@ -526,6 +729,66 @@ where
     Self::EntityCreate: Creatable<Entity = Self::Entity>,
 {
     type EntityCreate;
+
+    async fn get_attribute_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
+        // Repository: fetch directly from DB; caching is handled at the service layer
+        let entity_type = self.get_table_name().to_string();
+        let pool = self.get_pool();
+
+        // Select attribute name and textual data type for the owner entity_type
+        let rows = sqlx::query(
+            "SELECT name, data_type::text AS data_type FROM attributes WHERE entity_type = $1",
+        )
+        .bind(&entity_type)
+        .fetch_all(pool)
+        .await?;
+
+        let mut map: HashMap<String, ScalarValue> = HashMap::new();
+        for row in rows.into_iter() {
+            let name: String = row.get("name");
+            let dt: String = row.get("data_type");
+            if map.contains_key(&name) {
+                return Err(CoreError::UnprocessableEntity(
+                    "error.attribute.duplicate.name".into(),
+                    std::collections::HashMap::from([
+                        ("name".into(), name),
+                        ("entity_type".into(), entity_type.clone()),
+                    ]),
+                ));
+            }
+            let scalar = match dt.as_str() {
+                "int" | "integer" => ScalarValue::Int(0),
+                "double" | "float" | "double precision" | "real" | "numeric" => {
+                    ScalarValue::Float(0.0)
+                }
+                "string" | "text" | "character varying" | "character" => {
+                    ScalarValue::String(String::new())
+                }
+                "boolean" | "bool" => ScalarValue::Bool(false),
+                "date" => ScalarValue::Date(
+                    time::Date::from_calendar_date(1970, time::Month::January, 1).unwrap(),
+                ),
+                "datetime"
+                | "timestamp"
+                | "timestamp with time zone"
+                | "timestamp without time zone" => {
+                    ScalarValue::DateTime(time::OffsetDateTime::UNIX_EPOCH)
+                }
+                "time" => ScalarValue::Time(time::Time::from_hms(0, 0, 0).unwrap()),
+                other => {
+                    return Err(CoreError::UnprocessableEntity(
+                        "error.attribute.unsupported.datatype".into(),
+                        std::collections::HashMap::from([
+                            ("datatype".into(), other.to_string()),
+                            ("name".into(), name),
+                        ]),
+                    ));
+                }
+            };
+            map.insert(name, scalar);
+        }
+        Ok(map)
+    }
 
     async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
         let result = sqlx::query(&format!(

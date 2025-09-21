@@ -50,6 +50,16 @@ impl UserSqlxRepository {
 }
 
 impl ViewRepository<User> for UserSqlxRepository {
+    fn get_table_name(&self) -> &str {
+        "users"
+    }
+    fn get_columns(&self) -> Vec<&str> {
+        UserOrm::columns()
+    }
+    fn get_searchable_columns(&self) -> Vec<&str> {
+        UserOrm::searchable_columns()
+    }
+
     async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
         SqlxViewRepository::count(self, filters).await
     }
@@ -71,6 +81,13 @@ impl ViewRepository<User> for UserSqlxRepository {
     async fn find_by_uid(&self, uid: String) -> Result<Option<User>, CoreError> {
         SqlxViewRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
+
+    async fn get_column_type_map(
+        &self,
+    ) -> Result<std::collections::HashMap<String, crate::business::filter::ScalarValue>, CoreError>
+    {
+        SqlxViewRepository::get_column_type_map(self).await
+    }
 }
 
 impl Repository<User, UserCreate> for UserSqlxRepository {
@@ -84,6 +101,17 @@ impl Repository<User, UserCreate> for UserSqlxRepository {
 
     async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
         SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
+    }
+
+    fn get_attribute_type_map(
+        &self,
+    ) -> impl std::future::Future<
+        Output = Result<
+            std::collections::HashMap<String, crate::business::filter::ScalarValue>,
+            CoreError,
+        >,
+    > {
+        SqlxRepository::get_attribute_type_map(self)
     }
 
     async fn create(&self, user_create: &UserCreate) -> Result<User, CoreError> {
@@ -130,22 +158,9 @@ impl Repository<User, UserCreate> for UserSqlxRepository {
 impl SqlxViewRepository for UserSqlxRepository {
     type Entity = User;
     type Orm = UserOrm;
-    fn get_table_name(&self) -> &str {
-        "users"
-    }
-
-    fn get_columns(&self) -> Vec<&str> {
-        UserOrm::columns()
-    }
-
-    fn get_searchable_columns(&self) -> Vec<&str> {
-        UserOrm::searchable_columns()
-    }
-
     fn get_pool(&self) -> &PgPool {
         &self.pool
     }
-
     fn from_orm(orm: Self::Orm) -> Self::Entity {
         User::from(orm)
     }

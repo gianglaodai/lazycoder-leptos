@@ -49,3 +49,13 @@ impl<R: PostRelationInfoRepository> PostRelationInfoService<R> {
         self.repository.find_by_uid(uid).await
     }
 }
+
+impl<R: PostRelationInfoRepository> crate::business::service::ViewService
+    for PostRelationInfoService<R>
+{
+    type Entity = PostRelationInfo;
+    type Repo = R;
+    fn get_repository(&self) -> &Self::Repo {
+        &self.repository
+    }
+}

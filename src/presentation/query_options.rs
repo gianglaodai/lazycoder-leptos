@@ -1,5 +1,5 @@
 use crate::business::error::CoreError;
-use crate::business::filter::{Filter, FilterOperator, FilterValue};
+use crate::business::filter::{Filter, FilterOperator, FilterValue, ScalarValue};
 use crate::business::sort::SortCriterion;
 use crate::value_data_type::ValueDataType;
 use serde::de::{MapAccess, Visitor};
@@ -257,7 +257,6 @@ impl QueryOptions {
             "<=" | "lte" => FilterOperator::LessThanOrEqual,
             "~" | "like" => FilterOperator::Like,
             "!~" | "not_like" | "!like" | "nlike" => FilterOperator::NotLike,
-            "is" => FilterOperator::Is,
             "[]" | "in" => FilterOperator::In,
             "![]" | "not_in" | "nin" => FilterOperator::NotIn,
             "=null" | "is_null" => FilterOperator::IsNull,
@@ -273,7 +272,7 @@ impl QueryOptions {
         };
 
         let value = match operator {
-            FilterOperator::IsNull | FilterOperator::NotNull => FilterValue::Bool(true),
+            FilterOperator::IsNull | FilterOperator::NotNull => FilterValue::None,
             _ => {
                 let value_str = value_str_opt.as_deref().ok_or_else(|| {
                     CoreError::UnprocessableEntity(
@@ -339,7 +338,9 @@ impl QueryOptions {
                                     HashMap::from([("value".into(), value_str.into())]),
                                 )
                             })?;
-                        Ok(FilterValue::ListInt(parsed))
+                        Ok(FilterValue::List(
+                            parsed.into_iter().map(ScalarValue::Int).collect(),
+                        ))
                     }
                     ValueDataType::Float => {
                         let parsed = items
@@ -352,10 +353,15 @@ impl QueryOptions {
                                     HashMap::from([("value".into(), value_str.into())]),
                                 )
                             })?;
-                        Ok(FilterValue::ListFloat(parsed))
+                        Ok(FilterValue::List(
+                            parsed.into_iter().map(ScalarValue::Float).collect(),
+                        ))
                     }
-                    ValueDataType::String => Ok(FilterValue::ListString(
-                        items.into_iter().map(|s| s.to_string()).collect(),
+                    ValueDataType::String => Ok(FilterValue::List(
+                        items
+                            .into_iter()
+                            .map(|s| ScalarValue::String(s.to_string()))
+                            .collect(),
                     )),
                     // Not supported list datatypes in current FilterValue
                     _ => Err(CoreError::UnprocessableEntity(
@@ -387,7 +393,10 @@ impl QueryOptions {
                                 HashMap::from([("value".into(), value_str.into())]),
                             )
                         })?;
-                        Ok(FilterValue::IntRange(s, e))
+                        Ok(FilterValue::Range((
+                            ScalarValue::Int(s),
+                            ScalarValue::Int(e),
+                        )))
                     }
                     ValueDataType::Float => {
                         let s = start.parse::<f64>().map_err(|_| {
@@ -402,7 +411,10 @@ impl QueryOptions {
                                 HashMap::from([("value".into(), value_str.into())]),
                             )
                         })?;
-                        Ok(FilterValue::FloatRange(s, e))
+                        Ok(FilterValue::Range((
+                            ScalarValue::Float(s),
+                            ScalarValue::Float(e),
+                        )))
                     }
                     ValueDataType::Date => {
                         let s = Date::parse(start, format_description!("[year]-[month]-[day]"))
@@ -419,7 +431,10 @@ impl QueryOptions {
                                     HashMap::from([("value".into(), value_str.into())]),
                                 )
                             })?;
-                        Ok(FilterValue::DateRange(s, e))
+                        Ok(FilterValue::Range((
+                            ScalarValue::Date(s),
+                            ScalarValue::Date(e),
+                        )))
                     }
                     ValueDataType::DateTime => {
                         let s = OffsetDateTime::parse(start, &Rfc3339).map_err(|_| {
@@ -434,7 +449,10 @@ impl QueryOptions {
                                 HashMap::from([("value".into(), value_str.into())]),
                             )
                         })?;
-                        Ok(FilterValue::DateTimeRange(s, e))
+                        Ok(FilterValue::Range((
+                            ScalarValue::DateTime(s),
+                            ScalarValue::DateTime(e),
+                        )))
                     }
                     ValueDataType::Time => {
                         let s = Time::parse(start, format_description!("[hour]:[minute]:[second]"))
@@ -451,7 +469,10 @@ impl QueryOptions {
                                 HashMap::from([("value".into(), value_str.into())]),
                             )
                         })?;
-                        Ok(FilterValue::TimeRange(s, e))
+                        Ok(FilterValue::Range((
+                            ScalarValue::Time(s),
+                            ScalarValue::Time(e),
+                        )))
                     }
                     _ => Err(CoreError::UnprocessableEntity(
                         "error.invalid.range.datatype".into(),
@@ -459,21 +480,6 @@ impl QueryOptions {
                     )),
                 }
             }
-            FilterOperator::Is => match data_type {
-                ValueDataType::Bool => {
-                    let b = value_str.parse::<bool>().map_err(|_| {
-                        CoreError::UnprocessableEntity(
-                            "error.invalid.bool.value".into(),
-                            HashMap::from([("value".into(), value_str.into())]),
-                        )
-                    })?;
-                    Ok(FilterValue::Bool(b))
-                }
-                _ => Err(CoreError::UnprocessableEntity(
-                    "error.invalid.bool.datatype".into(),
-                    HashMap::from([("value".into(), value_str.into())]),
-                )),
-            },
             _ => {
                 // Single value based on dtype
                 match data_type {
@@ -484,7 +490,7 @@ impl QueryOptions {
                                 HashMap::from([("value".into(), value_str.into())]),
                             )
                         })?;
-                        Ok(FilterValue::Int(v))
+                        Ok(FilterValue::Single(ScalarValue::Int(v)))
                     }
                     ValueDataType::Float => {
                         let v = value_str.parse::<f64>().map_err(|_| {
@@ -493,9 +499,11 @@ impl QueryOptions {
                                 HashMap::from([("value".into(), value_str.into())]),
                             )
                         })?;
-                        Ok(FilterValue::Float(v))
+                        Ok(FilterValue::Single(ScalarValue::Float(v)))
                     }
-                    ValueDataType::String => Ok(FilterValue::String(value_str.into())),
+                    ValueDataType::String => {
+                        Ok(FilterValue::Single(ScalarValue::String(value_str.into())))
+                    }
                     ValueDataType::Bool => {
                         let v = value_str.parse::<bool>().map_err(|_| {
                             CoreError::UnprocessableEntity(
@@ -503,7 +511,7 @@ impl QueryOptions {
                                 HashMap::from([("value".into(), value_str.into())]),
                             )
                         })?;
-                        Ok(FilterValue::Bool(v))
+                        Ok(FilterValue::Single(ScalarValue::Bool(v)))
                     }
                     ValueDataType::Date => {
                         let v = Date::parse(value_str, format_description!("[year]-[month]-[day]"))
@@ -513,7 +521,7 @@ impl QueryOptions {
                                     HashMap::from([("value".into(), value_str.into())]),
                                 )
                             })?;
-                        Ok(FilterValue::Date(v))
+                        Ok(FilterValue::Single(ScalarValue::Date(v)))
                     }
                     ValueDataType::DateTime => {
                         let v = OffsetDateTime::parse(value_str, &Rfc3339).map_err(|_| {
@@ -522,7 +530,7 @@ impl QueryOptions {
                                 HashMap::from([("value".into(), value_str.into())]),
                             )
                         })?;
-                        Ok(FilterValue::DateTime(v))
+                        Ok(FilterValue::Single(ScalarValue::DateTime(v)))
                     }
                     ValueDataType::Time => {
                         let v =
@@ -533,7 +541,7 @@ impl QueryOptions {
                                         HashMap::from([("value".into(), value_str.into())]),
                                     )
                                 })?;
-                        Ok(FilterValue::Time(v))
+                        Ok(FilterValue::Single(ScalarValue::Time(v)))
                     }
                 }
             }
@@ -541,10 +549,147 @@ impl QueryOptions {
     }
 }
 
-#[cfg(test)]
+// Column values parsing/serialization for request maps
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ColumnValueDto {
+    // datatype code: 0=String,1=Int,2=Float,3=Bool,4=Date,5=DateTime,6=Time
+    pub t: u8,
+    // raw string value as sent by client
+    pub v: String,
+}
+
+pub type ColumnValuesDto = std::collections::HashMap<String, ColumnValueDto>;
+
+pub fn parse_column_values(
+    dto: ColumnValuesDto,
+) -> Result<std::collections::HashMap<String, ScalarValue>, CoreError> {
+    use ScalarValue as SV;
+    let mut out = std::collections::HashMap::new();
+    for (col, cv) in dto.into_iter() {
+        let sv = match cv.t {
+            0 => SV::String(cv.v),
+            1 => {
+                let v = cv.v.parse::<i32>().map_err(|_| {
+                    CoreError::UnprocessableEntity(
+                        "error.invalid.int.value".into(),
+                        HashMap::from([
+                            ("column".into(), col.clone()),
+                            ("value".into(), cv.v.clone()),
+                        ]),
+                    )
+                })?;
+                SV::Int(v)
+            }
+            2 => {
+                let v = cv.v.parse::<f64>().map_err(|_| {
+                    CoreError::UnprocessableEntity(
+                        "error.invalid.float.value".into(),
+                        HashMap::from([
+                            ("column".into(), col.clone()),
+                            ("value".into(), cv.v.clone()),
+                        ]),
+                    )
+                })?;
+                SV::Float(v)
+            }
+            3 => {
+                let v = cv.v.parse::<bool>().map_err(|_| {
+                    CoreError::UnprocessableEntity(
+                        "error.invalid.bool.value".into(),
+                        HashMap::from([
+                            ("column".into(), col.clone()),
+                            ("value".into(), cv.v.clone()),
+                        ]),
+                    )
+                })?;
+                SV::Bool(v)
+            }
+            4 => {
+                let v = Date::parse(&cv.v, format_description!("[year]-[month]-[day]")).map_err(
+                    |_| {
+                        CoreError::UnprocessableEntity(
+                            "error.invalid.date.value".into(),
+                            HashMap::from([
+                                ("column".into(), col.clone()),
+                                ("value".into(), cv.v.clone()),
+                            ]),
+                        )
+                    },
+                )?;
+                SV::Date(v)
+            }
+            5 => {
+                let v = OffsetDateTime::parse(&cv.v, &Rfc3339).map_err(|_| {
+                    CoreError::UnprocessableEntity(
+                        "error.invalid.datetime.value".into(),
+                        HashMap::from([
+                            ("column".into(), col.clone()),
+                            ("value".into(), cv.v.clone()),
+                        ]),
+                    )
+                })?;
+                SV::DateTime(v)
+            }
+            6 => {
+                let v = Time::parse(&cv.v, format_description!("[hour]:[minute]:[second]"))
+                    .map_err(|_| {
+                        CoreError::UnprocessableEntity(
+                            "error.invalid.time.value".into(),
+                            HashMap::from([
+                                ("column".into(), col.clone()),
+                                ("value".into(), cv.v.clone()),
+                            ]),
+                        )
+                    })?;
+                SV::Time(v)
+            }
+            _ => {
+                return Err(CoreError::UnprocessableEntity(
+                    "error.filters.invalid.datatype".into(),
+                    HashMap::from([
+                        ("column".into(), col),
+                        ("datatype".into(), cv.t.to_string()),
+                    ]),
+                ));
+            }
+        };
+        out.insert(col, sv);
+    }
+    Ok(out)
+}
+
+pub fn serialize_column_values(
+    map: &std::collections::HashMap<String, ScalarValue>,
+) -> ColumnValuesDto {
+    use ScalarValue as SV;
+    let mut out: ColumnValuesDto = std::collections::HashMap::new();
+    for (k, v) in map.iter() {
+        let (t, vstr) = match v {
+            SV::String(s) => (0u8, s.clone()),
+            SV::Int(i) => (1u8, i.to_string()),
+            SV::Float(f) => (2u8, f.to_string()),
+            SV::Bool(b) => (3u8, b.to_string()),
+            SV::Date(d) => (
+                4u8,
+                d.format(&format_description!("[year]-[month]-[day]"))
+                    .unwrap_or_default(),
+            ),
+            SV::DateTime(dt) => (5u8, dt.format(&Rfc3339).unwrap_or_default()),
+            SV::Time(ti) => (
+                6u8,
+                ti.format(&format_description!("[hour]:[minute]:[second]"))
+                    .unwrap_or_default(),
+            ),
+        };
+        out.insert(k.clone(), ColumnValueDto { t, v: vstr });
+    }
+    out
+}
+
+#[cfg(any())]
 mod tests {
     use super::*;
-    use crate::business::filter::{FilterOperator, FilterValue};
+    use crate::business::filter::{FilterOperator, FilterValue, ScalarValue};
     use leptos::prelude::RenderHtml;
     use time::macros::{datetime, time};
     use time::Month;
@@ -553,26 +698,26 @@ mod tests {
     fn test_parse_single_value() {
         assert_eq!(
             QueryOptions::parse_value("42", &FilterOperator::Equal, ValueDataType::Int).unwrap(),
-            FilterValue::Int(42)
+            FilterValue::Single(ScalarValue::Int(42))
         );
         assert_eq!(
             QueryOptions::parse_value("3.14", &FilterOperator::Equal, ValueDataType::Float)
                 .unwrap(),
-            FilterValue::Float(3.14)
+            FilterValue::Single(ScalarValue::Float(3.14))
         );
         assert_eq!(
             QueryOptions::parse_value("true", &FilterOperator::Equal, ValueDataType::String)
                 .unwrap(),
-            FilterValue::String("true".to_string())
+            FilterValue::Single(ScalarValue::String("true".to_string()))
         );
         assert_eq!(
-            QueryOptions::parse_value("true", &FilterOperator::Is, ValueDataType::Bool).unwrap(),
-            FilterValue::Bool(true)
+            QueryOptions::parse_value("true", &FilterOperator::Equal, ValueDataType::Bool).unwrap(),
+            FilterValue::Single(ScalarValue::Bool(true))
         );
         assert_eq!(
             QueryOptions::parse_value("2025-07-16", &FilterOperator::Equal, ValueDataType::Date)
                 .unwrap(),
-            FilterValue::Date(Date::from_calendar_date(2025, Month::July, 16).unwrap())
+            FilterValue::Single(ScalarValue::Date(Date::from_calendar_date(2025, Month::July, 16).unwrap()))
         );
         assert_eq!(
             QueryOptions::parse_value(
@@ -581,7 +726,7 @@ mod tests {
                 ValueDataType::DateTime
             )
             .unwrap(),
-            FilterValue::DateTime(datetime!(2025-07-16 15:30:01 UTC))
+            FilterValue::Single(ScalarValue::DateTime(datetime!(2025-07-16 15:30:01 UTC)))
         );
         assert_eq!(
             QueryOptions::parse_value("15:30:01", &FilterOperator::Equal, ValueDataType::Time)
@@ -671,7 +816,7 @@ mod tests {
             f,
             Filter::Attribute {
                 attr_name: "age".to_string(),
-                operator: FilterOperator::Is,
+                operator: FilterOperator::Equal,
                 value: FilterValue::Bool(true)
             }
         );

@@ -47,6 +47,16 @@ impl PostTypeSqlxRepository {
 }
 
 impl ViewRepository<PostType> for PostTypeSqlxRepository {
+    fn get_table_name(&self) -> &str {
+        "post_types"
+    }
+    fn get_columns(&self) -> Vec<&str> {
+        PostTypeOrm::columns()
+    }
+    fn get_searchable_columns(&self) -> Vec<&str> {
+        PostTypeOrm::searchable_columns()
+    }
+
     async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
         SqlxViewRepository::count(self, filters).await
     }
@@ -67,6 +77,13 @@ impl ViewRepository<PostType> for PostTypeSqlxRepository {
 
     async fn find_by_uid(&self, uid: String) -> Result<Option<PostType>, CoreError> {
         SqlxViewRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
+    }
+
+    async fn get_column_type_map(
+        &self,
+    ) -> Result<std::collections::HashMap<String, crate::business::filter::ScalarValue>, CoreError>
+    {
+        SqlxViewRepository::get_column_type_map(self).await
     }
 }
 
