@@ -1,13 +1,16 @@
 #![cfg(feature = "ssr")]
-use crate::business::attribute_service::{Attribute, AttributeRepository};
-use crate::business::error::CoreError;
-use crate::business::filter::Filter;
-use crate::business::repository::ViewRepository;
-use crate::business::sort::SortCriterion;
+
+use std::collections::HashMap;
+use std::future::Future;
+use crate::business::attribute_service::{Attribute, AttributeCreate, AttributeRepository};
+use crate::common::repository::{Repository, ViewRepository};
 use crate::define_readonly_orm_with_common_fields;
-use crate::infras::sqlx_repository::SqlxViewRepository;
+use crate::infras::sqlx_repository::{SqlxRepository, SqlxViewRepository};
 use sqlx::PgPool;
 use uuid::Uuid;
+use crate::common::error::CoreError;
+use crate::common::filter::{Filter, ScalarValue};
+use crate::common::sort::SortCriterion;
 
 #[derive(Clone)]
 pub struct AttributeSqlxRepository {
@@ -74,7 +77,7 @@ impl ViewRepository<Attribute> for AttributeSqlxRepository {
     }
     async fn get_column_type_map(
         &self,
-    ) -> Result<std::collections::HashMap<String, crate::business::filter::ScalarValue>, CoreError>
+    ) -> Result<HashMap<String, ScalarValue>, CoreError>
     {
         SqlxViewRepository::get_column_type_map(self).await
     }
@@ -88,6 +91,40 @@ impl SqlxViewRepository for AttributeSqlxRepository {
     }
     fn from_orm(orm: Self::Orm) -> Self::Entity {
         Attribute::from(orm)
+    }
+}
+
+impl SqlxRepository for AttributeSqlxRepository {
+    type EntityCreate = AttributeCreate;
+}
+
+impl Repository<Attribute, AttributeCreate> for AttributeSqlxRepository {
+    fn delete_by_id(&self, id: i32) -> impl Future<Output=Result<u64, CoreError>> {
+        SqlxRepository::delete_by_id(self, id)
+    }
+
+    fn delete_by_ids(&self, ids: Vec<i32>) -> impl Future<Output=Result<u64, CoreError>> {
+        SqlxRepository::delete_by_ids(self, ids)
+    }
+
+    fn delete_by_uid(&self, uid: String) -> impl Future<Output=Result<u64, CoreError>> {
+        SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap())
+    }
+
+    fn delete_by_uids(&self, uids: Vec<String>) -> impl Future<Output=Result<u64, CoreError>> {
+        SqlxRepository::delete_by_uids(self, uids.iter().map(Uuid::parse_str).collect())
+    }
+
+    fn create(&self, entity_create: &AttributeCreate) -> impl Future<Output=Result<Attribute, CoreError>> {
+        todo!()
+    }
+
+    fn update(&self, entity: &Attribute) -> impl Future<Output=Result<Attribute, CoreError>> {
+        todo!()
+    }
+
+    fn get_attribute_type_map(&self) -> impl Future<Output=Result<HashMap<String, ScalarValue>, CoreError>> {
+        todo!()
     }
 }
 

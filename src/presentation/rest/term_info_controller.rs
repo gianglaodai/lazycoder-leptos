@@ -1,4 +1,4 @@
-use crate::business::taxonomy_service::TermInfo;
+use crate::business::post_taxonomy_service::TermInfo;
 use crate::define_readonly_to_with_common_fields_be;
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};

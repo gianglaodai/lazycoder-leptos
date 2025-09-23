@@ -1,12 +1,15 @@
-use crate::business::error::CoreError;
-use crate::business::filter::ScalarValue;
-use crate::business::repository::{Creatable, Repository, ViewRepository};
+use crate::common::cache::cache_get_or_compute;
+use crate::common::error::CoreError;
+use crate::common::filter::ScalarValue;
+use crate::common::repository::{Creatable, Repository, ViewRepository};
 use std::collections::HashMap;
 use std::future::Future;
 
 pub type PropertyName = String;
 pub type AttributeName = String;
 
+pub const FIELD_TYPE_MAP: &str = "FIELD_TYPE_MAP";
+pub const ATTRIBUTE_TYPE_MAP: &str = "ATTRIBUTE_TYPE_MAP";
 pub trait ViewService {
     type Entity;
     type Repo: ViewRepository<Self::Entity> + Send + Sync;
@@ -19,7 +22,6 @@ pub trait ViewService {
         let repo_ref = self.get_repository();
         let table = repo_ref.get_table_name().to_string();
         async move {
-            use crate::business::cache::{cache_get_or_compute, FIELD_TYPE_MAP};
             cache_get_or_compute(FIELD_TYPE_MAP, &table, || async move {
                 repo_ref.get_column_type_map().await
             })
@@ -39,15 +41,9 @@ pub trait Service: ViewService {
     {
         let entity_type = self.get_repository().get_table_name().to_string();
         async move {
-            use crate::business::cache::{cache_get_or_compute, ATTRIBUTE_TYPE_MAP};
             cache_get_or_compute(ATTRIBUTE_TYPE_MAP, &entity_type, || {
                 let repo_ref = self.get_repository();
-                async move {
-                    <Self::Repo as Repository<Self::Entity, Self::Create>>::get_attribute_type_map(
-                        repo_ref,
-                    )
-                    .await
-                }
+                async move { Self::Repo::get_attribute_type_map(repo_ref).await }
             })
             .await
         }

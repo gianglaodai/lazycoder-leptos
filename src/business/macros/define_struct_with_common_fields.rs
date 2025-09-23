@@ -17,7 +17,7 @@ macro_rules! define_struct_with_common_fields {
                 $($field)*
             }
 
-            impl crate::business::repository::Creatable for [<$name Create>] {
+            impl crate::common::repository::Creatable for [<$name Create>] {
                 type Entity = $name;
             }
         }

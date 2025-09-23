@@ -1,13 +1,15 @@
 #![cfg(feature = "ssr")]
-use crate::business::attribute_service::{AttributeValueInfo, AttributeValueInfoRepository};
-use crate::business::error::CoreError;
-use crate::business::filter::Filter;
-use crate::business::repository::ViewRepository;
-use crate::business::sort::SortCriterion;
+
+use std::collections::HashMap;
+use crate::common::repository::ViewRepository;
 use crate::define_readonly_orm_with_common_fields;
 use crate::infras::sqlx_repository::SqlxViewRepository;
 use sqlx::PgPool;
 use uuid::Uuid;
+use crate::business::attribute_value_service::{AttributeValueInfo, AttributeValueInfoRepository};
+use crate::common::error::CoreError;
+use crate::common::filter::{Filter, ScalarValue};
+use crate::common::sort::SortCriterion;
 
 #[derive(Clone)]
 pub struct AttributeValueInfoSqlxRepository {
@@ -104,7 +106,7 @@ impl ViewRepository<AttributeValueInfo> for AttributeValueInfoSqlxRepository {
     }
     async fn get_column_type_map(
         &self,
-    ) -> Result<std::collections::HashMap<String, crate::business::filter::ScalarValue>, CoreError>
+    ) -> Result<HashMap<String, ScalarValue>, CoreError>
     {
         SqlxViewRepository::get_column_type_map(self).await
     }

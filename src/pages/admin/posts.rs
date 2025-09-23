@@ -1,4 +1,3 @@
-use std::iter::once;
 use crate::pages::admin::guard::AdminGuard;
 use crate::pages::admin::layout::AdminSidebar;
 use crate::pages::components::button::{ButtonIntent, ButtonVariant};
@@ -7,20 +6,21 @@ use crate::pages::components::datatable::core::query_sync::{sync_table_query_to_
 use crate::pages::components::datatable::core::render_value::Value;
 use crate::pages::components::datatable::core::row::RowNode;
 use crate::pages::components::datatable::core::state::TableState;
+use crate::pages::components::select::{Select, SelectOption, SelectSize};
 use crate::pages::components::sidebar::SidebarProvider;
 use crate::pages::components::{
     Button, Dialog, DialogClose, DialogContent, DialogDescription, DialogFooter, DialogHeader,
     DialogTitle, DialogTrigger, Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
     Input,
 };
-use crate::pages::components::select::{Select, SelectSize, SelectOption};
-use crate::pages::rest::post_type_info_api::{load_post_type_infos, PostTypeInfoTO};
 use crate::pages::rest::auth_api::UserTO;
 use crate::pages::rest::post_api::{create_post, delete_post, update_post, PostTO};
 use crate::pages::rest::post_info_api::{count_post_infos, load_post_infos, PostInfoTO};
+use crate::pages::rest::post_type_info_api::{load_post_type_infos, PostTypeInfoTO};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
+use std::iter::once;
 use std::sync::Arc;
 
 #[component]
@@ -55,12 +55,21 @@ fn NewPostDialog() -> impl IntoView {
     );
 
     // Unified select loader for post types
-    let load_post_type_options: Arc<dyn Fn() -> std::pin::Pin<Box<dyn std::future::Future<Output = Result<Vec<SelectOption>, String>> + Send>> + Send + Sync> = Arc::new(|| {
+    let load_post_type_options: Arc<
+        dyn Fn() -> std::pin::Pin<
+                Box<dyn std::future::Future<Output = Result<Vec<SelectOption>, String>> + Send>,
+            > + Send
+            + Sync,
+    > = Arc::new(|| {
         Box::pin(async move {
             match load_post_type_infos(0, 100, Some("name".to_string()), None, None, None).await {
                 Ok(items) => Ok(items
                     .into_iter()
-                    .map(|pt| SelectOption { value: pt.id.to_string(), label: format!("{} ({})", pt.name, pt.code), disabled: false })
+                    .map(|pt| SelectOption {
+                        value: pt.id.to_string(),
+                        label: format!("{} ({})", pt.name, pt.code),
+                        disabled: false,
+                    })
                     .collect()),
                 Err(e) => Err(e.to_string()),
             }
@@ -101,7 +110,11 @@ fn NewPostDialog() -> impl IntoView {
         let error = error.clone();
         move || {
             let e = error.get();
-            if e.is_empty() { None } else { Some(e) }
+            if e.is_empty() {
+                None
+            } else {
+                Some(e)
+            }
         }
     });
 

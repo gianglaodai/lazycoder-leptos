@@ -1,6 +1,7 @@
 #[cfg(feature = "ssr")]
 pub mod app;
 pub mod business;
+pub mod common;
 #[cfg(feature = "ssr")]
 pub mod config;
 #[cfg(feature = "ssr")]

@@ -1,0 +1,89 @@
+#![cfg(feature = "ssr")]
+
+use std::collections::HashMap;
+use crate::business::post_collection_item_service::{
+    PostCollectionItem, PostCollectionItemRepository,
+};
+use crate::common::repository::ViewRepository;
+use crate::define_readonly_orm_with_common_fields;
+use crate::infras::sqlx_repository::SqlxViewRepository;
+use sqlx::PgPool;
+use uuid::Uuid;
+use crate::common::error::CoreError;
+use crate::common::filter::{Filter, ScalarValue};
+use crate::common::sort::SortCriterion;
+
+#[derive(Clone)]
+pub struct PostCollectionItemSqlxRepository {
+    pool: PgPool,
+}
+
+define_readonly_orm_with_common_fields!(PostCollectionItem {
+    pub post_collection_id: i32,
+    pub post_id: i32,
+    pub position: i32,
+    pub headline: Option<String>,
+});
+
+impl PostCollectionItemOrm {
+    pub fn searchable_columns() -> Vec<&'static str> {
+        vec!["headline"]
+    }
+}
+
+impl From<PostCollectionItemOrm> for PostCollectionItem {
+    fn from(orm: PostCollectionItemOrm) -> Self {
+        Self {
+            id: orm.id,
+            uid: orm.uid.to_string(),
+            version: orm.version,
+            created_at: orm.created_at,
+            updated_at: orm.updated_at,
+            post_collection_id: orm.post_collection_id,
+            post_id: orm.post_id,
+            position: orm.position,
+            headline: orm.headline,
+        }
+    }
+}
+
+impl PostCollectionItemSqlxRepository {
+    pub fn new(pool: PgPool) -> Self { Self { pool } }
+}
+
+impl ViewRepository<PostCollectionItem> for PostCollectionItemSqlxRepository {
+    fn get_table_name(&self) -> &str { "post_collection_items" }
+    fn get_columns(&self) -> Vec<&str> { PostCollectionItemOrm::columns() }
+    fn get_searchable_columns(&self) -> Vec<&str> { PostCollectionItemOrm::searchable_columns() }
+
+    async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
+        SqlxViewRepository::count(self, filters).await
+    }
+    async fn find_many(
+        &self,
+        sort_criteria: Vec<SortCriterion>,
+        first_result: Option<i32>,
+        max_results: Option<i32>,
+        filters: Vec<Filter>,
+    ) -> Result<Vec<PostCollectionItem>, CoreError> {
+        SqlxViewRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
+    }
+    async fn find_by_id(&self, id: i32) -> Result<Option<PostCollectionItem>, CoreError> {
+        SqlxViewRepository::find_by_id(self, id).await
+    }
+    async fn find_by_uid(&self, uid: String) -> Result<Option<PostCollectionItem>, CoreError> {
+        SqlxViewRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
+    }
+    async fn get_column_type_map(&self,) -> Result<HashMap<String, ScalarValue>, CoreError> {
+        SqlxViewRepository::get_column_type_map(self).await
+    }
+}
+
+impl SqlxViewRepository for PostCollectionItemSqlxRepository {
+    type Entity = PostCollectionItem;
+    type Orm = PostCollectionItemOrm;
+    fn get_pool(&self) -> &PgPool { &self.pool }
+    fn from_orm(orm: Self::Orm) -> Self::Entity { PostCollectionItem::from(orm) }
+}
+
+impl PostCollectionItemRepository for PostCollectionItemSqlxRepository {}

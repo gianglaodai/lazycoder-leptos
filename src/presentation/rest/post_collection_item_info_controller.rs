@@ -1,4 +1,4 @@
-use crate::business::collection_item_service::PostCollectionItemInfo;
+use crate::business::post_collection_item_service::PostCollectionItemInfo;
 use crate::define_readonly_to_with_common_fields_be;
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};

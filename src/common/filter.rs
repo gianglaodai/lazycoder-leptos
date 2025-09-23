@@ -89,7 +89,6 @@ impl FilterOperator {
             Self::Between | Self::NotBetween => match value {
                 FilterValue::Range((a, b)) => {
                     use std::mem::discriminant;
-                    // both ends must be same scalar type and among comparable types
                     let same_kind = discriminant(a) == discriminant(b);
                     let comparable =
                         matches!(a, Int(_) | Float(_) | Time(_) | Date(_) | DateTime(_));

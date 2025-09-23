@@ -1,14 +1,22 @@
 #[cfg(feature = "ssr")]
 pub mod attribute_sqlx_repository;
 #[cfg(feature = "ssr")]
+pub mod attribute_info_sqlx_repository;
+#[cfg(feature = "ssr")]
 pub mod attribute_value_info_sqlx_repository;
+#[cfg(feature = "ssr")]
+pub mod attribute_value_sqlx_repository;
 #[cfg(feature = "ssr")]
 mod error;
 pub mod macros;
 #[cfg(feature = "ssr")]
 pub mod post_collection_info_sqlx_repository;
 #[cfg(feature = "ssr")]
+pub mod post_collection_sqlx_repository;
+#[cfg(feature = "ssr")]
 pub mod post_collection_item_info_sqlx_repository;
+#[cfg(feature = "ssr")]
+pub mod post_collection_item_sqlx_repository;
 #[cfg(feature = "ssr")]
 pub mod post_info_sqlx_repository;
 #[cfg(feature = "ssr")]

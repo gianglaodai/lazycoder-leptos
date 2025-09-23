@@ -206,21 +206,30 @@ pub fn build_p_filters<T: Send + Sync + 'static>(state: &Arc<TableState<T>>) -> 
                     match first {
                         ScalarValue::Int(_) => (
                             vs.iter()
-                                .filter_map(|s| match s { ScalarValue::Int(i) => Some(i.to_string()), _ => None })
+                                .filter_map(|s| match s {
+                                    ScalarValue::Int(i) => Some(i.to_string()),
+                                    _ => None,
+                                })
                                 .collect::<Vec<_>>()
                                 .join("|"),
                             1,
                         ),
                         ScalarValue::Float(_) => (
                             vs.iter()
-                                .filter_map(|s| match s { ScalarValue::Float(f) => Some(f.to_string()), _ => None })
+                                .filter_map(|s| match s {
+                                    ScalarValue::Float(f) => Some(f.to_string()),
+                                    _ => None,
+                                })
                                 .collect::<Vec<_>>()
                                 .join("|"),
                             2,
                         ),
                         ScalarValue::String(_) => (
                             vs.iter()
-                                .filter_map(|s| match s { ScalarValue::String(st) => Some(st.clone()), _ => None })
+                                .filter_map(|s| match s {
+                                    ScalarValue::String(st) => Some(st.clone()),
+                                    _ => None,
+                                })
                                 .collect::<Vec<_>>()
                                 .join("|"),
                             0,

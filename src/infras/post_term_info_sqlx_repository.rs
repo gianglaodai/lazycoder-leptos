@@ -1,9 +1,9 @@
 #![cfg(feature = "ssr")]
-use crate::business::error::CoreError;
-use crate::business::filter::Filter;
 use crate::business::post_term_service::{PostTermInfo, PostTermInfoRepository};
-use crate::business::repository::ViewRepository;
-use crate::business::sort::SortCriterion;
+use crate::common::error::CoreError;
+use crate::common::filter::Filter;
+use crate::common::repository::ViewRepository;
+use crate::common::sort::SortCriterion;
 use crate::define_readonly_orm_with_common_fields;
 use crate::infras::sqlx_repository::SqlxViewRepository;
 use sqlx::PgPool;
@@ -94,7 +94,7 @@ impl ViewRepository<PostTermInfo> for PostTermInfoSqlxRepository {
     }
     async fn get_column_type_map(
         &self,
-    ) -> Result<std::collections::HashMap<String, crate::business::filter::ScalarValue>, CoreError>
+    ) -> Result<std::collections::HashMap<String, crate::common::filter::ScalarValue>, CoreError>
     {
         SqlxViewRepository::get_column_type_map(self).await
     }

@@ -1,13 +1,15 @@
 #![cfg(feature = "ssr")]
 
-use crate::business::error::CoreError;
-use crate::business::filter::Filter;
 use crate::business::post_type_service::{PostType, PostTypeCreate, PostTypeRepository};
-use crate::business::repository::{Repository, ViewRepository};
-use crate::business::sort::SortCriterion;
+use crate::common::error::CoreError;
+use crate::common::filter::{Filter, ScalarValue};
+use crate::common::repository::{Repository, ViewRepository};
+use crate::common::sort::SortCriterion;
 use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::{SqlxRepository, SqlxViewRepository};
 use sqlx::PgPool;
+use std::collections::HashMap;
+use std::future::Future;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -79,10 +81,7 @@ impl ViewRepository<PostType> for PostTypeSqlxRepository {
         SqlxViewRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
 
-    async fn get_column_type_map(
-        &self,
-    ) -> Result<std::collections::HashMap<String, crate::business::filter::ScalarValue>, CoreError>
-    {
+    async fn get_column_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
         SqlxViewRepository::get_column_type_map(self).await
     }
 }
@@ -126,20 +125,15 @@ impl Repository<PostType, PostTypeCreate> for PostTypeSqlxRepository {
         .await?;
         Ok(PostType::from(row))
     }
+
+    async fn get_attribute_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
+        SqlxRepository::get_attribute_type_map(self)
+    }
 }
 
 impl SqlxViewRepository for PostTypeSqlxRepository {
     type Entity = PostType;
     type Orm = PostTypeOrm;
-    fn get_table_name(&self) -> &str {
-        "post_types"
-    }
-    fn get_columns(&self) -> Vec<&str> {
-        PostTypeOrm::columns()
-    }
-    fn get_searchable_columns(&self) -> Vec<&str> {
-        PostTypeOrm::searchable_columns()
-    }
     fn get_pool(&self) -> &PgPool {
         &self.pool
     }

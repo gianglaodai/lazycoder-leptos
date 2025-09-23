@@ -1,4 +1,5 @@
-use crate::business::attribute_service::{Attribute, AttributeValueInfo};
+use crate::business::attribute_service::Attribute;
+use crate::business::attribute_value_service::AttributeValueInfo;
 use crate::define_readonly_to_with_common_fields_be;
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};

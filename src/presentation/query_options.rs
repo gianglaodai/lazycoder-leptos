@@ -717,7 +717,9 @@ mod tests {
         assert_eq!(
             QueryOptions::parse_value("2025-07-16", &FilterOperator::Equal, ValueDataType::Date)
                 .unwrap(),
-            FilterValue::Single(ScalarValue::Date(Date::from_calendar_date(2025, Month::July, 16).unwrap()))
+            FilterValue::Single(ScalarValue::Date(
+                Date::from_calendar_date(2025, Month::July, 16).unwrap()
+            ))
         );
         assert_eq!(
             QueryOptions::parse_value(

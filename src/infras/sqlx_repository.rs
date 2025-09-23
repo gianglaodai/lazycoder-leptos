@@ -1,15 +1,14 @@
 #![cfg(feature = "ssr")]
 
-use crate::business::error::CoreError;
-use crate::business::filter::{Filter, FilterOperator, FilterValue, ScalarValue};
-use crate::business::repository::{Creatable, Repository, ViewRepository};
-// cache moved to service layer; repository focuses on DB access only
-use crate::business::sort::SortCriterion;
+use crate::common::repository::{Creatable, Repository, ViewRepository};
 use crate::define_orm_with_common_fields;
 use sqlx::postgres::PgRow;
 use sqlx::{FromRow, PgPool, Postgres, QueryBuilder, Row};
 use std::collections::HashMap;
 use uuid::Uuid;
+use crate::common::error::CoreError;
+use crate::common::filter::{Filter, FilterOperator, FilterValue, ScalarValue};
+use crate::common::sort::SortCriterion;
 
 #[derive(Debug, sqlx::Type)]
 #[sqlx(type_name = "attribute_datatype", rename_all = "lowercase")]
@@ -831,6 +830,23 @@ where
         .execute(self.get_pool())
         .await?;
 
+        Ok(result.rows_affected())
+    }
+
+    async fn delete_by_uids(&self, uids: Vec<Uuid>) -> Result<u64, CoreError> {
+        if uids.is_empty() {
+            return Ok(0);
+        }
+
+        let mut builder = QueryBuilder::<Postgres>::new(format!(
+            "DELETE FROM {} WHERE uid IN ",
+            self.get_table_name()
+        ));
+        builder.push_tuples(uids, |mut b, id| {
+            b.push_bind(id);
+        });
+        let query = builder.build();
+        let result = query.execute(self.get_pool()).await?;
         Ok(result.rows_affected())
     }
 }

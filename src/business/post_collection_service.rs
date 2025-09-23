@@ -6,32 +6,39 @@ use crate::common::sort::SortCriterion;
 use crate::{define_readonly_struct_with_common_fields, define_struct_with_common_fields};
 use std::sync::Arc;
 
-define_struct_with_common_fields!(PostType {
-    pub code: String,
-    pub name: String,
+// Table entity: post_collections
+define_struct_with_common_fields!(PostCollection {
+    pub slug: String,
+    pub title: String,
+    pub description: Option<String>,
+    pub visibility: String,
 });
 
-define_readonly_struct_with_common_fields!(PostTypeInfo {
-    pub code: String,
-    pub name: String,
+define_readonly_struct_with_common_fields!(PostCollectionInfo {
+    pub slug: String,
+    pub title: String,
+    pub description: String,
+    pub visibility: String,
 });
 
-// Repositories
-pub trait PostTypeRepository: Repository<PostType, PostTypeCreate> + Send + Sync {}
-pub trait PostTypeInfoRepository: ViewRepository<PostTypeInfo> + Send + Sync {}
+pub trait PostCollectionRepository:
+    Repository<PostCollection, PostCollectionCreate> + Send + Sync
+{
+}
+pub trait PostCollectionInfoRepository: ViewRepository<PostCollectionInfo> + Send + Sync {}
 
-// Services
+// Service for table (CRUD)
 #[derive(Clone)]
-pub struct PostTypeService<R: PostTypeRepository> {
+pub struct PostCollectionService<R: PostCollectionRepository> {
     repository: Arc<R>,
 }
 
-impl<R: PostTypeRepository> PostTypeService<R> {
+impl<R: PostCollectionRepository> PostCollectionService<R> {
     pub fn new(repository: Arc<R>) -> Self {
         Self { repository }
     }
 
-    pub async fn get_all(&self, filters: Vec<Filter>) -> Result<Vec<PostType>, CoreError> {
+    pub async fn get_all(&self, filters: Vec<Filter>) -> Result<Vec<PostCollection>, CoreError> {
         self.repository.find_all(filters).await
     }
 
@@ -41,7 +48,7 @@ impl<R: PostTypeRepository> PostTypeService<R> {
         first_result: Option<i32>,
         max_results: Option<i32>,
         filters: Vec<Filter>,
-    ) -> Result<Vec<PostType>, CoreError> {
+    ) -> Result<Vec<PostCollection>, CoreError> {
         self.repository
             .find_many(sort_criteria, first_result, max_results, filters)
             .await
@@ -51,19 +58,19 @@ impl<R: PostTypeRepository> PostTypeService<R> {
         self.repository.count(filters).await
     }
 
-    pub async fn get_by_id(&self, id: i32) -> Result<Option<PostType>, CoreError> {
+    pub async fn get_by_id(&self, id: i32) -> Result<Option<PostCollection>, CoreError> {
         self.repository.find_by_id(id).await
     }
 
-    pub async fn get_by_uid(&self, uid: String) -> Result<Option<PostType>, CoreError> {
+    pub async fn get_by_uid(&self, uid: String) -> Result<Option<PostCollection>, CoreError> {
         self.repository.find_by_uid(uid).await
     }
 
-    pub async fn create(&self, create: &PostTypeCreate) -> Result<PostType, CoreError> {
+    pub async fn create(&self, create: &PostCollectionCreate) -> Result<PostCollection, CoreError> {
         self.repository.create(create).await
     }
 
-    pub async fn update(&self, entity: &PostType) -> Result<PostType, CoreError> {
+    pub async fn update(&self, entity: &PostCollection) -> Result<PostCollection, CoreError> {
         self.repository.update(entity).await
     }
 
@@ -80,29 +87,32 @@ impl<R: PostTypeRepository> PostTypeService<R> {
     }
 }
 
-impl<R: PostTypeRepository> ViewService for PostTypeService<R> {
-    type Entity = PostType;
+impl<R: PostCollectionRepository> ViewService for PostCollectionService<R> {
+    type Entity = PostCollection;
     type Repo = R;
     fn get_repository(&self) -> &Self::Repo {
         &self.repository
     }
 }
 
-impl<R: PostTypeRepository> Service for PostTypeService<R> {
-    type Create = PostTypeCreate;
+impl<R: PostCollectionRepository> Service for PostCollectionService<R> {
+    type Create = PostCollectionCreate;
 }
 
 #[derive(Clone)]
-pub struct PostTypeInfoService<R: PostTypeInfoRepository> {
+pub struct PostCollectionInfoService<R: PostCollectionInfoRepository> {
     repository: Arc<R>,
 }
 
-impl<R: PostTypeInfoRepository> PostTypeInfoService<R> {
+impl<R: PostCollectionInfoRepository> PostCollectionInfoService<R> {
     pub fn new(repository: Arc<R>) -> Self {
         Self { repository }
     }
 
-    pub async fn get_all(&self, filters: Vec<Filter>) -> Result<Vec<PostTypeInfo>, CoreError> {
+    pub async fn get_all(
+        &self,
+        filters: Vec<Filter>,
+    ) -> Result<Vec<PostCollectionInfo>, CoreError> {
         self.repository.find_all(filters).await
     }
 
@@ -112,7 +122,7 @@ impl<R: PostTypeInfoRepository> PostTypeInfoService<R> {
         first_result: Option<i32>,
         max_results: Option<i32>,
         filters: Vec<Filter>,
-    ) -> Result<Vec<PostTypeInfo>, CoreError> {
+    ) -> Result<Vec<PostCollectionInfo>, CoreError> {
         self.repository
             .find_many(sort_criteria, first_result, max_results, filters)
             .await
@@ -122,17 +132,17 @@ impl<R: PostTypeInfoRepository> PostTypeInfoService<R> {
         self.repository.count(filters).await
     }
 
-    pub async fn get_by_id(&self, id: i32) -> Result<Option<PostTypeInfo>, CoreError> {
+    pub async fn get_by_id(&self, id: i32) -> Result<Option<PostCollectionInfo>, CoreError> {
         self.repository.find_by_id(id).await
     }
 
-    pub async fn get_by_uid(&self, uid: String) -> Result<Option<PostTypeInfo>, CoreError> {
+    pub async fn get_by_uid(&self, uid: String) -> Result<Option<PostCollectionInfo>, CoreError> {
         self.repository.find_by_uid(uid).await
     }
 }
 
-impl<R: PostTypeInfoRepository> ViewService for PostTypeInfoService<R> {
-    type Entity = PostTypeInfo;
+impl<R: PostCollectionInfoRepository> ViewService for PostCollectionInfoService<R> {
+    type Entity = PostCollectionInfo;
     type Repo = R;
     fn get_repository(&self) -> &Self::Repo {
         &self.repository

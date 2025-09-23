@@ -1,9 +1,9 @@
 use leptos::ev;
 use leptos::prelude::*;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::future::Future;
 use std::pin::Pin;
-use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
 use crate::utils::tv::{Tv, TvConfig, TvProps, TvResult, VariantClass, VariantDef};
@@ -30,7 +30,11 @@ pub struct SelectOption {
 
 impl SelectOption {
     pub fn new(value: impl Into<String>, label: impl Into<String>) -> Self {
-        Self { value: value.into(), label: label.into(), disabled: false }
+        Self {
+            value: value.into(),
+            label: label.into(),
+            disabled: false,
+        }
     }
 }
 
@@ -76,7 +80,13 @@ pub fn Select(
     #[prop(into, optional)] on_click: Option<Callback<ev::MouseEvent, ()>>,
     // New: lazy-loaded options
     #[prop(optional)] placeholder: Option<String>,
-    #[prop(optional)] load_options: Option<Arc<dyn Fn() -> Pin<Box<dyn Future<Output = Result<Vec<SelectOption>, String>> + Send>> + Send + Sync>>,
+    #[prop(optional)] load_options: Option<
+        Arc<
+            dyn Fn() -> Pin<Box<dyn Future<Output = Result<Vec<SelectOption>, String>> + Send>>
+                + Send
+                + Sync,
+        >,
+    >,
     #[prop(optional)] size: SelectSize,
     children: Children,
 ) -> impl IntoView {
@@ -215,6 +225,7 @@ pub fn Select(
             >
                 {children_any}
             </select>
-        }.into_any()
+        }
+        .into_any()
     }
 }

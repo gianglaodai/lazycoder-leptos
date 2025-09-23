@@ -4,7 +4,7 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::sync::RwLock;
 
-use crate::business::error::CoreError;
+use crate::common::error::CoreError;
 
 // Global in-memory cache keyed by a concatenation of service_name and key.
 // This keeps the cache simple and avoids nested maps or per-service type registries.
@@ -12,8 +12,6 @@ static CACHE: Lazy<RwLock<HashMap<String, Box<dyn Any + Send + Sync>>>> =
     Lazy::new(|| RwLock::new(HashMap::new()));
 
 // Namespacing constant for field type maps, as per requirement
-pub const FIELD_TYPE_MAP: &str = "FIELD_TYPE_MAP";
-pub const ATTRIBUTE_TYPE_MAP: &str = "ATTRIBUTE_TYPE_MAP";
 
 /// Get value from cache by (service_name, key); if missing, compute and store it via the provided async closure.
 /// The cache stores a single value per combined key ("service_name:key").

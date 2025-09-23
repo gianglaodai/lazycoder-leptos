@@ -1,16 +1,16 @@
 #![cfg(feature = "ssr")]
 
-use crate::business::error::CoreError;
-use crate::business::filter::{Filter, ScalarValue};
 use crate::business::post_service::{Post, PostCreate, PostRepository, PostStatus};
-use crate::business::repository::{Repository, ViewRepository};
-use crate::business::sort::SortCriterion;
+use crate::common::repository::{Repository, ViewRepository};
 use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::{SqlxRepository, SqlxViewRepository};
 use sqlx::PgPool;
 use std::collections::HashMap;
 use std::future::Future;
 use uuid::Uuid;
+use crate::common::error::CoreError;
+use crate::common::filter::{Filter, ScalarValue};
+use crate::common::sort::SortCriterion;
 
 #[derive(Clone)]
 pub struct PostSqlxRepository {
@@ -106,6 +106,9 @@ impl Repository<Post, PostCreate> for PostSqlxRepository {
     async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
         SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
+    async fn delete_by_uids(&self, uids: Vec<String>) -> impl Future<Output=Result<u64, CoreError>> {
+        SqlxRepository::delete_by_uids(self, uids.iter().map(Uuid::parse_str).collect())
+    }
 
     async fn create(&self, post_create: &PostCreate) -> Result<Post, CoreError> {
         let now = time::OffsetDateTime::now_utc();
@@ -190,9 +193,8 @@ impl PostRepository for PostSqlxRepository {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::business::filter::{Filter, FilterOperator, FilterValue, ScalarValue};
-    use crate::business::sort::SortCriterion;
     use sqlx::{postgres::PgPoolOptions, PgPool};
+    use crate::common::filter::{FilterOperator, FilterValue};
 
     #[tokio::test]
     async fn test_build_find_many_query() {

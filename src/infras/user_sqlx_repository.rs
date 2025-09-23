@@ -1,14 +1,15 @@
 #![cfg(feature = "ssr")]
 
-use crate::business::error::CoreError;
-use crate::business::filter::Filter;
-use crate::business::repository::{Repository, ViewRepository};
-use crate::business::sort::SortCriterion;
+use std::collections::HashMap;
 use crate::business::user_service::{User, UserCreate, UserRepository, UserRole};
+use crate::common::repository::{Repository, ViewRepository};
 use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::{SqlxRepository, SqlxViewRepository};
 use sqlx::PgPool;
 use uuid::Uuid;
+use crate::common::error::CoreError;
+use crate::common::filter::{Filter, ScalarValue};
+use crate::common::sort::SortCriterion;
 
 #[derive(Clone)]
 pub struct UserSqlxRepository {
@@ -84,7 +85,7 @@ impl ViewRepository<User> for UserSqlxRepository {
 
     async fn get_column_type_map(
         &self,
-    ) -> Result<std::collections::HashMap<String, crate::business::filter::ScalarValue>, CoreError>
+    ) -> Result<HashMap<String, ScalarValue>, CoreError>
     {
         SqlxViewRepository::get_column_type_map(self).await
     }
@@ -107,7 +108,7 @@ impl Repository<User, UserCreate> for UserSqlxRepository {
         &self,
     ) -> impl std::future::Future<
         Output = Result<
-            std::collections::HashMap<String, crate::business::filter::ScalarValue>,
+            HashMap<String, ScalarValue>,
             CoreError,
         >,
     > {

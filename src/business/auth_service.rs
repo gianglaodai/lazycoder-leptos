@@ -1,7 +1,7 @@
 #![cfg(feature = "ssr")]
 
-use crate::business::error::CoreError;
 use crate::business::user_service::{User, UserCreate, UserRepository, UserRole, UserService};
+use crate::common::error::CoreError;
 
 #[derive(Clone)]
 pub struct AuthService<R: UserRepository> {
