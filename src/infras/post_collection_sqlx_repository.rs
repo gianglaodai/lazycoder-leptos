@@ -107,34 +107,34 @@ impl SqlxRepository for PostCollectionSqlxRepository {
     type EntityCreate = PostCollectionCreate;
 
     async fn get_attribute_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
-        SqlxRepository::get_attribute_type_map(self)
+        SqlxRepository::get_attribute_type_map(self).await
     }
 
     async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_id(self, id)
+        SqlxRepository::delete_by_id(self, id).await
     }
 
     async fn delete_by_ids(&self, ids: Vec<i32>) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_ids(self, ids)
+        SqlxRepository::delete_by_ids(self, ids).await
     }
 
     async fn delete_by_uid(&self, uid: Uuid) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_uid(self, uid)
+        SqlxRepository::delete_by_uid(self, uid).await
     }
 }
 
 impl Repository<PostCollection, PostCollectionCreate> for PostCollectionSqlxRepository {
-    fn delete_by_id(&self, id: i32) -> impl Future<Output = Result<u64, CoreError>> + Send {
-        SqlxRepository::delete_by_id(self, id)
+    async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError>{
+        SqlxRepository::delete_by_id(self, id).await
     }
-    fn delete_by_ids(&self, ids: Vec<i32>) -> impl Future<Output = Result<u64, CoreError>> + Send {
-        SqlxRepository::delete_by_ids(self, ids)
+    async fn delete_by_ids(&self, ids: Vec<i32>) -> Result<u64, CoreError>{
+        SqlxRepository::delete_by_ids(self, ids).await
     }
-    fn delete_by_uid(&self, uid: String) -> impl Future<Output = Result<u64, CoreError>> + Send {
-        SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap())
+    async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError>{
+        SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
-    fn delete_by_uids(&self, uids: Vec<String>) -> impl Future<Output=Result<u64, CoreError>> {
-        SqlxRepository::delete_by_uids(self, uids.iter().map(Uuid::parse_str).collect())
+    async fn delete_by_uids(&self, uids: Vec<String>) -> Result<u64, CoreError> {
+        SqlxRepository::delete_by_uids(self, uids.iter().map(Uuid::parse_str).collect()).await
     }
 
     fn create(&self, create: &PostCollectionCreate) -> impl Future<Output = Result<PostCollection, CoreError>> + Send {
@@ -194,8 +194,8 @@ impl Repository<PostCollection, PostCollectionCreate> for PostCollectionSqlxRepo
         }
     }
 
-    fn get_attribute_type_map(&self) -> impl Future<Output = Result<HashMap<String, ScalarValue>, CoreError>> + Send {
-        SqlxRepository::get_attribute_type_map(self)
+    async fn get_attribute_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError>{
+        SqlxRepository::get_attribute_type_map(self).await
     }
 }
 

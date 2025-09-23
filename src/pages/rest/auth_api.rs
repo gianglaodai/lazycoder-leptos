@@ -1,8 +1,8 @@
-use crate::business::error::CoreError;
 use crate::business::user_service::User;
 use crate::define_to_with_common_fields_fe;
 use leptos::prelude::ServerFnError;
 use leptos::prelude::*;
+use crate::common::error::CoreError;
 
 define_to_with_common_fields_fe!(User {
     pub username: String,

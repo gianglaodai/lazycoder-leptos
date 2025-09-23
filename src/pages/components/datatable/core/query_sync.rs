@@ -1,9 +1,9 @@
-use crate::business::filter::{FilterOperator, FilterValue, ScalarValue};
 use crate::pages::components::datatable::core::column::DataType;
 use crate::pages::components::datatable::core::data_source::{SortModel, SortOrder};
 use crate::pages::components::datatable::core::state::TableState;
 use leptos::prelude::*;
 use std::sync::Arc;
+use crate::common::filter::{FilterOperator, FilterValue, ScalarValue};
 
 #[derive(Clone, Debug)]
 pub struct SyncOptions {

@@ -107,13 +107,13 @@ impl Repository<Post, PostCreate> for PostSqlxRepository {
         SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
     async fn delete_by_uids(&self, uids: Vec<String>) -> impl Future<Output=Result<u64, CoreError>> {
-        SqlxRepository::delete_by_uids(self, uids.iter().map(Uuid::parse_str).collect())
+        SqlxRepository::delete_by_uids(self, uids.iter().map(Uuid::parse_str).collect()).await
     }
 
     async fn create(&self, post_create: &PostCreate) -> Result<Post, CoreError> {
         let now = time::OffsetDateTime::now_utc();
         let row: PostOrm = sqlx::query_as::<_, PostOrm>(
-            "INSERT INTO posts (uid, created_at, updated_at, slug, title, summary, content, status, user_id, type_id) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) returning *",
+            "INSERT INTO posts (uid, created_at, updated_at, slug, title, summary, content, status, user_id, type_id) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *",
         )
             .bind(Uuid::now_v7())
             .bind(&now)

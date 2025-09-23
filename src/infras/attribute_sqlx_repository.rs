@@ -99,32 +99,32 @@ impl SqlxRepository for AttributeSqlxRepository {
 }
 
 impl Repository<Attribute, AttributeCreate> for AttributeSqlxRepository {
-    fn delete_by_id(&self, id: i32) -> impl Future<Output=Result<u64, CoreError>> {
-        SqlxRepository::delete_by_id(self, id)
+    async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
+        SqlxRepository::delete_by_id(self, id).await
     }
 
-    fn delete_by_ids(&self, ids: Vec<i32>) -> impl Future<Output=Result<u64, CoreError>> {
-        SqlxRepository::delete_by_ids(self, ids)
+    async fn delete_by_ids(&self, ids: Vec<i32>) -> Result<u64, CoreError> {
+        SqlxRepository::delete_by_ids(self, ids).await
     }
 
-    fn delete_by_uid(&self, uid: String) -> impl Future<Output=Result<u64, CoreError>> {
-        SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap())
+    async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
+        SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
 
-    fn delete_by_uids(&self, uids: Vec<String>) -> impl Future<Output=Result<u64, CoreError>> {
-        SqlxRepository::delete_by_uids(self, uids.iter().map(Uuid::parse_str).collect())
+    async fn delete_by_uids(&self, uids: Vec<String>) -> Result<u64, CoreError> {
+        SqlxRepository::delete_by_uids(self, uids.iter().map(Uuid::parse_str).collect()).await
     }
 
-    fn create(&self, entity_create: &AttributeCreate) -> impl Future<Output=Result<Attribute, CoreError>> {
+    async fn create(&self, entity_create: &AttributeCreate) -> Result<Attribute, CoreError> {
         todo!()
     }
 
-    fn update(&self, entity: &Attribute) -> impl Future<Output=Result<Attribute, CoreError>> {
+    async fn update(&self, entity: &Attribute) -> Result<Attribute, CoreError> {
         todo!()
     }
 
-    fn get_attribute_type_map(&self) -> impl Future<Output=Result<HashMap<String, ScalarValue>, CoreError>> {
-        todo!()
+    async fn get_attribute_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
+        SqlxRepository::get_attribute_type_map(self).await
     }
 }
 

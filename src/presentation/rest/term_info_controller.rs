@@ -1,10 +1,10 @@
-use crate::business::post_taxonomy_service::TermInfo;
 use crate::define_readonly_to_with_common_fields_be;
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
 use crate::state::AppState;
 use actix_web::web::{scope, Data, Path, Query, ServiceConfig};
 use actix_web::{get, Responder};
+use crate::business::term_service::TermInfo;
 
 define_readonly_to_with_common_fields_be!(TermInfo {
     pub taxonomy_id: i32,

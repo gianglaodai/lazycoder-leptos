@@ -118,17 +118,17 @@ impl SqlxRepository for AttributeValueSqlxRepository {
 
 impl Repository<AttributeValue, AttributeValueCreate> for AttributeValueSqlxRepository {
     async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_id(self, id)
+        SqlxRepository::delete_by_id(self, id).await
     }
     async fn delete_by_ids(&self, ids: Vec<i32>) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_ids(self, ids)
+        SqlxRepository::delete_by_ids(self, ids).await
     }
     async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap())
+        SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
 
     async fn delete_by_uids(&self, uids: Vec<String>) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_uids(self, uids.iter().map(Uuid::parse_str).collect())
+        SqlxRepository::delete_by_uids(self, uids.iter().map(Uuid::parse_str).collect()).await
     }
 
     async fn create(&self, create: &AttributeValueCreate) -> Result<AttributeValue, CoreError> {
@@ -208,7 +208,7 @@ impl Repository<AttributeValue, AttributeValueCreate> for AttributeValueSqlxRepo
     }
 
     async fn get_attribute_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
-        SqlxRepository::get_attribute_type_map(self)
+        SqlxRepository::get_attribute_type_map(self).await
     }
 }
 

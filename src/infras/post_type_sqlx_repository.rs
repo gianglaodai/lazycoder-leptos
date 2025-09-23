@@ -97,6 +97,9 @@ impl Repository<PostType, PostTypeCreate> for PostTypeSqlxRepository {
     async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
         SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
     }
+    async fn delete_by_uids(&self, uids: Vec<String>) -> impl Future<Output=Result<u64, CoreError>> {
+        SqlxRepository::delete_by_uids(self, uids.iter().map(Uuid::parse_str).collect()).await
+    }
     async fn create(&self, post_type_create: &PostTypeCreate) -> Result<PostType, CoreError> {
         let now = time::OffsetDateTime::now_utc();
         let row: PostTypeOrm = sqlx::query_as::<_, PostTypeOrm>(
