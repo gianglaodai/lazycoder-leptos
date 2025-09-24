@@ -1,14 +1,14 @@
 #![cfg(feature = "ssr")]
 
-use crate::business::user_service::{User, UserCreate, UserRole, UserInfo};
-use crate::{define_to_with_common_fields_be, define_readonly_to_with_common_fields_be};
+use crate::business::user_service::{User, UserCreate, UserInfo, UserRole};
+use crate::common::error::CoreError;
+use crate::common::service::{Service, ViewService};
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
 use crate::state::AppState;
+use crate::{define_readonly_to_with_common_fields_be, define_to_with_common_fields_be};
 use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
-use crate::common::error::CoreError;
-use crate::common::service::{Service, ViewService};
 
 define_to_with_common_fields_be!(User {
     pub username: String,
@@ -141,7 +141,11 @@ pub async fn create(state: Data<AppState>, user: Json<UserCreateTO>) -> impl Res
 }
 
 #[put("/{id}")]
-pub async fn update(state: Data<AppState>, id: Path<i32>, mut user: Json<UserTO>) -> impl Responder {
+pub async fn update(
+    state: Data<AppState>,
+    id: Path<i32>,
+    mut user: Json<UserTO>,
+) -> impl Responder {
     let mut body = user.into_inner();
     body.id = id.into_inner();
     respond_result(

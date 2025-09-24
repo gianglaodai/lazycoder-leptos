@@ -1,11 +1,11 @@
 use crate::business::post_service::{Post, PostCreate, PostInfo, PostStatus};
 use crate::common::error::CoreError;
 use crate::common::service::{Service, ViewService};
-use crate::{define_readonly_to_with_common_fields_be, define_to_with_common_fields_be};
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
 use crate::presentation::rest::user_controller::UserTO;
 use crate::state::AppState;
+use crate::{define_readonly_to_with_common_fields_be, define_to_with_common_fields_be};
 use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
 use std::str::FromStr;
@@ -34,7 +34,6 @@ define_readonly_to_with_common_fields_be!(PostInfo {
     pub username: String,
     pub email: String,
 });
-
 
 impl From<PostTO> for Post {
     fn from(to: PostTO) -> Self {

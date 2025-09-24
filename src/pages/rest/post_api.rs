@@ -383,10 +383,10 @@ pub async fn count_post_infos(
 
 #[server(name=LoadPostInfoById, prefix="/load", endpoint="/posts/id/info")]
 pub async fn load_post_info_by_id(id: i32) -> Result<PostInfoTO, ServerFnError> {
+    use crate::common::error::CoreError;
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
-    use crate::common::error::CoreError;
 
     let state: Data<AppState> = extract().await?;
     let result = state.post_info_service.get_by_id(id).await;

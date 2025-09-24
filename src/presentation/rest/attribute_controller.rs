@@ -1,12 +1,12 @@
 use crate::business::attribute_service::{Attribute, AttributeCreate, AttributeInfo};
-use crate::{define_readonly_to_with_common_fields_be, define_to_with_common_fields_be};
+use crate::common::error::CoreError;
+use crate::common::service::{Service, ViewService};
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
 use crate::state::AppState;
+use crate::{define_readonly_to_with_common_fields_be, define_to_with_common_fields_be};
 use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
-use crate::common::error::CoreError;
-use crate::common::service::{Service, ViewService};
 // attributes
 
 // Table TO (CRUD)
@@ -76,10 +76,7 @@ impl From<AttributeCreateTO> for AttributeCreate {
 }
 
 #[get("")]
-pub async fn get_many(
-    state: Data<AppState>,
-    query: Query<QueryOptions>,
-) -> impl Responder {
+pub async fn get_many(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
     respond_results(
         state
             .attribute_service
@@ -135,7 +132,11 @@ pub async fn create(state: Data<AppState>, data: Json<AttributeCreateTO>) -> imp
 }
 
 #[put("/{id}")]
-pub async fn update(state: Data<AppState>, id: Path<i32>, mut data: Json<AttributeTO>) -> impl Responder {
+pub async fn update(
+    state: Data<AppState>,
+    id: Path<i32>,
+    mut data: Json<AttributeTO>,
+) -> impl Responder {
     let mut body = data.into_inner();
     body.id = id.into_inner();
     respond_result(
@@ -154,7 +155,12 @@ pub async fn delete_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responde
 
 #[delete("/uid/{uid}")]
 pub async fn delete_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
-    respond_result(state.attribute_service.delete_by_uid(uid.into_inner()).await)
+    respond_result(
+        state
+            .attribute_service
+            .delete_by_uid(uid.into_inner())
+            .await,
+    )
 }
 
 // Info endpoints

@@ -3,10 +3,10 @@
 use crate::business::term_service::{Term, TermCreate, TermInfo};
 use crate::common::error::CoreError;
 use crate::common::service::{Service, ViewService};
-use crate::{define_readonly_to_with_common_fields_be, define_to_with_common_fields_be};
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
 use crate::state::AppState;
+use crate::{define_readonly_to_with_common_fields_be, define_to_with_common_fields_be};
 use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
 
@@ -230,7 +230,6 @@ pub fn routes(cfg: &mut ServiceConfig) {
             .service(get_info_by_uid),
     );
 }
-
 
 impl From<TermCreateTO> for TermCreate {
     fn from(to: TermCreateTO) -> Self {

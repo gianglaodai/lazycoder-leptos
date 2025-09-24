@@ -1,14 +1,12 @@
 #![cfg(feature = "ssr")]
 
-use crate::business::post_taxonomy_service::{
-    PostTaxonomy, PostTaxonomyCreate, PostTaxonomyInfo,
-};
+use crate::business::post_taxonomy_service::{PostTaxonomy, PostTaxonomyCreate, PostTaxonomyInfo};
 use crate::common::error::CoreError;
 use crate::common::service::{Service, ViewService};
-use crate::{define_readonly_to_with_common_fields_be, define_to_with_common_fields_be};
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
 use crate::state::AppState;
+use crate::{define_readonly_to_with_common_fields_be, define_to_with_common_fields_be};
 use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
 
@@ -127,12 +125,22 @@ pub async fn update(state: Data<AppState>, data: Json<PostTaxonomyTO>) -> impl R
 
 #[delete("/{id}")]
 pub async fn delete_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
-    respond_result(state.post_taxonomy_service.delete_by_id(id.into_inner()).await)
+    respond_result(
+        state
+            .post_taxonomy_service
+            .delete_by_id(id.into_inner())
+            .await,
+    )
 }
 
 #[delete("/uid/{uid}")]
 pub async fn delete_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
-    respond_result(state.post_taxonomy_service.delete_by_uid(uid.into_inner()).await)
+    respond_result(
+        state
+            .post_taxonomy_service
+            .delete_by_uid(uid.into_inner())
+            .await,
+    )
 }
 
 // Info endpoints
@@ -154,7 +162,12 @@ pub async fn get_many_info(state: Data<AppState>, query: Query<QueryOptions>) ->
 
 #[get("/info/count")]
 pub async fn count_info(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
-    respond_result(state.post_taxonomy_info_service.count(query.to_filters()).await)
+    respond_result(
+        state
+            .post_taxonomy_info_service
+            .count(query.to_filters())
+            .await,
+    )
 }
 
 #[get("/{id}/info")]
@@ -199,9 +212,11 @@ pub fn routes(cfg: &mut ServiceConfig) {
     );
 }
 
-
 impl From<PostTaxonomyCreateTO> for PostTaxonomyCreate {
     fn from(to: PostTaxonomyCreateTO) -> Self {
-        Self { code: to.code, name: to.name }
+        Self {
+            code: to.code,
+            name: to.name,
+        }
     }
 }

@@ -3,10 +3,10 @@
 use crate::business::post_type_service::{PostType, PostTypeCreate, PostTypeInfo};
 use crate::common::error::CoreError;
 use crate::common::service::{Service, ViewService};
-use crate::{define_readonly_to_with_common_fields_be, define_to_with_common_fields_be};
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
 use crate::state::AppState;
+use crate::{define_readonly_to_with_common_fields_be, define_to_with_common_fields_be};
 use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
 
@@ -137,7 +137,12 @@ pub async fn delete_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responde
 
 #[delete("/uid/{uid}")]
 pub async fn delete_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
-    respond_result(state.post_type_service.delete_by_uid(uid.into_inner()).await)
+    respond_result(
+        state
+            .post_type_service
+            .delete_by_uid(uid.into_inner())
+            .await,
+    )
 }
 
 // Info endpoints
@@ -203,7 +208,6 @@ pub fn routes(cfg: &mut ServiceConfig) {
             .service(get_info_by_uid),
     );
 }
-
 
 impl From<PostTypeCreateTO> for PostTypeCreate {
     fn from(to: PostTypeCreateTO) -> Self {

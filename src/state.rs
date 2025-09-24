@@ -7,15 +7,25 @@ use crate::business::post_service::{PostInfoService, PostService};
 use crate::business::post_taxonomy_service::{PostTaxonomyInfoService, PostTaxonomyService};
 use crate::business::post_type_service::{PostTypeInfoService, PostTypeService};
 use crate::business::term_service::{TermInfoService, TermService};
-use crate::business::user_service::{UserService, UserInfoService};
-use crate::infras::attribute_sqlx_repository::{AttributeInfoSqlxRepository, AttributeSqlxRepository};
-use crate::infras::attribute_value_sqlx_repository::{AttributeValueInfoSqlxRepository, AttributeValueSqlxRepository};
-use crate::infras::post_collection_sqlx_repository::{PostCollectionInfoSqlxRepository, PostCollectionSqlxRepository};
+use crate::business::user_service::{UserInfoService, UserService};
+use crate::infras::attribute_sqlx_repository::{
+    AttributeInfoSqlxRepository, AttributeSqlxRepository,
+};
+use crate::infras::attribute_value_sqlx_repository::{
+    AttributeValueInfoSqlxRepository, AttributeValueSqlxRepository,
+};
+use crate::infras::post_collection_sqlx_repository::{
+    PostCollectionInfoSqlxRepository, PostCollectionSqlxRepository,
+};
 use crate::infras::post_sqlx_repository::{PostInfoSqlxRepository, PostSqlxRepository};
-use crate::infras::post_taxonomy_sqlx_repository::{PostTaxonomyInfoSqlxRepository, PostTaxonomySqlxRepository};
-use crate::infras::post_type_sqlx_repository::{PostTypeInfoSqlxRepository, PostTypeSqlxRepository};
+use crate::infras::post_taxonomy_sqlx_repository::{
+    PostTaxonomyInfoSqlxRepository, PostTaxonomySqlxRepository,
+};
+use crate::infras::post_type_sqlx_repository::{
+    PostTypeInfoSqlxRepository, PostTypeSqlxRepository,
+};
 use crate::infras::term_sqlx_repository::{TermInfoSqlxRepository, TermSqlxRepository};
-use crate::infras::user_sqlx_repository::{UserSqlxRepository, UserInfoSqlxRepository};
+use crate::infras::user_sqlx_repository::{UserInfoSqlxRepository, UserSqlxRepository};
 use sqlx::PgPool;
 use std::sync::Arc;
 
