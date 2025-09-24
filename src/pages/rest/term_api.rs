@@ -1,50 +1,92 @@
-use crate::business::post_type_service::{PostType, PostTypeCreate, PostTypeInfo};
+use crate::business::term_service::{Term, TermCreate, TermInfo};
 use crate::common::error::CoreError;
 use crate::common::service::{Service, ViewService};
 use crate::{define_readonly_to_with_common_fields_fe, define_to_with_common_fields_fe};
 use leptos::prelude::ServerFnError;
 use leptos::*;
 
-// Table TO
-define_to_with_common_fields_fe!(PostType { pub code: String, pub name: String, });
-// View TO
-define_readonly_to_with_common_fields_fe!(PostTypeInfo { pub code: String, pub name: String, });
+// Table
+define_to_with_common_fields_fe!(Term {
+    pub taxonomy_id: i32,
+    pub slug: String,
+    pub name: String,
+    pub parent_id: Option<i32>,
+    pub description: Option<String>,
+});
+// View
+define_readonly_to_with_common_fields_fe!(TermInfo {
+    pub taxonomy_id: i32,
+    pub taxonomy_code: String,
+    pub taxonomy_name: String,
+    pub parent_id: Option<i32>,
+    pub parent_slug: Option<String>,
+    pub parent_name: Option<String>,
+    pub slug: String,
+    pub name: String,
+    pub description: Option<String>,
+});
 
-impl From<PostType> for PostTypeTO {
-    fn from(e: PostType) -> Self {
+impl From<Term> for TermTO {
+    fn from(e: Term) -> Self {
         Self {
             id: e.id,
             uid: e.uid,
             version: e.version,
             created_at: e.created_at,
             updated_at: e.updated_at,
-            code: e.code,
+            taxonomy_id: e.taxonomy_id,
+            slug: e.slug,
             name: e.name,
+            parent_id: e.parent_id,
+            description: e.description,
         }
     }
 }
-impl From<PostTypeInfo> for PostTypeInfoTO {
-    fn from(e: PostTypeInfo) -> Self {
+impl From<TermTO> for Term {
+    fn from(t: TermTO) -> Self {
+        Self {
+            id: t.id,
+            uid: t.uid,
+            version: t.version,
+            created_at: t.created_at,
+            updated_at: t.updated_at,
+            taxonomy_id: t.taxonomy_id,
+            slug: t.slug,
+            name: t.name,
+            parent_id: t.parent_id,
+            description: t.description,
+        }
+    }
+}
+impl From<TermInfo> for TermInfoTO {
+    fn from(e: TermInfo) -> Self {
         Self {
             id: e.id,
             uid: e.uid,
             version: e.version,
             created_at: e.created_at,
             updated_at: e.updated_at,
-            code: e.code,
+            taxonomy_id: e.taxonomy_id,
+            taxonomy_code: e.taxonomy_code,
+            taxonomy_name: e.taxonomy_name,
+            parent_id: e.parent_id,
+            parent_slug: e.parent_slug,
+            parent_name: e.parent_name,
+            slug: e.slug,
             name: e.name,
+            description: e.description,
         }
     }
 }
 
-#[server(name=LoadPostTypes, prefix="/load", endpoint="/post_types")]
-pub async fn load_post_types(
+#[server(name=LoadTerms, prefix="/load", endpoint="/terms")]
+pub async fn load_terms(
     first_result: Option<i32>,
     max_results: Option<i32>,
     sort: Option<String>,
     search: Option<String>,
     p_filters: Option<Vec<String>>,
-) -> Result<Vec<PostTypeTO>, ServerFnError> {
+) -> Result<Vec<TermTO>, ServerFnError> {
     use crate::presentation::query_options::QueryOptions;
     use crate::state::AppState;
     use actix_web::web::Data;
@@ -59,7 +101,7 @@ pub async fn load_post_types(
         a_filters: None,
     };
     state
-        .post_type_service
+        .term_service
         .get_many(
             q.to_sort_criteria(),
             q.first_result,
@@ -67,20 +109,19 @@ pub async fn load_post_types(
             q.to_filters(),
         )
         .await
-        .map(|v| v.into_iter().map(PostTypeTO::from).collect())
+        .map(|v| v.into_iter().map(TermTO::from).collect())
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=CountPostTypes, prefix="/load", endpoint="/post_types/count")]
-pub async fn count_post_types(
+#[server(name=CountTerms, prefix="/load", endpoint="/terms/count")]
+pub async fn count_terms(
     search: Option<String>,
     p_filters: Option<Vec<String>>,
 ) -> Result<i64, ServerFnError> {
     use crate::presentation::query_options::QueryOptions;
     use crate::state::AppState;
-    use actix_web::web::Data;
     use leptos_actix::extract;
-    let state: Data<AppState> = extract().await?;
+    let state: actix_web::web::Data<AppState> = extract().await?;
     let q = QueryOptions {
         first_result: None,
         max_results: None,
@@ -90,115 +131,116 @@ pub async fn count_post_types(
         a_filters: None,
     };
     state
-        .post_type_service
+        .term_service
         .count(q.to_filters())
         .await
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTypeById, prefix="/load", endpoint="/post_types/get")]
-pub async fn get_post_type_by_id(id: i32) -> Result<PostTypeTO, ServerFnError> {
+#[server(name=GetTermById, prefix="/load", endpoint="/terms/get")]
+pub async fn get_term_by_id(id: i32) -> Result<TermTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
     let state: Data<AppState> = extract().await?;
     state
-        .post_type_service
+        .term_service
         .get_by_id(id)
         .await
         .and_then(|o| o.ok_or(CoreError::not_found("error.not_found")))
-        .map(PostTypeTO::from)
+        .map(TermTO::from)
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTypeByUid, prefix="/load", endpoint="/post_types/get-uid")]
-pub async fn get_post_type_by_uid(uid: String) -> Result<PostTypeTO, ServerFnError> {
+#[server(name=GetTermByUid, prefix="/load", endpoint="/terms/get-uid")]
+pub async fn get_term_by_uid(uid: String) -> Result<TermTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
     let state: Data<AppState> = extract().await?;
     state
-        .post_type_service
+        .term_service
         .get_by_uid(uid)
         .await
         .and_then(|o| o.ok_or(CoreError::not_found("error.not_found")))
-        .map(PostTypeTO::from)
+        .map(TermTO::from)
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=CreatePostType, prefix="/load", endpoint="/post_types/create")]
-pub async fn create_post_type(code: String, name: String) -> Result<PostTypeTO, ServerFnError> {
+#[server(name=CreateTerm, prefix="/load", endpoint="/terms/create")]
+pub async fn create_term(
+    taxonomy_id: i32,
+    slug: String,
+    name: String,
+) -> Result<TermTO, ServerFnError> {
+    use crate::business::term_service::TermCreate;
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
     let state: Data<AppState> = extract().await?;
-    let c = PostTypeCreate { code, name };
-    state
-        .post_type_service
-        .create(&c)
-        .await
-        .map(PostTypeTO::from)
-        .map_err(|e| ServerFnError::ServerError(e.to_json()))
-}
-
-#[server(name=UpdatePostType, prefix="/load", endpoint="/post_types/update")]
-pub async fn update_post_type(entity: PostTypeTO) -> Result<PostTypeTO, ServerFnError> {
-    use crate::state::AppState;
-    use actix_web::web::Data;
-    use leptos_actix::extract;
-    let state: Data<AppState> = extract().await?;
-    let e: PostType = PostType {
-        id: entity.id,
-        uid: entity.uid,
-        version: entity.version,
-        created_at: entity.created_at,
-        updated_at: entity.updated_at,
-        code: entity.code,
-        name: entity.name,
+    let c = TermCreate {
+        taxonomy_id,
+        slug,
+        name,
     };
     state
-        .post_type_service
-        .update(&e)
+        .term_service
+        .create(&c)
         .await
-        .map(PostTypeTO::from)
+        .map(TermTO::from)
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=DeletePostTypeById, prefix="/load", endpoint="/post_types/delete")]
-pub async fn delete_post_type_by_id(id: i32) -> Result<u64, ServerFnError> {
+#[server(name=UpdateTerm, prefix="/load", endpoint="/terms/update")]
+pub async fn update_term(entity: TermTO) -> Result<TermTO, ServerFnError> {
+    use crate::state::AppState;
+    use actix_web::web::Data;
+    use leptos_actix::extract;
+    let state: Data<AppState> = extract().await?;
+    let e: Term = entity.into();
+    state
+        .term_service
+        .update(&e)
+        .await
+        .map(TermTO::from)
+        .map_err(|e| ServerFnError::ServerError(e.to_json()))
+}
+
+#[server(name=DeleteTermById, prefix="/load", endpoint="/terms/delete")]
+pub async fn delete_term_by_id(id: i32) -> Result<u64, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
     let state: Data<AppState> = extract().await?;
     state
-        .post_type_service
+        .term_service
         .delete_by_id(id)
         .await
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=DeletePostTypeByUid, prefix="/load", endpoint="/post_types/delete-uid")]
-pub async fn delete_post_type_by_uid(uid: String) -> Result<u64, ServerFnError> {
+#[server(name=DeleteTermByUid, prefix="/load", endpoint="/terms/delete-uid")]
+pub async fn delete_term_by_uid(uid: String) -> Result<u64, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
     let state: Data<AppState> = extract().await?;
     state
-        .post_type_service
+        .term_service
         .delete_by_uid(uid)
         .await
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
 // Info
-#[server(name=LoadPostTypeInfos, prefix="/load", endpoint="/post_types/info")]
-pub async fn load_post_type_infos(
+#[server(name=LoadTermInfos, prefix="/load", endpoint="/terms/info")]
+pub async fn load_term_infos(
     first_result: Option<i32>,
     max_results: Option<i32>,
     sort: Option<String>,
     search: Option<String>,
     p_filters: Option<Vec<String>>,
-) -> Result<Vec<PostTypeInfoTO>, ServerFnError> {
+) -> Result<Vec<TermInfoTO>, ServerFnError> {
     use crate::presentation::query_options::QueryOptions;
     use crate::state::AppState;
     use actix_web::web::Data;
@@ -213,7 +255,7 @@ pub async fn load_post_type_infos(
         a_filters: None,
     };
     state
-        .post_type_info_service
+        .term_info_service
         .get_many(
             q.to_sort_criteria(),
             q.first_result,
@@ -221,12 +263,12 @@ pub async fn load_post_type_infos(
             q.to_filters(),
         )
         .await
-        .map(|v| v.into_iter().map(PostTypeInfoTO::from).collect())
+        .map(|v| v.into_iter().map(TermInfoTO::from).collect())
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=CountPostTypeInfos, prefix="/load", endpoint="/post_types/info/count")]
-pub async fn count_post_type_infos(
+#[server(name=CountTermInfos, prefix="/load", endpoint="/terms/info/count")]
+pub async fn count_term_infos(
     search: Option<String>,
     p_filters: Option<Vec<String>>,
 ) -> Result<i64, ServerFnError> {
@@ -244,38 +286,38 @@ pub async fn count_post_type_infos(
         a_filters: None,
     };
     state
-        .post_type_info_service
+        .term_info_service
         .count(q.to_filters())
         .await
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTypeInfoById, prefix="/load", endpoint="/post_types/id/info")]
-pub async fn get_post_type_info_by_id(id: i32) -> Result<PostTypeInfoTO, ServerFnError> {
+#[server(name=GetTermInfoById, prefix="/load", endpoint="/terms/id/info")]
+pub async fn get_term_info_by_id(id: i32) -> Result<TermInfoTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
     let state: Data<AppState> = extract().await?;
     state
-        .post_type_info_service
+        .term_info_service
         .get_by_id(id)
         .await
         .and_then(|o| o.ok_or(CoreError::not_found("error.not_found")))
-        .map(PostTypeInfoTO::from)
+        .map(TermInfoTO::from)
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTypeInfoByUid, prefix="/load", endpoint="/post_types/uid/info")]
-pub async fn get_post_type_info_by_uid(uid: String) -> Result<PostTypeInfoTO, ServerFnError> {
+#[server(name=GetTermInfoByUid, prefix="/load", endpoint="/terms/uid/info")]
+pub async fn get_term_info_by_uid(uid: String) -> Result<TermInfoTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
     let state: Data<AppState> = extract().await?;
     state
-        .post_type_info_service
+        .term_info_service
         .get_by_uid(uid)
         .await
         .and_then(|o| o.ok_or(CoreError::not_found("error.not_found")))
-        .map(PostTypeInfoTO::from)
+        .map(TermInfoTO::from)
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }

@@ -1,11 +1,11 @@
+pub mod attribute_api;
+pub mod attribute_value_api;
 pub mod auth_api;
 mod error;
 mod macros;
 pub mod post_api;
-pub mod post_collection_info_api;
-pub mod post_info_api;
-pub mod post_taxonomy_info_api;
+pub mod post_collection_api;
+pub mod post_taxonomy_api;
 pub mod post_type_api;
-pub mod post_type_info_api;
-pub mod term_info_api;
-pub mod user_info_api;
+pub mod term_api;
+pub mod user_api;

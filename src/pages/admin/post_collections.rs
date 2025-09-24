@@ -7,7 +7,7 @@ use crate::pages::components::datatable::core::row::RowNode;
 use crate::pages::components::datatable::core::state::TableState;
 use crate::pages::components::datatable::DataTable;
 use crate::pages::components::sidebar::SidebarProvider;
-use crate::pages::rest::post_collection_info_api::PostCollectionInfoTO;
+use crate::pages::rest::post_collection_api::PostCollectionInfoTO;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
@@ -164,19 +164,18 @@ pub fn AdminPostCollectionsPage() -> impl IntoView {
             }
         },
         |(first_result_i32, max_results_i32, sort, search)| async move {
-            use crate::pages::rest::post_collection_info_api::{
+            use crate::pages::rest::post_collection_api::{
                 count_post_collection_infos, load_post_collection_infos,
             };
             let (a, b) = futures::join!(
                 load_post_collection_infos(
-                    first_result_i32 as i64,
-                    max_results_i32,
+                    Some(first_result_i32),
+                    Some(max_results_i32),
                     sort.clone(),
                     search.clone(),
                     None,
-                    None
                 ),
-                count_post_collection_infos(search.clone(), None, None)
+                count_post_collection_infos(search.clone(), None)
             );
             match (a, b) {
                 (Ok(items), Ok(total)) => Ok((items, total)),

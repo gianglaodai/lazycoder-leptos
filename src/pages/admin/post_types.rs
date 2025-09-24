@@ -1,6 +1,6 @@
 use crate::pages::admin::guard::AdminGuard;
 use crate::pages::admin::layout::AdminSidebar;
-use crate::pages::components::datatable::core::column::{ColumnDef, Pinned};
+use crate::pages::components::datatable::core::column::{ColumnDef, DataType, Pinned};
 use crate::pages::components::datatable::core::query_sync::{sync_table_query_to_url, SyncOptions};
 use crate::pages::components::datatable::core::render_value::Value;
 use crate::pages::components::datatable::core::row::RowNode;
@@ -11,8 +11,8 @@ use crate::pages::components::{
     DialogTitle, DialogTrigger, Form, FormControl, FormField, FormItem, FormLabel, FormMessage,
     Input, SidebarProvider,
 };
-use crate::pages::rest::post_type_info_api::PostTypeInfoTO;
-use crate::pages::rest::post_type_info_api::{count_post_type_infos, load_post_type_infos};
+use crate::pages::rest::post_type_api::PostTypeInfoTO;
+use crate::pages::rest::post_type_api::{count_post_type_infos, load_post_type_infos};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
@@ -144,11 +144,7 @@ pub fn AdminPostTypesPage() -> impl IntoView {
         ColumnDef {
             id: "id",
             header_name: "ID",
-            value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_type_info_api::PostTypeInfoTO| {
-                    Value::Number(p.id as f64)
-                },
-            )),
+            value_getter: Some(Arc::new(|p: &PostTypeInfoTO| Value::Number(p.id as f64))),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -164,16 +160,12 @@ pub fn AdminPostTypesPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("id"),
-            data_type: Some(crate::pages::components::datatable::core::column::DataType::Int),
+            data_type: Some(DataType::Int),
         },
         ColumnDef {
             id: "uid",
             header_name: "UID",
-            value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_type_info_api::PostTypeInfoTO| {
-                    Value::Text(p.uid.clone())
-                },
-            )),
+            value_getter: Some(Arc::new(|p: &PostTypeInfoTO| Value::Text(p.uid.clone()))),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -189,16 +181,12 @@ pub fn AdminPostTypesPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("uid"),
-            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
+            data_type: Some(DataType::Text),
         },
         ColumnDef {
             id: "code",
             header_name: "Code",
-            value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_type_info_api::PostTypeInfoTO| {
-                    Value::Text(p.code.clone())
-                },
-            )),
+            value_getter: Some(Arc::new(|p: &PostTypeInfoTO| Value::Text(p.code.clone()))),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -214,16 +202,12 @@ pub fn AdminPostTypesPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("code"),
-            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
+            data_type: Some(DataType::Text),
         },
         ColumnDef {
             id: "name",
             header_name: "Name",
-            value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_type_info_api::PostTypeInfoTO| {
-                    Value::Text(p.name.clone())
-                },
-            )),
+            value_getter: Some(Arc::new(|p: &PostTypeInfoTO| Value::Text(p.name.clone()))),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -239,16 +223,14 @@ pub fn AdminPostTypesPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("name"),
-            data_type: Some(crate::pages::components::datatable::core::column::DataType::Text),
+            data_type: Some(DataType::Text),
         },
         ColumnDef {
             id: "created_at",
             header_name: "Created",
-            value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_type_info_api::PostTypeInfoTO| {
-                    Value::Text(p.created_at.to_string())
-                },
-            )),
+            value_getter: Some(Arc::new(|p: &PostTypeInfoTO| {
+                Value::Text(p.created_at.to_string())
+            })),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -264,16 +246,14 @@ pub fn AdminPostTypesPage() -> impl IntoView {
             aggregate: None,
             comparator: None,
             field: Some("updated_at"),
-            data_type: Some(crate::pages::components::datatable::core::column::DataType::DateTime),
+            data_type: Some(DataType::DateTime),
         },
         ColumnDef {
             id: "updated_at",
             header_name: "Updated",
-            value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_type_info_api::PostTypeInfoTO| {
-                    Value::Text(p.updated_at.to_string())
-                },
-            )),
+            value_getter: Some(Arc::new(|p: &PostTypeInfoTO| {
+                Value::Text(p.updated_at.to_string())
+            })),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -316,19 +296,16 @@ pub fn AdminPostTypesPage() -> impl IntoView {
             }
         },
         |(first_result_i32, max_results_i32, sort, search, _r)| async move {
-            use crate::pages::rest::post_type_info_api::{
-                count_post_type_infos, load_post_type_infos,
-            };
+            use crate::pages::rest::post_type_api::{count_post_type_infos, load_post_type_infos};
             let (a, b) = futures::join!(
                 load_post_type_infos(
-                    first_result_i32 as i64,
-                    max_results_i32,
+                    Some(first_result_i32),
+                    Some(max_results_i32),
                     sort.clone(),
                     search.clone(),
                     None,
-                    None
                 ),
-                count_post_type_infos(search.clone(), None, None)
+                count_post_type_infos(search.clone(), None)
             );
             match (a, b) {
                 (Ok(items), Ok(total)) => Ok((items, total)),

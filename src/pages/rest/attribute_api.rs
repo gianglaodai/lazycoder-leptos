@@ -1,4 +1,4 @@
-use crate::business::post_type_service::{PostType, PostTypeCreate, PostTypeInfo};
+use crate::business::attribute_service::{Attribute, AttributeCreate, AttributeInfo};
 use crate::common::error::CoreError;
 use crate::common::service::{Service, ViewService};
 use crate::{define_readonly_to_with_common_fields_fe, define_to_with_common_fields_fe};
@@ -6,45 +6,61 @@ use leptos::prelude::ServerFnError;
 use leptos::*;
 
 // Table TO
-define_to_with_common_fields_fe!(PostType { pub code: String, pub name: String, });
+define_to_with_common_fields_fe!(Attribute { pub name: String, pub entity_type: String, pub data_type: String, });
 // View TO
-define_readonly_to_with_common_fields_fe!(PostTypeInfo { pub code: String, pub name: String, });
+define_readonly_to_with_common_fields_fe!(AttributeInfo { pub name: String, pub entity_type: String, pub data_type: String, });
 
-impl From<PostType> for PostTypeTO {
-    fn from(e: PostType) -> Self {
+impl From<Attribute> for AttributeTO {
+    fn from(e: Attribute) -> Self {
         Self {
             id: e.id,
             uid: e.uid,
             version: e.version,
             created_at: e.created_at,
             updated_at: e.updated_at,
-            code: e.code,
             name: e.name,
+            entity_type: e.entity_type,
+            data_type: e.data_type,
         }
     }
 }
-impl From<PostTypeInfo> for PostTypeInfoTO {
-    fn from(e: PostTypeInfo) -> Self {
+impl From<AttributeTO> for Attribute {
+    fn from(t: AttributeTO) -> Self {
+        Self {
+            id: t.id,
+            uid: t.uid,
+            version: t.version,
+            created_at: t.created_at,
+            updated_at: t.updated_at,
+            name: t.name,
+            entity_type: t.entity_type,
+            data_type: t.data_type,
+        }
+    }
+}
+impl From<AttributeInfo> for AttributeInfoTO {
+    fn from(e: AttributeInfo) -> Self {
         Self {
             id: e.id,
             uid: e.uid,
             version: e.version,
             created_at: e.created_at,
             updated_at: e.updated_at,
-            code: e.code,
             name: e.name,
+            entity_type: e.entity_type,
+            data_type: e.data_type,
         }
     }
 }
 
-#[server(name=LoadPostTypes, prefix="/load", endpoint="/post_types")]
-pub async fn load_post_types(
+#[server(name=LoadAttributes, prefix="/load", endpoint="/attributes")]
+pub async fn load_attributes(
     first_result: Option<i32>,
     max_results: Option<i32>,
     sort: Option<String>,
     search: Option<String>,
     p_filters: Option<Vec<String>>,
-) -> Result<Vec<PostTypeTO>, ServerFnError> {
+) -> Result<Vec<AttributeTO>, ServerFnError> {
     use crate::presentation::query_options::QueryOptions;
     use crate::state::AppState;
     use actix_web::web::Data;
@@ -59,7 +75,7 @@ pub async fn load_post_types(
         a_filters: None,
     };
     state
-        .post_type_service
+        .attribute_service
         .get_many(
             q.to_sort_criteria(),
             q.first_result,
@@ -67,12 +83,12 @@ pub async fn load_post_types(
             q.to_filters(),
         )
         .await
-        .map(|v| v.into_iter().map(PostTypeTO::from).collect())
+        .map(|v| v.into_iter().map(AttributeTO::from).collect())
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=CountPostTypes, prefix="/load", endpoint="/post_types/count")]
-pub async fn count_post_types(
+#[server(name=CountAttributes, prefix="/load", endpoint="/attributes/count")]
+pub async fn count_attributes(
     search: Option<String>,
     p_filters: Option<Vec<String>>,
 ) -> Result<i64, ServerFnError> {
@@ -90,115 +106,115 @@ pub async fn count_post_types(
         a_filters: None,
     };
     state
-        .post_type_service
+        .attribute_service
         .count(q.to_filters())
         .await
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTypeById, prefix="/load", endpoint="/post_types/get")]
-pub async fn get_post_type_by_id(id: i32) -> Result<PostTypeTO, ServerFnError> {
+#[server(name=GetAttributeById, prefix="/load", endpoint="/attributes/get")]
+pub async fn get_attribute_by_id(id: i32) -> Result<AttributeTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
     let state: Data<AppState> = extract().await?;
     state
-        .post_type_service
+        .attribute_service
         .get_by_id(id)
         .await
         .and_then(|o| o.ok_or(CoreError::not_found("error.not_found")))
-        .map(PostTypeTO::from)
+        .map(AttributeTO::from)
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTypeByUid, prefix="/load", endpoint="/post_types/get-uid")]
-pub async fn get_post_type_by_uid(uid: String) -> Result<PostTypeTO, ServerFnError> {
+#[server(name=GetAttributeByUid, prefix="/load", endpoint="/attributes/get-uid")]
+pub async fn get_attribute_by_uid(uid: String) -> Result<AttributeTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
     let state: Data<AppState> = extract().await?;
     state
-        .post_type_service
+        .attribute_service
         .get_by_uid(uid)
         .await
         .and_then(|o| o.ok_or(CoreError::not_found("error.not_found")))
-        .map(PostTypeTO::from)
+        .map(AttributeTO::from)
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=CreatePostType, prefix="/load", endpoint="/post_types/create")]
-pub async fn create_post_type(code: String, name: String) -> Result<PostTypeTO, ServerFnError> {
+#[server(name=CreateAttribute, prefix="/load", endpoint="/attributes/create")]
+pub async fn create_attribute(
+    name: String,
+    entity_type: String,
+    data_type: String,
+) -> Result<AttributeTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
     let state: Data<AppState> = extract().await?;
-    let c = PostTypeCreate { code, name };
-    state
-        .post_type_service
-        .create(&c)
-        .await
-        .map(PostTypeTO::from)
-        .map_err(|e| ServerFnError::ServerError(e.to_json()))
-}
-
-#[server(name=UpdatePostType, prefix="/load", endpoint="/post_types/update")]
-pub async fn update_post_type(entity: PostTypeTO) -> Result<PostTypeTO, ServerFnError> {
-    use crate::state::AppState;
-    use actix_web::web::Data;
-    use leptos_actix::extract;
-    let state: Data<AppState> = extract().await?;
-    let e: PostType = PostType {
-        id: entity.id,
-        uid: entity.uid,
-        version: entity.version,
-        created_at: entity.created_at,
-        updated_at: entity.updated_at,
-        code: entity.code,
-        name: entity.name,
+    let c = AttributeCreate {
+        name,
+        entity_type,
+        data_type,
     };
     state
-        .post_type_service
-        .update(&e)
+        .attribute_service
+        .create(&c)
         .await
-        .map(PostTypeTO::from)
+        .map(AttributeTO::from)
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=DeletePostTypeById, prefix="/load", endpoint="/post_types/delete")]
-pub async fn delete_post_type_by_id(id: i32) -> Result<u64, ServerFnError> {
+#[server(name=UpdateAttribute, prefix="/load", endpoint="/attributes/update")]
+pub async fn update_attribute(entity: AttributeTO) -> Result<AttributeTO, ServerFnError> {
+    use crate::state::AppState;
+    use actix_web::web::Data;
+    use leptos_actix::extract;
+    let state: Data<AppState> = extract().await?;
+    let e: Attribute = entity.into();
+    state
+        .attribute_service
+        .update(&e)
+        .await
+        .map(AttributeTO::from)
+        .map_err(|e| ServerFnError::ServerError(e.to_json()))
+}
+
+#[server(name=DeleteAttributeById, prefix="/load", endpoint="/attributes/delete")]
+pub async fn delete_attribute_by_id(id: i32) -> Result<u64, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
     let state: Data<AppState> = extract().await?;
     state
-        .post_type_service
+        .attribute_service
         .delete_by_id(id)
         .await
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=DeletePostTypeByUid, prefix="/load", endpoint="/post_types/delete-uid")]
-pub async fn delete_post_type_by_uid(uid: String) -> Result<u64, ServerFnError> {
+#[server(name=DeleteAttributeByUid, prefix="/load", endpoint="/attributes/delete-uid")]
+pub async fn delete_attribute_by_uid(uid: String) -> Result<u64, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
     let state: Data<AppState> = extract().await?;
     state
-        .post_type_service
+        .attribute_service
         .delete_by_uid(uid)
         .await
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
 // Info
-#[server(name=LoadPostTypeInfos, prefix="/load", endpoint="/post_types/info")]
-pub async fn load_post_type_infos(
+#[server(name=LoadAttributeInfos, prefix="/load", endpoint="/attributes/info")]
+pub async fn load_attribute_infos(
     first_result: Option<i32>,
     max_results: Option<i32>,
     sort: Option<String>,
     search: Option<String>,
     p_filters: Option<Vec<String>>,
-) -> Result<Vec<PostTypeInfoTO>, ServerFnError> {
+) -> Result<Vec<AttributeInfoTO>, ServerFnError> {
     use crate::presentation::query_options::QueryOptions;
     use crate::state::AppState;
     use actix_web::web::Data;
@@ -213,7 +229,7 @@ pub async fn load_post_type_infos(
         a_filters: None,
     };
     state
-        .post_type_info_service
+        .attribute_info_service
         .get_many(
             q.to_sort_criteria(),
             q.first_result,
@@ -221,12 +237,12 @@ pub async fn load_post_type_infos(
             q.to_filters(),
         )
         .await
-        .map(|v| v.into_iter().map(PostTypeInfoTO::from).collect())
+        .map(|v| v.into_iter().map(AttributeInfoTO::from).collect())
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=CountPostTypeInfos, prefix="/load", endpoint="/post_types/info/count")]
-pub async fn count_post_type_infos(
+#[server(name=CountAttributeInfos, prefix="/load", endpoint="/attributes/info/count")]
+pub async fn count_attribute_infos(
     search: Option<String>,
     p_filters: Option<Vec<String>>,
 ) -> Result<i64, ServerFnError> {
@@ -244,38 +260,38 @@ pub async fn count_post_type_infos(
         a_filters: None,
     };
     state
-        .post_type_info_service
+        .attribute_info_service
         .count(q.to_filters())
         .await
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTypeInfoById, prefix="/load", endpoint="/post_types/id/info")]
-pub async fn get_post_type_info_by_id(id: i32) -> Result<PostTypeInfoTO, ServerFnError> {
+#[server(name=GetAttributeInfoById, prefix="/load", endpoint="/attributes/id/info")]
+pub async fn get_attribute_info_by_id(id: i32) -> Result<AttributeInfoTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
     let state: Data<AppState> = extract().await?;
     state
-        .post_type_info_service
+        .attribute_info_service
         .get_by_id(id)
         .await
         .and_then(|o| o.ok_or(CoreError::not_found("error.not_found")))
-        .map(PostTypeInfoTO::from)
+        .map(AttributeInfoTO::from)
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTypeInfoByUid, prefix="/load", endpoint="/post_types/uid/info")]
-pub async fn get_post_type_info_by_uid(uid: String) -> Result<PostTypeInfoTO, ServerFnError> {
+#[server(name=GetAttributeInfoByUid, prefix="/load", endpoint="/attributes/uid/info")]
+pub async fn get_attribute_info_by_uid(uid: String) -> Result<AttributeInfoTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
     let state: Data<AppState> = extract().await?;
     state
-        .post_type_info_service
+        .attribute_info_service
         .get_by_uid(uid)
         .await
         .and_then(|o| o.ok_or(CoreError::not_found("error.not_found")))
-        .map(PostTypeInfoTO::from)
+        .map(AttributeInfoTO::from)
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }

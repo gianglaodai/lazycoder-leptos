@@ -46,6 +46,23 @@ impl AsCell for bool {
         }
     }
 }
+impl AsCell for f64 {
+    fn as_cell(&self) -> String {
+        self.to_string()
+    }
+}
+impl AsCell for time::Date {
+    fn as_cell(&self) -> String {
+        let fmt = time::macros::format_description!("[year]-[month]-[day]");
+        self.format(&fmt).unwrap_or_else(|_| self.to_string())
+    }
+}
+impl AsCell for time::Time {
+    fn as_cell(&self) -> String {
+        let fmt = time::macros::format_description!("[hour]:[minute]:[second]");
+        self.format(&fmt).unwrap_or_else(|_| self.to_string())
+    }
+}
 impl<T: AsCell> AsCell for Option<T> {
     fn as_cell(&self) -> String {
         self.as_ref().map(|v| v.as_cell()).unwrap_or_default()

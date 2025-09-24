@@ -14,9 +14,10 @@ use crate::pages::components::{
     Input,
 };
 use crate::pages::rest::auth_api::UserTO;
-use crate::pages::rest::post_api::{create_post, delete_post, update_post, PostTO};
-use crate::pages::rest::post_info_api::{count_post_infos, load_post_infos, PostInfoTO};
-use crate::pages::rest::post_type_info_api::{load_post_type_infos, PostTypeInfoTO};
+use crate::pages::rest::post_api::{
+    count_post_infos, create_post, delete_post, load_post_infos, update_post, PostInfoTO, PostTO,
+};
+use crate::pages::rest::post_type_api::{load_post_type_infos, PostTypeInfoTO};
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
@@ -47,7 +48,7 @@ fn NewPostDialog() -> impl IntoView {
         move || post_types_trigger.get(),
         |should_load| async move {
             if should_load {
-                load_post_type_infos(0, 100, Some("name".to_string()), None, None, None).await
+                load_post_type_infos(Some(0), Some(100), Some("name".to_string()), None, None).await
             } else {
                 Ok(Vec::<PostTypeInfoTO>::new())
             }
@@ -62,7 +63,9 @@ fn NewPostDialog() -> impl IntoView {
             + Sync,
     > = Arc::new(|| {
         Box::pin(async move {
-            match load_post_type_infos(0, 100, Some("name".to_string()), None, None, None).await {
+            match load_post_type_infos(Some(0), Some(100), Some("name".to_string()), None, None)
+                .await
+            {
                 Ok(items) => Ok(items
                     .into_iter()
                     .map(|pt| SelectOption {
