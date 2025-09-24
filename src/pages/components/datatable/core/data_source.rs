@@ -1,5 +1,7 @@
 use crate::pages::components::datatable::core::agg::AggMap;
 use std::{future::Future, pin::Pin};
+use std::collections::HashMap;
+use crate::common::filter::{FilterOperator, FilterValue};
 
 #[derive(Clone, Debug)]
 pub enum SortOrder {
@@ -18,15 +20,15 @@ pub struct SortModel {
 pub struct FilterModel {
     // simple per-column text filters (AG Grid-like 'contains' behavior)
     pub quick_text: Option<String>,
-    pub column_text: std::collections::HashMap<String, String>,
+    pub column_text: HashMap<String, String>,
     // advanced per-column filters: operator + typed value
-    pub column_advanced: std::collections::HashMap<String, AdvancedFilter>,
+    pub column_advanced: HashMap<String, AdvancedFilter>,
 }
 
 #[derive(Clone, Debug)]
 pub struct AdvancedFilter {
-    pub operator: crate::business::filter::FilterOperator,
-    pub value: Option<crate::business::filter::FilterValue>,
+    pub operator: FilterOperator,
+    pub value: Option<FilterValue>,
 }
 
 #[derive(Clone, Debug, Default)]

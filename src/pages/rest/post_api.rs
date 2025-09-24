@@ -1,5 +1,6 @@
-use crate::business::error::CoreError;
 use crate::business::post_service::{Post, PostStatus};
+use crate::common::error::CoreError;
+use crate::common::service::{Service, ViewService};
 use crate::define_to_with_common_fields_fe;
 use crate::pages::rest::post_info_api::PostInfoTO;
 use leptos::prelude::ServerFnError;
@@ -54,7 +55,7 @@ pub async fn load_posts(
     first_result: i64,
     max_results: i32,
 ) -> Result<Vec<PostInfoTO>, ServerFnError> {
-    use crate::business::sort::SortCriterion;
+    use crate::common::sort::SortCriterion;
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
@@ -127,12 +128,8 @@ fn slugify(input: &str) -> String {
     }
 }
 #[server(name=CreatePost, prefix="/load", endpoint="/posts/create")]
-pub async fn create_post(
-    title: String,
-    type_id: i32,
-    user_id: i32,
-) -> Result<PostTO, ServerFnError> {
-    use crate::business::post_service::{PostCreate, PostStatus};
+pub async fn create_post(title: String, type_id: i32) -> Result<PostTO, ServerFnError> {
+    use crate::business::post_service::PostCreate;
     use crate::state::AppState;
     use actix_session::SessionExt as _;
     use actix_web::web::Data;
@@ -160,15 +157,7 @@ pub async fn create_post(
     }
 
     let state: Data<AppState> = extract().await?;
-    let create = PostCreate {
-        slug: slugify(&title),
-        title,
-        summary: "".to_string(),
-        content: "".to_string(),
-        status: PostStatus::DRAFT,
-        user_id,
-        type_id,
-    };
+    let create = PostCreate { title, type_id };
     state
         .post_service
         .create(&create)

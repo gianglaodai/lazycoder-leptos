@@ -1,4 +1,4 @@
-use crate::business::filter::FilterOperator;
+use crate::common::filter::FilterOperator;
 use crate::pages::components::button::ButtonVariant;
 use crate::pages::components::datatable::core::column::ColumnDef;
 use crate::pages::components::datatable::core::column::DataType;
