@@ -113,7 +113,7 @@ pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Respon
     )
 }
 
-#[post("/")]
+#[post("")]
 pub async fn create(
     state: Data<AppState>,
     req: actix_web::HttpRequest,

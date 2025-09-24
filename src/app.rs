@@ -60,7 +60,7 @@ pub async fn run(pool: PgPool) -> std::io::Result<()> {
             .service(Files::new("/pkg", format!("{site_root}/pkg")))
             .service(Files::new("/assets", &site_root))
             .service(favicon)
-            .route("/api/{tail:.*}", handle_server_fns())
+            .route("/load/{tail:.*}", handle_server_fns())
             .configure(config)
             .leptos_routes(routes, {
                 let leptos_options = leptos_options.clone();
