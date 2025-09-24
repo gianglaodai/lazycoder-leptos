@@ -1,7 +1,7 @@
 #![cfg(feature = "ssr")]
 
-use crate::business::user_service::{User, UserCreate, UserRole};
-use crate::define_to_with_common_fields_be;
+use crate::business::user_service::{User, UserCreate, UserRole, UserInfo};
+use crate::{define_to_with_common_fields_be, define_readonly_to_with_common_fields_be};
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
 use crate::state::AppState;
@@ -17,6 +17,13 @@ define_to_with_common_fields_be!(User {
     pub password: String,
     #[serde(skip_serializing, default)]
     pub role: i32,
+});
+
+// Readonly TO for info (no password)
+define_readonly_to_with_common_fields_be!(UserInfo {
+    pub username: String,
+    pub email: String,
+    pub role: String,
 });
 
 impl From<UserTO> for User {
@@ -58,6 +65,21 @@ impl From<User> for UserTO {
             email: entity.email,
             password: entity.password,
             role: entity.role.as_i32(),
+        }
+    }
+}
+
+impl From<UserInfo> for UserInfoTO {
+    fn from(e: UserInfo) -> Self {
+        Self {
+            id: e.id,
+            uid: e.uid,
+            version: e.version,
+            created_at: e.created_at,
+            updated_at: e.updated_at,
+            username: e.username,
+            email: e.email,
+            role: e.role,
         }
     }
 }
@@ -119,11 +141,13 @@ pub async fn create(state: Data<AppState>, user: Json<UserCreateTO>) -> impl Res
 }
 
 #[put("/{id}")]
-pub async fn update(state: Data<AppState>, user: Json<UserTO>) -> impl Responder {
+pub async fn update(state: Data<AppState>, id: Path<i32>, mut user: Json<UserTO>) -> impl Responder {
+    let mut body = user.into_inner();
+    body.id = id.into_inner();
     respond_result(
         state
             .user_service
-            .update(&User::from(user.into_inner()))
+            .update(&User::from(body))
             .await
             .map(UserTO::from),
     )
@@ -139,15 +163,66 @@ pub async fn delete_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Res
     respond_result(state.user_service.delete_by_uid(uid.into_inner()).await)
 }
 
+// ===== Info endpoints =====
+#[get("/info")]
+pub async fn get_many_info(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
+    respond_results(
+        state
+            .user_info_service
+            .get_many(
+                query.to_sort_criteria(),
+                query.first_result,
+                query.max_results,
+                query.to_filters(),
+            )
+            .await,
+        UserInfoTO::from,
+    )
+}
+
+#[get("/info/count")]
+pub async fn count_info(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
+    respond_result(state.user_info_service.count(query.to_filters()).await)
+}
+
+#[get("/{id}/info")]
+pub async fn get_info_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
+    respond_result(
+        state
+            .user_info_service
+            .get_by_id(id.into_inner())
+            .await
+            .and_then(|opt| opt.ok_or(CoreError::not_found("error.not_found")))
+            .map(UserInfoTO::from),
+    )
+}
+
+#[get("/uid/{uid}/info")]
+pub async fn get_info_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
+    respond_result(
+        state
+            .user_info_service
+            .get_by_uid(uid.into_inner())
+            .await
+            .and_then(|opt| opt.ok_or(CoreError::not_found("error.not_found")))
+            .map(UserInfoTO::from),
+    )
+}
+
 pub fn routes(cfg: &mut ServiceConfig) {
     cfg.service(
         scope("/users")
             .service(get_many)
+            .service(count)
             .service(get_by_id)
             .service(get_by_uid)
             .service(create)
             .service(update)
             .service(delete_by_id)
-            .service(delete_by_uid),
+            .service(delete_by_uid)
+            .service(get_many_info)
+            .service(count_info)
+            .service(get_info_by_id)
+            .service(get_info_by_uid),
     );
 }

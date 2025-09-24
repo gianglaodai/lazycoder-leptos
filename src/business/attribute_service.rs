@@ -1,5 +1,5 @@
-use crate::common::repository::ViewRepository;
-use crate::common::service::ViewService;
+use crate::common::repository::{Repository, ViewRepository};
+use crate::common::service::{Service, ViewService};
 use crate::{define_readonly_struct_with_common_fields, define_struct_with_common_fields};
 use std::sync::Arc;
 
@@ -17,7 +17,7 @@ define_readonly_struct_with_common_fields!(AttributeInfo {
     pub data_type: String,
 });
 
-pub trait AttributeRepository: ViewRepository<Attribute> + Send + Sync {}
+pub trait AttributeRepository: Repository<Attribute, AttributeCreate> + Send + Sync {}
 pub trait AttributeInfoRepository: ViewRepository<AttributeInfo> + Send + Sync {}
 
 #[derive(Clone)]
@@ -37,6 +37,10 @@ impl<R: AttributeRepository> ViewService for AttributeService<R> {
     fn get_repository(&self) -> &Self::Repo {
         &self.repository
     }
+}
+
+impl<R: AttributeRepository> Service for AttributeService<R> {
+    type Create = AttributeCreate;
 }
 
 #[derive(Clone)]

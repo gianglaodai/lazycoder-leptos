@@ -1,88 +1,73 @@
-use crate::business::attribute_service::{Attribute, AttributeCreate, AttributeInfo};
+#![cfg(feature = "ssr")]
+
+use crate::business::post_type_service::{PostType, PostTypeCreate, PostTypeInfo};
+use crate::common::error::CoreError;
+use crate::common::service::{Service, ViewService};
 use crate::{define_readonly_to_with_common_fields_be, define_to_with_common_fields_be};
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
 use crate::state::AppState;
 use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
-use crate::common::error::CoreError;
-use crate::common::service::{Service, ViewService};
-// attributes
 
-// Table TO (CRUD)
-define_to_with_common_fields_be!(Attribute {
+// Table
+define_to_with_common_fields_be!(PostType {
+    pub code: String,
     pub name: String,
-    pub entity_type: String,
-    pub data_type: String,
 });
 
-// View TO (info)
-define_readonly_to_with_common_fields_be!(AttributeInfo {
+// View
+define_readonly_to_with_common_fields_be!(PostTypeInfo {
+    pub code: String,
     pub name: String,
-    pub entity_type: String,
-    pub data_type: String,
 });
 
-impl From<AttributeTO> for Attribute {
-    fn from(to: AttributeTO) -> Self {
+impl From<PostTypeTO> for PostType {
+    fn from(to: PostTypeTO) -> Self {
         Self {
             id: to.id,
             uid: to.uid,
             version: to.version,
             created_at: to.created_at,
             updated_at: to.updated_at,
+            code: to.code,
             name: to.name,
-            entity_type: to.entity_type,
-            data_type: to.data_type,
         }
     }
 }
-impl From<Attribute> for AttributeTO {
-    fn from(entity: Attribute) -> Self {
+impl From<PostType> for PostTypeTO {
+    fn from(e: PostType) -> Self {
         Self {
-            id: entity.id,
-            uid: entity.uid,
-            version: entity.version,
-            created_at: entity.created_at,
-            updated_at: entity.updated_at,
-            name: entity.name,
-            entity_type: entity.entity_type,
-            data_type: entity.data_type,
+            id: e.id,
+            uid: e.uid,
+            version: e.version,
+            created_at: e.created_at,
+            updated_at: e.updated_at,
+            code: e.code,
+            name: e.name,
         }
     }
 }
-impl From<AttributeInfo> for AttributeInfoTO {
-    fn from(entity: AttributeInfo) -> Self {
+impl From<PostTypeInfo> for PostTypeInfoTO {
+    fn from(e: PostTypeInfo) -> Self {
         Self {
-            id: entity.id,
-            uid: entity.uid,
-            version: entity.version,
-            created_at: entity.created_at,
-            updated_at: entity.updated_at,
-            name: entity.name,
-            entity_type: entity.entity_type,
-            data_type: entity.data_type,
-        }
-    }
-}
-impl From<AttributeCreateTO> for AttributeCreate {
-    fn from(to: AttributeCreateTO) -> Self {
-        Self {
-            name: to.name,
-            entity_type: to.entity_type,
-            data_type: to.data_type,
+            id: e.id,
+            uid: e.uid,
+            version: e.version,
+            created_at: e.created_at,
+            updated_at: e.updated_at,
+            code: e.code,
+            name: e.name,
         }
     }
 }
 
+// Table endpoints
 #[get("")]
-pub async fn get_many(
-    state: Data<AppState>,
-    query: Query<QueryOptions>,
-) -> impl Responder {
+pub async fn get_many(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
     respond_results(
         state
-            .attribute_service
+            .post_type_service
             .get_many(
                 query.to_sort_criteria(),
                 query.first_result,
@@ -90,24 +75,24 @@ pub async fn get_many(
                 query.to_filters(),
             )
             .await,
-        AttributeTO::from,
+        PostTypeTO::from,
     )
 }
 
 #[get("/count")]
 pub async fn count(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
-    respond_result(state.attribute_service.count(query.to_filters()).await)
+    respond_result(state.post_type_service.count(query.to_filters()).await)
 }
 
 #[get("/{id}")]
 pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
     respond_result(
         state
-            .attribute_service
+            .post_type_service
             .get_by_id(id.into_inner())
             .await
             .and_then(|opt| opt.ok_or(CoreError::not_found("error.not_found")))
-            .map(AttributeTO::from),
+            .map(PostTypeTO::from),
     )
 }
 
@@ -115,46 +100,44 @@ pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
 pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
     respond_result(
         state
-            .attribute_service
+            .post_type_service
             .get_by_uid(uid.into_inner())
             .await
             .and_then(|opt| opt.ok_or(CoreError::not_found("error.not_found")))
-            .map(AttributeTO::from),
+            .map(PostTypeTO::from),
     )
 }
 
 #[post("")]
-pub async fn create(state: Data<AppState>, data: Json<AttributeCreateTO>) -> impl Responder {
+pub async fn create(state: Data<AppState>, data: Json<PostTypeCreateTO>) -> impl Responder {
     respond_result(
         state
-            .attribute_service
-            .create(&AttributeCreate::from(data.into_inner()))
+            .post_type_service
+            .create(&PostTypeCreate::from(data.into_inner()))
             .await
-            .map(AttributeTO::from),
+            .map(PostTypeTO::from),
     )
 }
 
 #[put("/{id}")]
-pub async fn update(state: Data<AppState>, id: Path<i32>, mut data: Json<AttributeTO>) -> impl Responder {
-    let mut body = data.into_inner();
-    body.id = id.into_inner();
+pub async fn update(state: Data<AppState>, data: Json<PostTypeTO>) -> impl Responder {
     respond_result(
         state
-            .attribute_service
-            .update(&Attribute::from(body))
+            .post_type_service
+            .update(&PostType::from(data.into_inner()))
             .await
-            .map(AttributeTO::from),
+            .map(PostTypeTO::from),
     )
 }
 
 #[delete("/{id}")]
 pub async fn delete_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
-    respond_result(state.attribute_service.delete_by_id(id.into_inner()).await)
+    respond_result(state.post_type_service.delete_by_id(id.into_inner()).await)
 }
 
 #[delete("/uid/{uid}")]
 pub async fn delete_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
-    respond_result(state.attribute_service.delete_by_uid(uid.into_inner()).await)
+    respond_result(state.post_type_service.delete_by_uid(uid.into_inner()).await)
 }
 
 // Info endpoints
@@ -162,7 +145,7 @@ pub async fn delete_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Res
 pub async fn get_many_info(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
     respond_results(
         state
-            .attribute_info_service
+            .post_type_info_service
             .get_many(
                 query.to_sort_criteria(),
                 query.first_result,
@@ -170,24 +153,24 @@ pub async fn get_many_info(state: Data<AppState>, query: Query<QueryOptions>) ->
                 query.to_filters(),
             )
             .await,
-        AttributeInfoTO::from,
+        PostTypeInfoTO::from,
     )
 }
 
 #[get("/info/count")]
 pub async fn count_info(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
-    respond_result(state.attribute_info_service.count(query.to_filters()).await)
+    respond_result(state.post_type_info_service.count(query.to_filters()).await)
 }
 
 #[get("/{id}/info")]
 pub async fn get_info_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
     respond_result(
         state
-            .attribute_info_service
+            .post_type_info_service
             .get_by_id(id.into_inner())
             .await
             .and_then(|opt| opt.ok_or(CoreError::not_found("error.not_found")))
-            .map(AttributeInfoTO::from),
+            .map(PostTypeInfoTO::from),
     )
 }
 
@@ -195,17 +178,17 @@ pub async fn get_info_by_id(state: Data<AppState>, id: Path<i32>) -> impl Respon
 pub async fn get_info_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
     respond_result(
         state
-            .attribute_info_service
+            .post_type_info_service
             .get_by_uid(uid.into_inner())
             .await
             .and_then(|opt| opt.ok_or(CoreError::not_found("error.not_found")))
-            .map(AttributeInfoTO::from),
+            .map(PostTypeInfoTO::from),
     )
 }
 
-pub fn routes_attributes(cfg: &mut ServiceConfig) {
+pub fn routes(cfg: &mut ServiceConfig) {
     cfg.service(
-        scope("/api/attributes")
+        scope("/api/post_types")
             .service(get_many)
             .service(count)
             .service(get_by_id)
@@ -219,4 +202,14 @@ pub fn routes_attributes(cfg: &mut ServiceConfig) {
             .service(get_info_by_id)
             .service(get_info_by_uid),
     );
+}
+
+
+impl From<PostTypeCreateTO> for PostTypeCreate {
+    fn from(to: PostTypeCreateTO) -> Self {
+        Self {
+            code: to.code,
+            name: to.name,
+        }
+    }
 }

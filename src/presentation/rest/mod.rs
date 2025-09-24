@@ -1,10 +1,10 @@
 #![cfg(feature = "ssr")]
 pub mod attribute_controller;
-pub mod post_collection_info_controller;
+pub mod attribute_value_controller;
+pub mod post_collection_controller;
 pub mod post_controller;
-pub mod post_info_controller;
-pub mod post_type_info_controller;
+pub mod post_type_controller;
 pub mod response_result;
-pub mod taxonomy_info_controller;
-pub mod term_info_controller;
+pub mod post_taxonomy_controller;
+pub mod term_controller;
 pub mod user_controller;

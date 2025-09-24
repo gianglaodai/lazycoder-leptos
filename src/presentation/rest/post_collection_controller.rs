@@ -1,43 +1,39 @@
-use crate::business::post_service::{Post, PostCreate, PostInfo, PostStatus};
+#![cfg(feature = "ssr")]
+
+use crate::business::post_collection_service::{
+    PostCollection, PostCollectionCreate, PostCollectionInfo,
+};
 use crate::common::error::CoreError;
 use crate::common::service::{Service, ViewService};
 use crate::{define_readonly_to_with_common_fields_be, define_to_with_common_fields_be};
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
-use crate::presentation::rest::user_controller::UserTO;
 use crate::state::AppState;
 use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
-use std::str::FromStr;
 
-define_to_with_common_fields_be!(Post {
+// Table TO (CRUD)
+define_to_with_common_fields_be!(PostCollection {
     req {
+        pub slug: String,
         pub title: String,
-        pub type_id: i32,
+        pub visibility: String,
     }
     opt {
-        pub slug: String,
-        pub summary: String,
-        pub content: String,
-        pub status: String,
-        pub user_id: i32,
+        pub description: Option<String>,
     }
 });
 
-define_readonly_to_with_common_fields_be!(PostInfo {
+// View TO (info)
+define_readonly_to_with_common_fields_be!(PostCollectionInfo {
     pub slug: String,
     pub title: String,
-    pub summary: String,
-    pub content: String,
-    pub status: String,
-    pub user_id: i32,
-    pub username: String,
-    pub email: String,
+    pub description: String,
+    pub visibility: String,
 });
 
-
-impl From<PostTO> for Post {
-    fn from(to: PostTO) -> Self {
+impl From<PostCollectionTO> for PostCollection {
+    fn from(to: PostCollectionTO) -> Self {
         Self {
             id: to.id,
             uid: to.uid,
@@ -46,17 +42,13 @@ impl From<PostTO> for Post {
             updated_at: to.updated_at,
             slug: to.slug,
             title: to.title,
-            summary: to.summary,
-            content: to.content,
-            status: PostStatus::from_str(&to.status).unwrap_or(PostStatus::DRAFT),
-            user_id: to.user_id,
-            type_id: to.type_id,
+            description: to.description,
+            visibility: to.visibility,
         }
     }
 }
-
-impl From<PostInfo> for PostInfoTO {
-    fn from(entity: PostInfo) -> Self {
+impl From<PostCollection> for PostCollectionTO {
+    fn from(entity: PostCollection) -> Self {
         Self {
             id: entity.id,
             uid: entity.uid,
@@ -65,24 +57,13 @@ impl From<PostInfo> for PostInfoTO {
             updated_at: entity.updated_at,
             slug: entity.slug,
             title: entity.title,
-            summary: entity.summary,
-            content: entity.content,
-            status: entity.status.as_str().to_string(),
-            user_id: entity.user_id,
-            username: entity.username,
-            email: entity.email,
+            description: entity.description,
+            visibility: entity.visibility,
         }
     }
 }
-
-#[derive(serde::Deserialize)]
-pub struct NewPostTO {
-    pub title: String,
-    pub type_id: i32,
-}
-
-impl From<Post> for PostTO {
-    fn from(entity: Post) -> Self {
+impl From<PostCollectionInfo> for PostCollectionInfoTO {
+    fn from(entity: PostCollectionInfo) -> Self {
         Self {
             id: entity.id,
             uid: entity.uid,
@@ -91,20 +72,18 @@ impl From<Post> for PostTO {
             updated_at: entity.updated_at,
             slug: entity.slug,
             title: entity.title,
-            summary: entity.summary,
-            content: entity.content,
-            status: entity.status.as_str().to_string(),
-            user_id: entity.user_id,
-            type_id: entity.type_id,
+            description: entity.description,
+            visibility: entity.visibility,
         }
     }
 }
 
+// ========== Table endpoints ==========
 #[get("")]
 pub async fn get_many(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
     respond_results(
         state
-            .post_service
+            .post_collection_service
             .get_many(
                 query.to_sort_criteria(),
                 query.first_result,
@@ -112,24 +91,24 @@ pub async fn get_many(state: Data<AppState>, query: Query<QueryOptions>) -> impl
                 query.to_filters(),
             )
             .await,
-        PostTO::from,
+        PostCollectionTO::from,
     )
 }
 
 #[get("/count")]
 pub async fn count(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
-    respond_result(state.post_service.count(query.to_filters()).await)
+    respond_result(state.post_collection_service.count(query.to_filters()).await)
 }
 
 #[get("/{id}")]
 pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
     respond_result(
         state
-            .post_service
+            .post_collection_service
             .get_by_id(id.into_inner())
             .await
             .and_then(|opt| opt.ok_or(CoreError::not_found("error.not_found")))
-            .map(PostTO::from),
+            .map(PostCollectionTO::from),
     )
 }
 
@@ -137,72 +116,52 @@ pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
 pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
     respond_result(
         state
-            .post_service
+            .post_collection_service
             .get_by_uid(uid.into_inner())
             .await
             .and_then(|opt| opt.ok_or(CoreError::not_found("error.not_found")))
-            .map(PostTO::from),
+            .map(PostCollectionTO::from),
     )
 }
 
 #[post("")]
-pub async fn create(
-    state: Data<AppState>,
-    req: actix_web::HttpRequest,
-    post: Json<NewPostTO>,
-) -> impl Responder {
-    use actix_session::SessionExt as _;
-
-    let Some(user_id) = req
-        .get_session()
-        .get::<UserTO>("user")
-        .ok()
-        .flatten()
-        .map(|u| u.id)
-    else {
-        return respond_result::<PostTO>(Err(CoreError::unauthorized("error.missing_session")));
-    };
-
-    let create = PostCreate {
-        title: post.title.clone(),
-        type_id: post.type_id,
-        user_id,
-    };
-
-    respond_result(state.post_service.create(&create).await.map(PostTO::from))
+pub async fn create(state: Data<AppState>, data: Json<PostCollectionCreateTO>) -> impl Responder {
+    respond_result(
+        state
+            .post_collection_service
+            .create(&PostCollectionCreate::from(data.into_inner()))
+            .await
+            .map(PostCollectionTO::from),
+    )
 }
 
 #[put("/{id}")]
-pub async fn update(
-    state: Data<AppState>,
-    id: Path<i32>,
-    mut post: Json<PostTO>,
-) -> impl Responder {
-    post.id = id.into_inner();
+pub async fn update(state: Data<AppState>, data: Json<PostCollectionTO>) -> impl Responder {
     respond_result(
         state
-            .post_service
-            .update(&Post::from(post.into_inner()))
+            .post_collection_service
+            .update(&PostCollection::from(data.into_inner()))
             .await
-            .map(PostTO::from),
+            .map(PostCollectionTO::from),
     )
 }
 
 #[delete("/{id}")]
 pub async fn delete_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
-    respond_result(state.post_service.delete_by_id(id.into_inner()).await)
+    respond_result(state.post_collection_service.delete_by_id(id.into_inner()).await)
 }
 
 #[delete("/uid/{uid}")]
 pub async fn delete_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
-    respond_result(state.post_service.delete_by_uid(uid.into_inner()).await)
+    respond_result(state.post_collection_service.delete_by_uid(uid.into_inner()).await)
 }
 
+// ========== Info endpoints ==========
 #[get("/info")]
 pub async fn get_many_info(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
     respond_results(
         state
-            .post_info_service
+            .post_collection_info_service
             .get_many(
                 query.to_sort_criteria(),
                 query.first_result,
@@ -210,24 +169,24 @@ pub async fn get_many_info(state: Data<AppState>, query: Query<QueryOptions>) ->
                 query.to_filters(),
             )
             .await,
-        PostInfoTO::from,
+        PostCollectionInfoTO::from,
     )
 }
 
 #[get("/info/count")]
 pub async fn count_info(state: Data<AppState>, query: Query<QueryOptions>) -> impl Responder {
-    respond_result(state.post_info_service.count(query.to_filters()).await)
+    respond_result(state.post_collection_info_service.count(query.to_filters()).await)
 }
 
 #[get("/{id}/info")]
 pub async fn get_info_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
     respond_result(
         state
-            .post_info_service
+            .post_collection_info_service
             .get_by_id(id.into_inner())
             .await
             .and_then(|opt| opt.ok_or(CoreError::not_found("error.not_found")))
-            .map(PostInfoTO::from),
+            .map(PostCollectionInfoTO::from),
     )
 }
 
@@ -235,17 +194,17 @@ pub async fn get_info_by_id(state: Data<AppState>, id: Path<i32>) -> impl Respon
 pub async fn get_info_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Responder {
     respond_result(
         state
-            .post_info_service
+            .post_collection_info_service
             .get_by_uid(uid.into_inner())
             .await
             .and_then(|opt| opt.ok_or(CoreError::not_found("error.not_found")))
-            .map(PostInfoTO::from),
+            .map(PostCollectionInfoTO::from),
     )
 }
 
 pub fn routes(cfg: &mut ServiceConfig) {
     cfg.service(
-        scope("/api/posts")
+        scope("/api/post_collections")
             .service(get_many)
             .service(count)
             .service(get_by_id)
@@ -259,4 +218,15 @@ pub fn routes(cfg: &mut ServiceConfig) {
             .service(get_info_by_id)
             .service(get_info_by_uid),
     );
+}
+
+
+impl From<PostCollectionCreateTO> for PostCollectionCreate {
+    fn from(to: PostCollectionCreateTO) -> Self {
+        Self {
+            slug: to.slug,
+            title: to.title,
+            visibility: to.visibility,
+        }
+    }
 }

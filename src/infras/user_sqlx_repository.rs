@@ -64,6 +64,12 @@ pub struct UserInfoSqlxRepository {
     pool: PgPool,
 }
 
+impl UserInfoSqlxRepository {
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+}
+
 impl UserOrm {
     pub fn searchable_columns() -> Vec<&'static str> {
         vec!["username", "email"]
