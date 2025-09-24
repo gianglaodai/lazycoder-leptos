@@ -1,18 +1,15 @@
 #![cfg(feature = "ssr")]
 
-use crate::business::user_service::{User, UserCreate, UserRepository, UserRole};
+use crate::business::user_service::{
+    User, UserCreate, UserInfo, UserInfoRepository, UserRepository, UserRole,
+};
 use crate::common::error::CoreError;
-use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::{
     SqlxEntityMapper, SqlxRepository, SqlxViewMeta, SqlxViewRepository,
 };
+use crate::{define_orm_with_common_fields, define_readonly_orm_with_common_fields};
 use sqlx::PgPool;
 use uuid::Uuid;
-
-#[derive(Clone)]
-pub struct UserSqlxRepository {
-    pool: PgPool,
-}
 
 define_orm_with_common_fields!(User {
     pub username: String,
@@ -21,11 +18,12 @@ define_orm_with_common_fields!(User {
     pub role: i32,
 });
 
-impl UserOrm {
-    pub fn searchable_columns() -> Vec<&'static str> {
-        vec!["username", "email"]
-    }
-}
+define_readonly_orm_with_common_fields!(UserInfo {
+    pub username: String,
+    pub email: String,
+    pub role: String,
+});
+
 impl From<UserOrm> for User {
     fn from(orm: UserOrm) -> Self {
         Self {
@@ -42,6 +40,35 @@ impl From<UserOrm> for User {
     }
 }
 
+impl From<UserInfoOrm> for UserInfo {
+    fn from(orm: UserInfoOrm) -> Self {
+        Self {
+            id: orm.id,
+            uid: orm.uid.to_string(),
+            version: orm.version,
+            created_at: orm.created_at,
+            updated_at: orm.updated_at,
+            username: orm.username,
+            email: orm.email,
+            role: orm.role,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct UserSqlxRepository {
+    pool: PgPool,
+}
+#[derive(Clone)]
+pub struct UserInfoSqlxRepository {
+    pool: PgPool,
+}
+
+impl UserOrm {
+    pub fn searchable_columns() -> Vec<&'static str> {
+        vec!["username", "email"]
+    }
+}
 impl UserSqlxRepository {
     pub fn new(pool: PgPool) -> Self {
         Self { pool }
@@ -110,6 +137,29 @@ impl SqlxRepository for UserSqlxRepository {
     type EntityCreate = UserCreate;
 }
 
+impl SqlxViewMeta for UserInfoSqlxRepository {
+    fn get_table_name(&self) -> &str {
+        "users_info"
+    }
+    fn get_columns(&self) -> Vec<&str> {
+        UserInfoOrm::columns()
+    }
+    fn get_searchable_columns(&self) -> Vec<&str> {
+        vec!["username", "email", "role"]
+    }
+}
+
+impl SqlxViewRepository for UserInfoSqlxRepository {
+    type Entity = UserInfo;
+    type Orm = UserInfoOrm;
+    fn get_pool(&self) -> &PgPool {
+        &self.pool
+    }
+    fn from_orm(orm: Self::Orm) -> Self::Entity {
+        UserInfo::from(orm)
+    }
+}
+
 impl UserRepository for UserSqlxRepository {
     async fn find_by_username(&self, name: &str) -> Result<Option<User>, CoreError> {
         let result = sqlx::query_as::<_, UserOrm>("SELECT * FROM users WHERE username = $1")
@@ -139,3 +189,5 @@ impl UserRepository for UserSqlxRepository {
         Ok(result.map(Self::from_orm))
     }
 }
+
+impl UserInfoRepository for UserInfoSqlxRepository {}

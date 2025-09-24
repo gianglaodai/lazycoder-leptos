@@ -78,7 +78,7 @@ fn NewPostDialog() -> impl IntoView {
 
     let create_action = Action::new(move |payload: &(String, i32)| {
         let (title_val, pt_id) = payload.clone();
-        async move { create_post(title_val, pt_id ).await }
+        async move { create_post(title_val, pt_id).await }
     });
 
     Effect::new({

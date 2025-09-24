@@ -1,21 +1,16 @@
 #![cfg(feature = "ssr")]
 
 use crate::business::post_collection_service::{
-    PostCollection, PostCollectionCreate, PostCollectionRepository,
+    PostCollection, PostCollectionCreate, PostCollectionInfo, PostCollectionInfoRepository,
+    PostCollectionRepository,
 };
-use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::{
     SqlxEntityMapper, SqlxRepository, SqlxViewMeta, SqlxViewRepository,
 };
+use crate::{define_orm_with_common_fields, define_readonly_orm_with_common_fields};
 use sqlx::PgPool;
 use uuid::Uuid;
 
-#[derive(Clone)]
-pub struct PostCollectionSqlxRepository {
-    pool: PgPool,
-}
-
-// ORM for table post_collections
 define_orm_with_common_fields!(PostCollection {
     pub slug: String,
     pub title: String,
@@ -23,12 +18,12 @@ define_orm_with_common_fields!(PostCollection {
     pub visibility: String,
 });
 
-impl PostCollectionOrm {
-    pub fn searchable_columns() -> Vec<&'static str> {
-        vec!["slug", "title", "description", "visibility"]
-    }
-}
-
+define_readonly_orm_with_common_fields!(PostCollectionInfo {
+    pub slug: String,
+    pub title: String,
+    pub description: String,
+    pub visibility: String,
+});
 impl From<PostCollectionOrm> for PostCollection {
     fn from(orm: PostCollectionOrm) -> Self {
         Self {
@@ -42,6 +37,35 @@ impl From<PostCollectionOrm> for PostCollection {
             description: orm.description,
             visibility: orm.visibility,
         }
+    }
+}
+impl From<PostCollectionInfoOrm> for PostCollectionInfo {
+    fn from(orm: PostCollectionInfoOrm) -> Self {
+        Self {
+            id: orm.id,
+            uid: orm.uid.to_string(),
+            version: orm.version,
+            created_at: orm.created_at,
+            updated_at: orm.updated_at,
+            slug: orm.slug,
+            title: orm.title,
+            description: orm.description,
+            visibility: orm.visibility,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct PostCollectionSqlxRepository {
+    pool: PgPool,
+}
+#[derive(Clone)]
+pub struct PostCollectionInfoSqlxRepository {
+    pool: PgPool,
+}
+impl PostCollectionOrm {
+    pub fn searchable_columns() -> Vec<&'static str> {
+        vec!["slug", "title", "description", "visibility"]
     }
 }
 
@@ -114,3 +138,40 @@ impl SqlxRepository for PostCollectionSqlxRepository {
 }
 
 impl PostCollectionRepository for PostCollectionSqlxRepository {}
+
+impl PostCollectionInfoOrm {
+    pub fn searchable_columns() -> Vec<&'static str> {
+        vec!["slug", "title", "description", "visibility"]
+    }
+}
+
+impl PostCollectionInfoSqlxRepository {
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+}
+
+impl SqlxViewMeta for PostCollectionInfoSqlxRepository {
+    fn get_table_name(&self) -> &str {
+        "post_collections_info"
+    }
+    fn get_columns(&self) -> Vec<&str> {
+        PostCollectionInfoOrm::columns()
+    }
+    fn get_searchable_columns(&self) -> Vec<&str> {
+        PostCollectionInfoOrm::searchable_columns()
+    }
+}
+
+impl SqlxViewRepository for PostCollectionInfoSqlxRepository {
+    type Entity = PostCollectionInfo;
+    type Orm = PostCollectionInfoOrm;
+    fn get_pool(&self) -> &PgPool {
+        &self.pool
+    }
+    fn from_orm(orm: Self::Orm) -> Self::Entity {
+        PostCollectionInfo::from(orm)
+    }
+}
+
+impl PostCollectionInfoRepository for PostCollectionInfoSqlxRepository {}

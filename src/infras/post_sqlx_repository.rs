@@ -1,22 +1,19 @@
 #![cfg(feature = "ssr")]
 
-use crate::business::post_service::{Post, PostCreate, PostRepository, PostStatus};
+use crate::business::post_service::{
+    Post, PostCreate, PostInfo, PostInfoRepository, PostRepository, PostStatus,
+};
 use crate::common::error::CoreError;
 use crate::common::filter::{Filter, ScalarValue};
 use crate::common::repository::{Repository, ViewRepository};
 use crate::common::sort::SortCriterion;
-use crate::define_orm_with_common_fields;
 use crate::infras::sqlx_repository::{
     SqlxEntityMapper, SqlxRepository, SqlxViewMeta, SqlxViewRepository,
 };
+use crate::{define_orm_with_common_fields, define_readonly_orm_with_common_fields};
 use sqlx::PgPool;
 use std::future::Future;
 use uuid::Uuid;
-
-#[derive(Clone)]
-pub struct PostSqlxRepository {
-    pool: PgPool,
-}
 
 define_orm_with_common_fields!(Post {
     pub title: String,
@@ -28,9 +25,34 @@ define_orm_with_common_fields!(Post {
     pub user_id: i32,
 });
 
-impl PostOrm {
-    pub fn searchable_columns() -> Vec<&'static str> {
-        vec!["slug", "title", "summary", "content"]
+define_readonly_orm_with_common_fields!(PostInfo {
+    pub slug: String,
+    pub title: String,
+    pub summary: String,
+    pub content: String,
+    pub status: i32,
+    pub user_id: i32,
+    pub username: String,
+    pub email: String,
+});
+
+impl From<PostInfoOrm> for PostInfo {
+    fn from(orm: PostInfoOrm) -> Self {
+        Self {
+            id: orm.id,
+            uid: orm.uid.to_string(),
+            version: orm.version,
+            created_at: orm.created_at,
+            updated_at: orm.updated_at,
+            slug: orm.slug,
+            title: orm.title,
+            summary: orm.summary,
+            content: orm.content,
+            status: PostStatus::from(orm.status),
+            user_id: orm.user_id,
+            username: orm.username,
+            email: orm.email,
+        }
     }
 }
 
@@ -50,6 +72,20 @@ impl From<PostOrm> for Post {
             user_id: orm.user_id,
             type_id: orm.type_id,
         }
+    }
+}
+
+#[derive(Clone)]
+pub struct PostSqlxRepository {
+    pool: PgPool,
+}
+#[derive(Clone)]
+pub struct PostInfoSqlxRepository {
+    pool: PgPool,
+}
+impl PostOrm {
+    pub fn searchable_columns() -> Vec<&'static str> {
+        vec!["slug", "title", "summary", "content"]
     }
 }
 
@@ -147,6 +183,42 @@ impl PostRepository for PostSqlxRepository {
     }
 }
 
+impl PostInfoOrm {
+    pub fn searchable_columns() -> Vec<&'static str> {
+        vec!["slug", "title", "summary", "content"]
+    }
+}
+
+impl PostInfoSqlxRepository {
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
+}
+
+impl SqlxViewMeta for PostInfoSqlxRepository {
+    fn get_table_name(&self) -> &str {
+        "posts_info"
+    }
+    fn get_columns(&self) -> Vec<&str> {
+        PostInfoOrm::columns()
+    }
+    fn get_searchable_columns(&self) -> Vec<&str> {
+        PostInfoOrm::searchable_columns()
+    }
+}
+
+impl SqlxViewRepository for PostInfoSqlxRepository {
+    type Entity = PostInfo;
+    type Orm = PostInfoOrm;
+    fn get_pool(&self) -> &PgPool {
+        &self.pool
+    }
+    fn from_orm(orm: Self::Orm) -> Self::Entity {
+        PostInfo::from(orm)
+    }
+}
+
+impl PostInfoRepository for PostInfoSqlxRepository {}
 #[cfg(test)]
 mod tests {
     use super::*;

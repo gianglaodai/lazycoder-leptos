@@ -175,7 +175,11 @@ pub async fn create_post(title: String, type_id: i32) -> Result<PostTO, ServerFn
     };
 
     let state: Data<AppState> = extract().await?;
-    let create = PostCreate { title, type_id, user_id };
+    let create = PostCreate {
+        title,
+        type_id,
+        user_id,
+    };
     state
         .post_service
         .create(&create)

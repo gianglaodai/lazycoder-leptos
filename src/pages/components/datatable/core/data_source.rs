@@ -1,7 +1,7 @@
-use crate::pages::components::datatable::core::agg::AggMap;
-use std::{future::Future, pin::Pin};
-use std::collections::HashMap;
 use crate::common::filter::{FilterOperator, FilterValue};
+use crate::pages::components::datatable::core::agg::AggMap;
+use std::collections::HashMap;
+use std::{future::Future, pin::Pin};
 
 #[derive(Clone, Debug)]
 pub enum SortOrder {
