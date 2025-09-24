@@ -7,6 +7,7 @@ use crate::presentation::rest::response_result::{respond_result, respond_results
 use crate::state::AppState;
 use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
+use crate::common::service::{Service, ViewService};
 
 define_to_with_common_fields_be!(User {
     pub username: String,

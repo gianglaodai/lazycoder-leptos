@@ -2,6 +2,7 @@ use crate::business::post_type_service::PostTypeInfo;
 use crate::define_readonly_to_with_common_fields_fe;
 use leptos::prelude::ServerFnError;
 use leptos::*;
+use crate::common::service::ViewService;
 
 define_readonly_to_with_common_fields_fe!(PostTypeInfo {
     pub code: String,

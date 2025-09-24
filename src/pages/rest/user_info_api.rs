@@ -1,6 +1,7 @@
 use crate::define_readonly_to_with_common_fields_fe;
 use leptos::prelude::ServerFnError;
 use leptos::*;
+use crate::common::service::ViewService;
 
 // Mirror of minimal user info for admin listing
 define_readonly_to_with_common_fields_fe!(UserInfo {

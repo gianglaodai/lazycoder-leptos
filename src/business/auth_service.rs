@@ -2,6 +2,7 @@
 
 use crate::business::user_service::{User, UserCreate, UserRepository, UserRole, UserService};
 use crate::common::error::CoreError;
+use crate::common::service::Service;
 
 #[derive(Clone)]
 pub struct AuthService<R: UserRepository> {

@@ -2,6 +2,7 @@ use crate::business::post_service::PostInfo;
 use crate::define_readonly_to_with_common_fields_fe;
 use leptos::prelude::ServerFnError;
 use leptos::*;
+use crate::common::service::ViewService;
 
 define_readonly_to_with_common_fields_fe!(PostInfo {
     pub slug: String,
@@ -111,13 +112,14 @@ pub async fn load_post_info_by_id(id: i32) -> Result<PostInfoTO, ServerFnError> 
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
+    use crate::common::error::CoreError;
 
     let state: Data<AppState> = extract().await?;
     let result = state.post_info_service.get_by_id(id).await;
     match result {
         Ok(Some(p)) => Ok(PostInfoTO::from(p)),
         Ok(None) => Err(ServerFnError::ServerError(
-            crate::business::error::CoreError::not_found("error.post_not_found").to_json(),
+            CoreError::not_found("error.post_not_found").to_json(),
         )),
         Err(e) => Err(ServerFnError::ServerError(e.to_json())),
     }

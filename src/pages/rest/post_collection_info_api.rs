@@ -2,6 +2,7 @@ use crate::business::post_collection_service::PostCollectionInfo;
 use crate::define_readonly_to_with_common_fields_fe;
 use leptos::prelude::ServerFnError;
 use leptos::*;
+use crate::common::service::ViewService;
 
 define_readonly_to_with_common_fields_fe!(PostCollectionInfo {
     pub slug: String,

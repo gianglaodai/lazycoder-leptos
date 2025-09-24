@@ -1,5 +1,5 @@
 #![cfg(feature = "ssr")]
-use crate::business::error::CoreError;
+use crate::common::error::CoreError;
 use actix_web::{HttpResponse, Responder};
 
 pub fn respond_result<T>(result: Result<T, CoreError>) -> impl Responder

@@ -39,18 +39,11 @@ SELECT p.id,
        p.summary,
        p.content,
        p.status,
-       p.visibility,
-       p.format,
-       p.published_at,
        p.user_id,
        u.username,
-       u.email,
-       p.type_id,
-       pt.code  AS type_code,
-       pt.name  AS type_name
+       u.email
 FROM posts AS p
-LEFT JOIN users AS u ON p.user_id = u.id
-LEFT JOIN post_types AS pt ON p.type_id = pt.id;
+LEFT JOIN users AS u ON p.user_id = u.id;
 
 -- 4) post_collections_info
 DROP VIEW IF EXISTS post_collections_info;
@@ -69,7 +62,12 @@ FROM post_collections pc;
 -- 5) post_collection_items_info
 DROP VIEW IF EXISTS post_collection_items_info;
 CREATE VIEW post_collection_items_info AS
-SELECT pci.post_collection_id,
+SELECT pci.id,
+       pci.uid,
+       pci.version,
+       pci.created_at,
+       pci.updated_at,
+       pci.post_collection_id,
        pci.post_id,
        pci.position,
        pci.headline,
@@ -117,7 +115,12 @@ LEFT JOIN terms tp ON tp.id = te.parent_id;
 -- 8) post_terms_info
 DROP VIEW IF EXISTS post_terms_info;
 CREATE VIEW post_terms_info AS
-SELECT pt.post_id,
+SELECT pt.id,
+       pt.uid,
+       pt.version,
+       pt.created_at,
+       pt.updated_at,
+       pt.post_id,
        pt.term_id,
        p.slug   AS post_slug,
        p.title  AS post_title,
@@ -133,7 +136,12 @@ LEFT JOIN post_taxonomies tx ON tx.id = te.taxonomy_id;
 -- 9) post_relations_info
 DROP VIEW IF EXISTS post_relations_info;
 CREATE VIEW post_relations_info AS
-SELECT pr.from_post,
+SELECT pr.id,
+       pr.uid,
+       pr.version,
+       pr.created_at,
+       pr.updated_at,
+       pr.from_post,
        pr.to_post,
        pr.rel_type,
        pf.slug  AS from_slug,

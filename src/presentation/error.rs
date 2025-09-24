@@ -1,4 +1,4 @@
-use crate::business::error::CoreError;
+use crate::common::error::CoreError;
 
 impl std::fmt::Display for CoreError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

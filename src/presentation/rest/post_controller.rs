@@ -1,7 +1,10 @@
 use crate::business::post_service::{Post, PostCreate, PostStatus};
+use crate::common::error::CoreError;
+use crate::common::service::{Service, ViewService};
 use crate::define_to_with_common_fields_be;
 use crate::presentation::query_options::QueryOptions;
 use crate::presentation::rest::response_result::{respond_result, respond_results};
+use crate::presentation::rest::user_controller::UserTO;
 use crate::state::AppState;
 use actix_web::web::{scope, Data, Json, Path, Query, ServiceConfig};
 use actix_web::{delete, get, post, put, Responder};
@@ -40,13 +43,10 @@ impl From<PostTO> for Post {
     }
 }
 
-impl From<PostCreateTO> for PostCreate {
-    fn from(to: PostCreateTO) -> Self {
-        Self {
-            title: to.title,
-            type_id: to.type_id,
-        }
-    }
+#[derive(serde::Deserialize)]
+pub struct NewPostTO {
+    pub title: String,
+    pub type_id: i32,
 }
 
 impl From<Post> for PostTO {
@@ -113,15 +113,31 @@ pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Respon
     )
 }
 
-#[post("")]
-pub async fn create(state: Data<AppState>, post: Json<PostCreateTO>) -> impl Responder {
-    respond_result(
-        state
-            .post_service
-            .create(&PostCreate::from(post.into_inner()))
-            .await
-            .map(PostTO::from),
-    )
+#[post("/")]
+pub async fn create(
+    state: Data<AppState>,
+    req: actix_web::HttpRequest,
+    post: Json<NewPostTO>,
+) -> impl Responder {
+    use actix_session::SessionExt as _;
+
+    let Some(user_id) = req
+        .get_session()
+        .get::<UserTO>("user")
+        .ok()
+        .flatten()
+        .map(|u| u.id)
+    else {
+        return respond_result::<PostTO>(Err(CoreError::unauthorized("error.missing_session")));
+    };
+
+    let create = PostCreate {
+        title: post.title.clone(),
+        type_id: post.type_id,
+        user_id,
+    };
+
+    respond_result(state.post_service.create(&create).await.map(PostTO::from))
 }
 
 #[put("/{id}")]

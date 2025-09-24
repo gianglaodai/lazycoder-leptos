@@ -5,6 +5,7 @@ use crate::presentation::rest::response_result::{respond_result, respond_results
 use crate::state::AppState;
 use actix_web::web::{scope, Data, Path, Query, ServiceConfig};
 use actix_web::{get, Responder};
+use crate::common::service::ViewService;
 
 define_readonly_to_with_common_fields_be!(PostTypeInfo {
     pub code: String,
