@@ -7,9 +7,6 @@ pub mod user_service;
 
 pub mod attribute_service;
 pub mod attribute_value_service;
-pub mod post_collection_item_service;
 pub mod post_collection_service;
-pub mod post_relation_service;
-pub mod post_term_service;
 pub mod post_type_service;
 pub mod term_service;

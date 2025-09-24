@@ -2,24 +2,18 @@
 use crate::business::attribute_service::AttributeService;
 use crate::business::attribute_value_service::AttributeValueInfoService;
 use crate::business::auth_service::AuthService;
-use crate::business::post_collection_item_service::PostCollectionItemInfoService;
 use crate::business::post_collection_service::PostCollectionInfoService;
-use crate::business::post_relation_service::PostRelationInfoService;
 use crate::business::post_service::{PostInfoService, PostService};
 use crate::business::post_taxonomy_service::PostTaxonomyInfoService;
-use crate::business::post_term_service::PostTermInfoService;
 use crate::business::post_type_service::{PostTypeInfoService, PostTypeService};
 use crate::business::term_service::TermInfoService;
 use crate::business::user_service::UserService;
 use crate::infras::attribute_sqlx_repository::AttributeSqlxRepository;
 use crate::infras::attribute_value_sqlx_repository::AttributeValueInfoSqlxRepository;
-use crate::infras::post_collection_item_sqlx_repository::PostCollectionItemInfoSqlxRepository;
 use crate::infras::post_collection_sqlx_repository::PostCollectionInfoSqlxRepository;
-use crate::infras::post_relation_sqlx_repository::PostRelationInfoSqlxRepository;
 use crate::infras::post_sqlx_repository::PostInfoSqlxRepository;
 use crate::infras::post_sqlx_repository::PostSqlxRepository;
 use crate::infras::post_taxonomy_sqlx_repository::PostTaxonomyInfoSqlxRepository;
-use crate::infras::post_term_sqlx_repository::PostTermInfoSqlxRepository;
 use crate::infras::post_type_sqlx_repository::PostTypeInfoSqlxRepository;
 use crate::infras::post_type_sqlx_repository::PostTypeSqlxRepository;
 use crate::infras::term_sqlx_repository::TermInfoSqlxRepository;
@@ -38,10 +32,6 @@ pub struct AppState {
     pub term_info_service: TermInfoService<TermInfoSqlxRepository>,
     pub attribute_service: AttributeService<AttributeSqlxRepository>,
     pub attribute_value_info_service: AttributeValueInfoService<AttributeValueInfoSqlxRepository>,
-    pub post_relation_info_service: PostRelationInfoService<PostRelationInfoSqlxRepository>,
-    pub post_term_info_service: PostTermInfoService<PostTermInfoSqlxRepository>,
-    pub post_collection_item_info_service:
-        PostCollectionItemInfoService<PostCollectionItemInfoSqlxRepository>,
     pub post_type_service: PostTypeService<PostTypeSqlxRepository>,
 }
 
@@ -69,14 +59,6 @@ pub async fn new_app_state(pool: PgPool) -> actix_web::web::Data<AppState> {
         Arc::new(AttributeValueInfoSqlxRepository::new(pool.clone()));
     let attribute_value_info_service =
         AttributeValueInfoService::new(attribute_value_info_repository);
-    let post_relation_info_repository = Arc::new(PostRelationInfoSqlxRepository::new(pool.clone()));
-    let post_relation_info_service = PostRelationInfoService::new(post_relation_info_repository);
-    let post_term_info_repository = Arc::new(PostTermInfoSqlxRepository::new(pool.clone()));
-    let post_term_info_service = PostTermInfoService::new(post_term_info_repository);
-    let post_collection_item_info_repository =
-        Arc::new(PostCollectionItemInfoSqlxRepository::new(pool.clone()));
-    let post_collection_item_info_service =
-        PostCollectionItemInfoService::new(post_collection_item_info_repository);
     let post_type_repository = Arc::new(PostTypeSqlxRepository::new(pool.clone()));
     let post_type_service = PostTypeService::new(post_type_repository);
     let auth_service = AuthService::new(user_service.clone());
@@ -92,9 +74,6 @@ pub async fn new_app_state(pool: PgPool) -> actix_web::web::Data<AppState> {
         term_info_service,
         attribute_service,
         attribute_value_info_service,
-        post_relation_info_service,
-        post_term_info_service,
-        post_collection_item_info_service,
         post_type_service,
     })
 }

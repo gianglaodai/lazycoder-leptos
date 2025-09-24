@@ -43,7 +43,7 @@ SELECT p.id,
        u.username,
        u.email
 FROM posts AS p
-LEFT JOIN users AS u ON p.user_id = u.id;
+         LEFT JOIN users AS u ON p.user_id = u.id;
 
 -- 4) post_collections_info
 DROP VIEW IF EXISTS post_collections_info;
@@ -59,25 +59,6 @@ SELECT pc.id,
        pc.visibility
 FROM post_collections pc;
 
--- 5) post_collection_items_info
-DROP VIEW IF EXISTS post_collection_items_info;
-CREATE VIEW post_collection_items_info AS
-SELECT pci.id,
-       pci.uid,
-       pci.version,
-       pci.created_at,
-       pci.updated_at,
-       pci.post_collection_id,
-       pci.post_id,
-       pci.position,
-       pci.headline,
-       pc.slug      AS collection_slug,
-       pc.title     AS collection_title,
-       p.slug       AS post_slug,
-       p.title      AS post_title
-FROM post_collection_items pci
-LEFT JOIN post_collections pc ON pc.id = pci.post_collection_id
-LEFT JOIN posts p ON p.id = pci.post_id;
 
 -- 6) post_taxonomies_info
 DROP VIEW IF EXISTS post_taxonomies_info;
@@ -100,57 +81,19 @@ SELECT te.id,
        te.created_at,
        te.updated_at,
        te.taxonomy_id,
-       tx.code  AS taxonomy_code,
-       tx.name  AS taxonomy_name,
+       tx.code AS taxonomy_code,
+       tx.name AS taxonomy_name,
        te.parent_id,
-       tp.slug  AS parent_slug,
-       tp.name  AS parent_name,
+       tp.slug AS parent_slug,
+       tp.name AS parent_name,
        te.slug,
        te.name,
        te.description
 FROM terms te
-LEFT JOIN post_taxonomies tx ON tx.id = te.taxonomy_id
-LEFT JOIN terms tp ON tp.id = te.parent_id;
+         LEFT JOIN post_taxonomies tx ON tx.id = te.taxonomy_id
+         LEFT JOIN terms tp ON tp.id = te.parent_id;
 
--- 8) post_terms_info
-DROP VIEW IF EXISTS post_terms_info;
-CREATE VIEW post_terms_info AS
-SELECT pt.id,
-       pt.uid,
-       pt.version,
-       pt.created_at,
-       pt.updated_at,
-       pt.post_id,
-       pt.term_id,
-       p.slug   AS post_slug,
-       p.title  AS post_title,
-       te.slug  AS term_slug,
-       te.name  AS term_name,
-       te.taxonomy_id,
-       tx.code  AS taxonomy_code
-FROM post_terms pt
-LEFT JOIN posts p ON p.id = pt.post_id
-LEFT JOIN terms te ON te.id = pt.term_id
-LEFT JOIN post_taxonomies tx ON tx.id = te.taxonomy_id;
 
--- 9) post_relations_info
-DROP VIEW IF EXISTS post_relations_info;
-CREATE VIEW post_relations_info AS
-SELECT pr.id,
-       pr.uid,
-       pr.version,
-       pr.created_at,
-       pr.updated_at,
-       pr.from_post,
-       pr.to_post,
-       pr.rel_type,
-       pf.slug  AS from_slug,
-       pf.title AS from_title,
-       pt.slug  AS to_slug,
-       pt.title AS to_title
-FROM post_relations pr
-LEFT JOIN posts pf ON pf.id = pr.from_post
-LEFT JOIN posts pt ON pt.id = pr.to_post;
 
 -- 10) attributes_info
 DROP VIEW IF EXISTS attributes_info;
@@ -187,4 +130,4 @@ SELECT av.id,
        av.entity_id,
        av.entity_type
 FROM attribute_values av
-LEFT JOIN attributes a ON a.id = av.attribute_id;
+         LEFT JOIN attributes a ON a.id = av.attribute_id;

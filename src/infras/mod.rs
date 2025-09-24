@@ -6,17 +6,11 @@ pub mod attribute_value_sqlx_repository;
 pub mod error;
 pub mod macros;
 #[cfg(feature = "ssr")]
-pub mod post_collection_item_sqlx_repository;
-#[cfg(feature = "ssr")]
 pub mod post_collection_sqlx_repository;
-#[cfg(feature = "ssr")]
-pub mod post_relation_sqlx_repository;
 #[cfg(feature = "ssr")]
 pub mod post_sqlx_repository;
 #[cfg(feature = "ssr")]
 pub mod post_taxonomy_sqlx_repository;
-#[cfg(feature = "ssr")]
-pub mod post_term_sqlx_repository;
 #[cfg(feature = "ssr")]
 pub mod post_type_sqlx_repository;
 #[cfg(feature = "ssr")]

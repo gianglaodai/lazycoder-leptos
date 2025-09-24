@@ -3,11 +3,8 @@
 use crate::presentation::rest::{
     attribute_controller,
     post_collection_info_controller,
-    post_collection_item_info_controller,
     post_controller,
     post_info_controller,
-    post_relation_info_controller,
-    post_term_info_controller,
     post_type_info_controller,
     taxonomy_info_controller,
     term_info_controller,
@@ -28,8 +25,5 @@ pub fn config(cfg: &mut ServiceConfig) {
         .configure(term_info_controller::routes_terms)
         .configure(attribute_controller::routes_attributes)
         .configure(attribute_controller::routes_attribute_values)
-        .configure(post_collection_info_controller::routes)
-        .configure(post_collection_item_info_controller::routes)
-        .configure(post_relation_info_controller::routes)
-        .configure(post_term_info_controller::routes);
+        .configure(post_collection_info_controller::routes);
 }

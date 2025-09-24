@@ -5,6 +5,7 @@ use crate::presentation::rest::response_result::{respond_result, respond_results
 use crate::state::AppState;
 use actix_web::web::{scope, Data, Path, Query, ServiceConfig};
 use actix_web::{get, Responder};
+use crate::common::error::CoreError;
 use crate::common::service::ViewService;
 
 define_readonly_to_with_common_fields_be!(PostTaxonomyInfo {
@@ -59,7 +60,7 @@ pub async fn get_by_id(state: Data<AppState>, id: Path<i32>) -> impl Responder {
             .post_taxonomy_info_service
             .get_by_id(id.into_inner())
             .await
-            .map(|it| it.unwrap())
+            .and_then(|opt| opt.ok_or(CoreError::not_found("error.not_found")))
             .map(PostTaxonomyInfoTO::from),
     )
 }
@@ -71,7 +72,7 @@ pub async fn get_by_uid(state: Data<AppState>, uid: Path<String>) -> impl Respon
             .post_taxonomy_info_service
             .get_by_uid(uid.into_inner())
             .await
-            .map(|it| it.unwrap())
+            .and_then(|opt| opt.ok_or(CoreError::not_found("error.not_found")))
             .map(PostTaxonomyInfoTO::from),
     )
 }
