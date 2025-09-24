@@ -100,7 +100,7 @@ impl SqlxEntityMapper for PostSqlxRepository {
             summary: String::new(),
             content: String::new(),
             status: PostStatus::DRAFT.as_i32(),
-            user_id: 0,
+            user_id: create.user_id,
             type_id: create.type_id,
         }
     }
