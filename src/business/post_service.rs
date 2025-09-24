@@ -62,6 +62,7 @@ impl FromStr for PostStatus {
 define_struct_with_common_fields!(Post {
     req {
         pub title: String,
+        pub user_id: i32,
         pub type_id: i32,
     }
     opt {
@@ -69,7 +70,6 @@ define_struct_with_common_fields!(Post {
         pub summary: String,
         pub content: String,
         pub status: PostStatus,
-        pub user_id: i32,
     }
 });
 
