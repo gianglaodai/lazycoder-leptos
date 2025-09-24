@@ -1,14 +1,15 @@
 #![cfg(feature = "ssr")]
 
+use crate::common::error::CoreError;
+use crate::common::filter::{Filter, FilterOperator, FilterValue, ScalarValue};
 use crate::common::repository::{Creatable, Repository, ViewRepository};
+use crate::common::service::Entity as BizEntity;
+use crate::common::sort::SortCriterion;
 use crate::define_orm_with_common_fields;
 use sqlx::postgres::PgRow;
 use sqlx::{FromRow, PgPool, Postgres, QueryBuilder, Row};
 use std::collections::HashMap;
 use uuid::Uuid;
-use crate::common::error::CoreError;
-use crate::common::filter::{Filter, FilterOperator, FilterValue, ScalarValue};
-use crate::common::sort::SortCriterion;
 
 #[derive(Debug, sqlx::Type)]
 #[sqlx(type_name = "attribute_datatype", rename_all = "lowercase")]
@@ -25,10 +26,13 @@ pub enum AttributeDataType {
 define_orm_with_common_fields!(Attribute {
     pub name: String,
     pub entity_type: String,
-    pub data_type: AttributeDataType,
+    pub data_type: String,
 });
 
 define_orm_with_common_fields!(AttributeValue {
+    pub attribute_id: i32,
+    pub entity_id: i32,
+    pub entity_type: String,
     pub int_value: Option<i32>,
     pub double_value: Option<f64>,
     pub string_value: Option<String>,
@@ -36,12 +40,50 @@ define_orm_with_common_fields!(AttributeValue {
     pub date_value: Option<time::Date>,
     pub datetime_value: Option<time::OffsetDateTime>,
     pub time_value: Option<time::Time>,
-    pub attribute_id: i32,
-    pub entity_id: i32,
-    pub entity_type: String,
 });
 
-pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
+pub trait OrmMeta {
+    fn columns() -> Vec<&'static str>;
+    fn auto_columns() -> Vec<&'static str> {
+        vec!["id"]
+    }
+    fn insertable_columns() -> Vec<&'static str> {
+        let auto = Self::auto_columns();
+        Self::columns()
+            .into_iter()
+            .filter(|c| !auto.contains(c))
+            .collect()
+    }
+    fn updatable_columns() -> Vec<&'static str> {
+        let exclude = vec!["id", "uid", "created_at"];
+        Self::columns()
+            .into_iter()
+            .filter(|c| !exclude.contains(c))
+            .collect()
+    }
+}
+
+pub trait OrmBind {
+    fn bind_column<'q>(&'q self, col: &str, qb: &mut QueryBuilder<'q, Postgres>);
+    fn bind_update_pairs<'q>(&'q self, cols: &[&str], qb: &mut QueryBuilder<'q, Postgres>);
+}
+
+pub trait SqlxEntityMapper {
+    type Entity;
+    type EntityCreate;
+    type Orm;
+
+    fn to_orm_from_create(&self, create: &Self::EntityCreate) -> Self::Orm;
+    fn to_orm_from_entity(&self, entity: &Self::Entity) -> Self::Orm;
+}
+
+pub trait SqlxViewMeta {
+    fn get_table_name(&self) -> &str;
+    fn get_columns(&self) -> Vec<&str>;
+    fn get_searchable_columns(&self) -> Vec<&str>;
+}
+
+pub trait SqlxViewRepository: SqlxViewMeta {
     type Entity;
     type Orm: for<'r> FromRow<'r, PgRow> + Send + Unpin;
 
@@ -56,9 +98,9 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
 
     async fn get_column_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
         // Repository: fetch directly from DB; caching is handled at the service layer
-        let table = self.get_table_name().to_string();
+        let table = SqlxViewMeta::get_table_name(self).to_string();
         let pool = self.get_pool();
-        let cols = self.get_columns();
+        let cols = SqlxViewMeta::get_columns(self);
 
         let rows = sqlx::query(
             "SELECT column_name, data_type, udt_name FROM information_schema.columns WHERE table_schema = 'public' AND table_name = $1"
@@ -132,7 +174,7 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
     async fn find_by_id(&self, id: i32) -> Result<Option<Self::Entity>, CoreError> {
         let result = sqlx::query_as::<_, Self::Orm>(&format!(
             "SELECT * FROM {} WHERE id=$1",
-            self.get_table_name()
+            SqlxViewMeta::get_table_name(self)
         ))
         .bind(id)
         .fetch_optional(self.get_pool())
@@ -144,7 +186,7 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
     async fn find_by_uid(&self, uid: Uuid) -> Result<Option<Self::Entity>, CoreError> {
         let result = sqlx::query_as::<_, Self::Orm>(&format!(
             "SELECT * FROM {} WHERE uid=$1",
-            self.get_table_name()
+            SqlxViewMeta::get_table_name(self)
         ))
         .bind(uid)
         .fetch_optional(self.get_pool())
@@ -163,7 +205,7 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
         let mut query_builder = QueryBuilder::new(format!(
             "SELECT {} FROM {}",
             if count { "COUNT(*)" } else { "*" },
-            self.get_table_name()
+            SqlxViewMeta::get_table_name(self)
         ));
 
         let (property_filters, attribute_filters, search_filters): (Vec<_>, Vec<_>, Vec<_>) =
@@ -208,9 +250,9 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
 
             query_builder.push(format!(
                 "EXISTS (SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = {}.id AND av.entity_type = ",
-                self.get_table_name()
+                SqlxViewMeta::get_table_name(self)
             ));
-            query_builder.push_bind(self.get_table_name());
+            query_builder.push_bind(SqlxViewMeta::get_table_name(self));
 
             if let Filter::Attribute {
                 attr_name,
@@ -240,7 +282,7 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
 
                 query_builder.push("(");
 
-                let searchable_columns = self.get_searchable_columns();
+                let searchable_columns = SqlxViewMeta::get_searchable_columns(self);
                 query_builder.push("(to_tsvector('simple', unaccent(");
                 for (i, col) in searchable_columns.iter().enumerate() {
                     if i > 0 {
@@ -263,9 +305,9 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
 
                 {
                     query_builder.push(" (EXISTS ( SELECT 1 FROM attribute_values av JOIN attributes a ON a.id = av.attribute_id WHERE av.entity_id = ")
-                        .push(self.get_table_name()).push(".id")
+                        .push(SqlxViewMeta::get_table_name(self)).push(".id")
                         .push(" AND av.entity_type = ")
-                        .push_bind(self.get_table_name())
+                        .push_bind(SqlxViewMeta::get_table_name(self))
                         .push(" AND to_tsvector('simple', unaccent(coalesce(av.string_value, ''))) @@ plainto_tsquery('simple', unaccent(")
                         .push_bind(keyword.split_whitespace().map(|s| s.to_string()).collect::<Vec<_>>().join(" | "))
                         .push("))))");
@@ -722,16 +764,115 @@ pub trait SqlxViewRepository: ViewRepository<Self::Entity> {
         };
     }
 }
-pub trait SqlxRepository:
-    SqlxViewRepository + Repository<<Self as SqlxViewRepository>::Entity, Self::EntityCreate>
+pub trait SqlxRepository: SqlxViewRepository
 where
     Self::EntityCreate: Creatable<Entity = Self::Entity>,
 {
     type EntityCreate;
 
+    // Default create/update delegate to generic_* when mapper and meta are available.
+    async fn create(
+        &self,
+        entity_create: &<Self as SqlxRepository>::EntityCreate,
+    ) -> Result<<Self as SqlxViewRepository>::Entity, CoreError>
+    where
+        Self: SqlxEntityMapper<
+            Entity = <Self as SqlxViewRepository>::Entity,
+            EntityCreate = <Self as SqlxRepository>::EntityCreate,
+            Orm = <Self as SqlxViewRepository>::Orm,
+        >,
+        <Self as SqlxViewRepository>::Orm: OrmMeta + OrmBind,
+    {
+        self.generic_create(entity_create).await
+    }
+    async fn update(
+        &self,
+        entity: &<Self as SqlxViewRepository>::Entity,
+    ) -> Result<<Self as SqlxViewRepository>::Entity, CoreError>
+    where
+        Self: SqlxEntityMapper<
+            Entity = <Self as SqlxViewRepository>::Entity,
+            EntityCreate = <Self as SqlxRepository>::EntityCreate,
+            Orm = <Self as SqlxViewRepository>::Orm,
+        >,
+        <Self as SqlxViewRepository>::Orm: OrmMeta + OrmBind,
+        <Self as SqlxViewRepository>::Entity: BizEntity,
+    {
+        self.generic_update(entity).await
+    }
+
+    // Generic helpers using OrmMeta + OrmBind + SqlxEntityMapper. Repos can call these.
+    async fn generic_create(
+        &self,
+        entity_create: &<Self as SqlxRepository>::EntityCreate,
+    ) -> Result<<Self as SqlxViewRepository>::Entity, CoreError>
+    where
+        Self: SqlxEntityMapper<
+            Entity = <Self as SqlxViewRepository>::Entity,
+            EntityCreate = <Self as SqlxRepository>::EntityCreate,
+            Orm = <Self as SqlxViewRepository>::Orm,
+        >,
+        <Self as SqlxViewRepository>::Orm: OrmMeta + OrmBind,
+    {
+        let orm = <Self as SqlxEntityMapper>::to_orm_from_create(self, entity_create);
+        let table = SqlxViewMeta::get_table_name(self);
+        let insert_cols = <<Self as SqlxViewRepository>::Orm as OrmMeta>::insertable_columns();
+
+        let mut qb = QueryBuilder::<Postgres>::new("INSERT INTO ");
+        qb.push(table).push(" (");
+        for (i, col) in insert_cols.iter().enumerate() {
+            if i > 0 {
+                qb.push(", ");
+            }
+            qb.push(*col);
+        }
+        qb.push(") VALUES (");
+        for (i, col) in insert_cols.iter().enumerate() {
+            if i > 0 {
+                qb.push(", ");
+            }
+            orm.bind_column(col, &mut qb);
+        }
+        qb.push(") RETURNING *");
+
+        let orm_row: <Self as SqlxViewRepository>::Orm =
+            qb.build_query_as().fetch_one(self.get_pool()).await?;
+        Ok(<Self as SqlxViewRepository>::from_orm(orm_row))
+    }
+
+    async fn generic_update(
+        &self,
+        entity: &<Self as SqlxViewRepository>::Entity,
+    ) -> Result<<Self as SqlxViewRepository>::Entity, CoreError>
+    where
+        Self: SqlxEntityMapper<
+            Entity = <Self as SqlxViewRepository>::Entity,
+            EntityCreate = <Self as SqlxRepository>::EntityCreate,
+            Orm = <Self as SqlxViewRepository>::Orm,
+        >,
+        <Self as SqlxViewRepository>::Orm: OrmMeta + OrmBind,
+        <Self as SqlxViewRepository>::Entity: BizEntity,
+    {
+        let orm = <Self as SqlxEntityMapper>::to_orm_from_entity(self, entity);
+        let table = SqlxViewMeta::get_table_name(self);
+        let set_cols = <<Self as SqlxViewRepository>::Orm as OrmMeta>::updatable_columns();
+
+        let mut qb = QueryBuilder::<Postgres>::new("UPDATE ");
+        qb.push(table).push(" SET ");
+        orm.bind_update_pairs(&set_cols, &mut qb);
+        qb.push(" WHERE id = ");
+        qb.push_bind(entity.id());
+        qb.push(" RETURNING *");
+
+        let orm_row: <Self as SqlxViewRepository>::Orm =
+            qb.build_query_as().fetch_one(self.get_pool()).await?;
+        Ok(<Self as SqlxViewRepository>::from_orm(orm_row))
+    }
+
+    // Provided defaults: common attribute type map and delete helpers
     async fn get_attribute_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
         // Repository: fetch directly from DB; caching is handled at the service layer
-        let entity_type = self.get_table_name().to_string();
+        let entity_type = SqlxViewMeta::get_table_name(self).to_string();
         let pool = self.get_pool();
 
         // Select attribute name and textual data type for the owner entity_type
@@ -792,7 +933,7 @@ where
     async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
         let result = sqlx::query(&format!(
             "DELETE FROM {} WHERE id = $1",
-            self.get_table_name()
+            SqlxViewMeta::get_table_name(self)
         ))
         .bind(id)
         .execute(self.get_pool())
@@ -808,7 +949,7 @@ where
 
         let mut builder = QueryBuilder::<Postgres>::new(format!(
             "DELETE FROM {} WHERE id IN ",
-            self.get_table_name()
+            SqlxViewMeta::get_table_name(self)
         ));
 
         // Follow the same convention used in filter IN/NOT IN: use tuples for values
@@ -824,7 +965,7 @@ where
     async fn delete_by_uid(&self, uid: Uuid) -> Result<u64, CoreError> {
         let result = sqlx::query(&format!(
             "DELETE FROM {} WHERE uid = $1",
-            self.get_table_name()
+            SqlxViewMeta::get_table_name(self)
         ))
         .bind(uid)
         .execute(self.get_pool())
@@ -840,7 +981,7 @@ where
 
         let mut builder = QueryBuilder::<Postgres>::new(format!(
             "DELETE FROM {} WHERE uid IN ",
-            self.get_table_name()
+            SqlxViewMeta::get_table_name(self)
         ));
         builder.push_tuples(uids, |mut b, id| {
             b.push_bind(id);
@@ -848,5 +989,121 @@ where
         let query = builder.build();
         let result = query.execute(self.get_pool()).await?;
         Ok(result.rows_affected())
+    }
+}
+
+// Blanket implementation: any SqlxViewRepository automatically implements ViewRepository for its Entity
+impl<R> ViewRepository<<R as SqlxViewRepository>::Entity> for R
+where
+    R: SqlxViewRepository + Send + Sync,
+{
+    fn get_table_name(&self) -> &str {
+        SqlxViewMeta::get_table_name(self)
+    }
+    fn get_columns(&self) -> Vec<&str> {
+        SqlxViewMeta::get_columns(self)
+    }
+    fn get_searchable_columns(&self) -> Vec<&str> {
+        SqlxViewMeta::get_searchable_columns(self)
+    }
+
+    async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
+        SqlxViewRepository::count(self, filters).await
+    }
+
+    async fn find_many(
+        &self,
+        sort_criteria: Vec<SortCriterion>,
+        first_result: Option<i32>,
+        max_results: Option<i32>,
+        filters: Vec<Filter>,
+    ) -> Result<Vec<<R as SqlxViewRepository>::Entity>, CoreError> {
+        SqlxViewRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
+    }
+
+    async fn find_by_id(
+        &self,
+        id: i32,
+    ) -> Result<Option<<R as SqlxViewRepository>::Entity>, CoreError> {
+        SqlxViewRepository::find_by_id(self, id).await
+    }
+
+    async fn find_by_uid(
+        &self,
+        uid: String,
+    ) -> Result<Option<<R as SqlxViewRepository>::Entity>, CoreError> {
+        let uuid = match Uuid::parse_str(&uid) {
+            Ok(u) => u,
+            Err(_) => return Err(CoreError::bad_request("error.invalid.uid")),
+        };
+        SqlxViewRepository::find_by_uid(self, uuid).await
+    }
+
+    async fn get_column_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
+        SqlxViewRepository::get_column_type_map(self).await
+    }
+}
+
+// Blanket implementation: any SqlxRepository automatically implements Repository for its Entity/Create
+impl<R> Repository<<R as SqlxViewRepository>::Entity, <R as SqlxRepository>::EntityCreate> for R
+where
+    R: SqlxRepository
+        + Send
+        + Sync
+        + SqlxEntityMapper<
+            Entity = <R as SqlxViewRepository>::Entity,
+            EntityCreate = <R as SqlxRepository>::EntityCreate,
+            Orm = <R as SqlxViewRepository>::Orm,
+        >,
+    <R as SqlxViewRepository>::Orm: OrmMeta + OrmBind,
+    <R as SqlxViewRepository>::Entity: BizEntity,
+{
+    async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
+        SqlxRepository::delete_by_id(self, id).await
+    }
+
+    async fn delete_by_ids(&self, ids: Vec<i32>) -> Result<u64, CoreError> {
+        SqlxRepository::delete_by_ids(self, ids).await
+    }
+
+    async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
+        let uuid = match Uuid::parse_str(&uid) {
+            Ok(u) => u,
+            Err(_) => return Err(CoreError::bad_request("error.invalid.uid")),
+        };
+        SqlxRepository::delete_by_uid(self, uuid).await
+    }
+
+    async fn delete_by_uids(&self, uids: Vec<String>) -> Result<u64, CoreError> {
+        if uids.is_empty() {
+            return Ok(0);
+        }
+        // Try parsing all; fail fast on first invalid
+        let mut parsed = Vec::with_capacity(uids.len());
+        for s in uids.into_iter() {
+            match Uuid::parse_str(&s) {
+                Ok(u) => parsed.push(u),
+                Err(_) => return Err(CoreError::bad_request("error.invalid.uid")),
+            }
+        }
+        SqlxRepository::delete_by_uids(self, parsed).await
+    }
+
+    async fn create(
+        &self,
+        entity_create: &<R as SqlxRepository>::EntityCreate,
+    ) -> Result<<R as SqlxViewRepository>::Entity, CoreError> {
+        <Self as SqlxRepository>::create(self, entity_create).await
+    }
+
+    async fn update(
+        &self,
+        entity: &<R as SqlxViewRepository>::Entity,
+    ) -> Result<<R as SqlxViewRepository>::Entity, CoreError> {
+        <Self as SqlxRepository>::update(self, entity).await
+    }
+
+    async fn get_attribute_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
+        SqlxRepository::get_attribute_type_map(self).await
     }
 }

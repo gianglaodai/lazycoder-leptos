@@ -1,15 +1,9 @@
 #![cfg(feature = "ssr")]
 
-use std::collections::HashMap;
 use crate::business::post_collection_service::{PostCollectionInfo, PostCollectionInfoRepository};
-use crate::common::repository::ViewRepository;
 use crate::define_readonly_orm_with_common_fields;
-use crate::infras::sqlx_repository::SqlxViewRepository;
+use crate::infras::sqlx_repository::{SqlxViewMeta, SqlxViewRepository};
 use sqlx::PgPool;
-use uuid::Uuid;
-use crate::common::error::CoreError;
-use crate::common::filter::{Filter, ScalarValue};
-use crate::common::sort::SortCriterion;
 
 #[derive(Clone)]
 pub struct PostCollectionInfoSqlxRepository {
@@ -51,7 +45,7 @@ impl PostCollectionInfoSqlxRepository {
     }
 }
 
-impl ViewRepository<PostCollectionInfo> for PostCollectionInfoSqlxRepository {
+impl SqlxViewMeta for PostCollectionInfoSqlxRepository {
     fn get_table_name(&self) -> &str {
         "post_collections_info"
     }
@@ -60,35 +54,6 @@ impl ViewRepository<PostCollectionInfo> for PostCollectionInfoSqlxRepository {
     }
     fn get_searchable_columns(&self) -> Vec<&str> {
         PostCollectionInfoOrm::searchable_columns()
-    }
-
-    async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
-        SqlxViewRepository::count(self, filters).await
-    }
-
-    async fn find_many(
-        &self,
-        sort_criteria: Vec<SortCriterion>,
-        first_result: Option<i32>,
-        max_results: Option<i32>,
-        filters: Vec<Filter>,
-    ) -> Result<Vec<PostCollectionInfo>, CoreError> {
-        SqlxViewRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
-    }
-
-    async fn find_by_id(&self, id: i32) -> Result<Option<PostCollectionInfo>, CoreError> {
-        SqlxViewRepository::find_by_id(self, id).await
-    }
-
-    async fn find_by_uid(&self, uid: String) -> Result<Option<PostCollectionInfo>, CoreError> {
-        SqlxViewRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
-    }
-
-    async fn get_column_type_map(
-        &self,
-    ) -> Result<HashMap<String, ScalarValue>, CoreError>
-    {
-        SqlxViewRepository::get_column_type_map(self).await
     }
 }
 

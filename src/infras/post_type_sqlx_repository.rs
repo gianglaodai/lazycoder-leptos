@@ -1,15 +1,11 @@
 #![cfg(feature = "ssr")]
 
 use crate::business::post_type_service::{PostType, PostTypeCreate, PostTypeRepository};
-use crate::common::error::CoreError;
-use crate::common::filter::{Filter, ScalarValue};
-use crate::common::repository::{Repository, ViewRepository};
-use crate::common::sort::SortCriterion;
 use crate::define_orm_with_common_fields;
-use crate::infras::sqlx_repository::{SqlxRepository, SqlxViewRepository};
+use crate::infras::sqlx_repository::{
+    SqlxEntityMapper, SqlxRepository, SqlxViewMeta, SqlxViewRepository,
+};
 use sqlx::PgPool;
-use std::collections::HashMap;
-use std::future::Future;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -48,7 +44,7 @@ impl PostTypeSqlxRepository {
     }
 }
 
-impl ViewRepository<PostType> for PostTypeSqlxRepository {
+impl SqlxViewMeta for PostTypeSqlxRepository {
     fn get_table_name(&self) -> &str {
         "post_types"
     }
@@ -58,80 +54,41 @@ impl ViewRepository<PostType> for PostTypeSqlxRepository {
     fn get_searchable_columns(&self) -> Vec<&str> {
         PostTypeOrm::searchable_columns()
     }
+}
 
-    async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
-        SqlxViewRepository::count(self, filters).await
+impl SqlxEntityMapper for PostTypeSqlxRepository {
+    type Entity = PostType;
+    type EntityCreate = PostTypeCreate;
+    type Orm = PostTypeOrm;
+
+    fn to_orm_from_create(&self, create: &Self::EntityCreate) -> Self::Orm {
+        let now = time::OffsetDateTime::now_utc();
+        PostTypeOrm {
+            id: 0,
+            uid: Uuid::now_v7(),
+            version: 0,
+            created_at: now,
+            updated_at: now,
+            code: create.code.clone(),
+            name: create.name.clone(),
+        }
     }
 
-    async fn find_many(
-        &self,
-        sort_criteria: Vec<SortCriterion>,
-        first_result: Option<i32>,
-        max_results: Option<i32>,
-        filters: Vec<Filter>,
-    ) -> Result<Vec<PostType>, CoreError> {
-        SqlxViewRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
-    }
-
-    async fn find_by_id(&self, id: i32) -> Result<Option<PostType>, CoreError> {
-        SqlxViewRepository::find_by_id(self, id).await
-    }
-
-    async fn find_by_uid(&self, uid: String) -> Result<Option<PostType>, CoreError> {
-        SqlxViewRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
-    }
-
-    async fn get_column_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
-        SqlxViewRepository::get_column_type_map(self).await
+    fn to_orm_from_entity(&self, entity: &Self::Entity) -> Self::Orm {
+        PostTypeOrm {
+            id: entity.id,
+            uid: Uuid::parse_str(&entity.uid).unwrap_or_else(|_| Uuid::nil()),
+            version: entity.version,
+            created_at: entity.created_at,
+            updated_at: entity.updated_at,
+            code: entity.code.clone(),
+            name: entity.name.clone(),
+        }
     }
 }
 
-impl Repository<PostType, PostTypeCreate> for PostTypeSqlxRepository {
-    async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_id(self, id).await
-    }
-    async fn delete_by_ids(&self, ids: Vec<i32>) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_ids(self, ids).await
-    }
-
-    async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
-    }
-    async fn delete_by_uids(&self, uids: Vec<String>) -> impl Future<Output=Result<u64, CoreError>> {
-        SqlxRepository::delete_by_uids(self, uids.iter().map(Uuid::parse_str).collect()).await
-    }
-    async fn create(&self, post_type_create: &PostTypeCreate) -> Result<PostType, CoreError> {
-        let now = time::OffsetDateTime::now_utc();
-        let row: PostTypeOrm = sqlx::query_as::<_, PostTypeOrm>(
-            "INSERT INTO post_types (uid, created_at, updated_at, code, name) VALUES ($1, $2, $3, $4, $5) RETURNING *",
-        )
-            .bind(Uuid::now_v7())
-            .bind(&now)
-            .bind(&now)
-            .bind(&post_type_create.code)
-            .bind(&post_type_create.name)
-            .fetch_one(&self.pool)
-            .await?;
-        Ok(PostType::from(row))
-    }
-
-    async fn update(&self, entity: &PostType) -> Result<PostType, CoreError> {
-        let now = time::OffsetDateTime::now_utc();
-        let row = sqlx::query_as::<_, PostTypeOrm>(
-            "UPDATE post_types SET code=$1, name=$2, updated_at=$3 WHERE id=$4 RETURNING *",
-        )
-        .bind(&entity.code)
-        .bind(&entity.name)
-        .bind(now)
-        .bind(entity.id)
-        .fetch_one(&self.pool)
-        .await?;
-        Ok(PostType::from(row))
-    }
-
-    async fn get_attribute_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
-        SqlxRepository::get_attribute_type_map(self)
-    }
+impl SqlxRepository for PostTypeSqlxRepository {
+    type EntityCreate = PostTypeCreate;
 }
 
 impl SqlxViewRepository for PostTypeSqlxRepository {
@@ -143,10 +100,6 @@ impl SqlxViewRepository for PostTypeSqlxRepository {
     fn from_orm(orm: Self::Orm) -> Self::Entity {
         PostType::from(orm)
     }
-}
-
-impl SqlxRepository for PostTypeSqlxRepository {
-    type EntityCreate = PostTypeCreate;
 }
 
 impl PostTypeRepository for PostTypeSqlxRepository {}

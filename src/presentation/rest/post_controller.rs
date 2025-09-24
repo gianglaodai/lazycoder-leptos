@@ -8,13 +8,17 @@ use actix_web::{delete, get, post, put, Responder};
 use std::str::FromStr;
 
 define_to_with_common_fields_be!(Post {
-    pub slug: String,
-    pub title: String,
-    pub summary: String,
-    pub content: String,
-    pub status: String,
-    pub user_id: i32,
-    pub type_id: i32,
+    req {
+        pub title: String,
+        pub type_id: i32,
+    }
+    opt {
+        pub slug: String,
+        pub summary: String,
+        pub content: String,
+        pub status: String,
+        pub user_id: i32,
+    }
 });
 
 impl From<PostTO> for Post {
@@ -39,12 +43,7 @@ impl From<PostTO> for Post {
 impl From<PostCreateTO> for PostCreate {
     fn from(to: PostCreateTO) -> Self {
         Self {
-            slug: to.slug,
             title: to.title,
-            summary: to.summary,
-            content: to.content,
-            status: PostStatus::from_str(&to.status).unwrap_or(PostStatus::DRAFT),
-            user_id: to.user_id,
             type_id: to.type_id,
         }
     }

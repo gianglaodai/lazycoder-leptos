@@ -1,15 +1,13 @@
 #![cfg(feature = "ssr")]
 
-use std::collections::HashMap;
 use crate::business::user_service::{User, UserCreate, UserRepository, UserRole};
-use crate::common::repository::{Repository, ViewRepository};
+use crate::common::error::CoreError;
 use crate::define_orm_with_common_fields;
-use crate::infras::sqlx_repository::{SqlxRepository, SqlxViewRepository};
+use crate::infras::sqlx_repository::{
+    SqlxEntityMapper, SqlxRepository, SqlxViewMeta, SqlxViewRepository,
+};
 use sqlx::PgPool;
 use uuid::Uuid;
-use crate::common::error::CoreError;
-use crate::common::filter::{Filter, ScalarValue};
-use crate::common::sort::SortCriterion;
 
 #[derive(Clone)]
 pub struct UserSqlxRepository {
@@ -50,7 +48,7 @@ impl UserSqlxRepository {
     }
 }
 
-impl ViewRepository<User> for UserSqlxRepository {
+impl SqlxViewMeta for UserSqlxRepository {
     fn get_table_name(&self) -> &str {
         "users"
     }
@@ -59,100 +57,6 @@ impl ViewRepository<User> for UserSqlxRepository {
     }
     fn get_searchable_columns(&self) -> Vec<&str> {
         UserOrm::searchable_columns()
-    }
-
-    async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
-        SqlxViewRepository::count(self, filters).await
-    }
-
-    async fn find_many(
-        &self,
-        sort_criteria: Vec<SortCriterion>,
-        first_result: Option<i32>,
-        max_results: Option<i32>,
-        filters: Vec<Filter>,
-    ) -> Result<Vec<User>, CoreError> {
-        SqlxViewRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
-    }
-
-    async fn find_by_id(&self, id: i32) -> Result<Option<User>, CoreError> {
-        SqlxViewRepository::find_by_id(self, id).await
-    }
-
-    async fn find_by_uid(&self, uid: String) -> Result<Option<User>, CoreError> {
-        SqlxViewRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
-    }
-
-    async fn get_column_type_map(
-        &self,
-    ) -> Result<HashMap<String, ScalarValue>, CoreError>
-    {
-        SqlxViewRepository::get_column_type_map(self).await
-    }
-}
-
-impl Repository<User, UserCreate> for UserSqlxRepository {
-    async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_id(self, id).await
-    }
-
-    async fn delete_by_ids(&self, ids: Vec<i32>) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_ids(self, ids).await
-    }
-
-    async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
-    }
-
-    fn get_attribute_type_map(
-        &self,
-    ) -> impl std::future::Future<
-        Output = Result<
-            HashMap<String, ScalarValue>,
-            CoreError,
-        >,
-    > {
-        SqlxRepository::get_attribute_type_map(self)
-    }
-
-    async fn create(&self, user_create: &UserCreate) -> Result<User, CoreError> {
-        let now = time::OffsetDateTime::now_utc();
-
-        let user = sqlx::query_as::<_, UserOrm>(
-            "INSERT INTO users (uid, username, email, password, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6)
-             RETURNING *",
-        )
-        .bind(Uuid::now_v7())
-        .bind(&user_create.username)
-        .bind(&user_create.email)
-        .bind(&user_create.password)
-        .bind(&now)
-        .bind(&now)
-        .fetch_one(&self.pool)
-        .await?;
-
-        Ok(User::from(user))
-    }
-
-    async fn update(&self, user: &User) -> Result<User, CoreError> {
-        let now = time::OffsetDateTime::now_utc();
-
-        let user = sqlx::query_as::<_, UserOrm>(
-            "UPDATE users
-             SET username = $1, email = $2, password = $3, updated_at = $4
-             WHERE id = $5
-             RETURNING *",
-        )
-        .bind(&user.username)
-        .bind(&user.email)
-        .bind(&user.password)
-        .bind(&now)
-        .bind(user.id)
-        .fetch_one(&self.pool)
-        .await?;
-
-        Ok(User::from(user))
     }
 }
 
@@ -164,6 +68,41 @@ impl SqlxViewRepository for UserSqlxRepository {
     }
     fn from_orm(orm: Self::Orm) -> Self::Entity {
         User::from(orm)
+    }
+}
+
+impl SqlxEntityMapper for UserSqlxRepository {
+    type Entity = User;
+    type EntityCreate = UserCreate;
+    type Orm = UserOrm;
+
+    fn to_orm_from_create(&self, create: &Self::EntityCreate) -> Self::Orm {
+        let now = time::OffsetDateTime::now_utc();
+        UserOrm {
+            id: 0,
+            uid: Uuid::now_v7(),
+            version: 0,
+            created_at: now,
+            updated_at: now,
+            username: create.username.clone(),
+            email: create.email.clone(),
+            password: create.password.clone(),
+            role: UserRole::USER.as_i32(),
+        }
+    }
+
+    fn to_orm_from_entity(&self, entity: &Self::Entity) -> Self::Orm {
+        UserOrm {
+            id: entity.id,
+            uid: Uuid::parse_str(&entity.uid).unwrap_or_else(|_| Uuid::nil()),
+            version: entity.version,
+            created_at: entity.created_at,
+            updated_at: entity.updated_at,
+            username: entity.username.clone(),
+            email: entity.email.clone(),
+            password: entity.password.clone(),
+            role: entity.role.as_i32(),
+        }
     }
 }
 

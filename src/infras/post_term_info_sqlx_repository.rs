@@ -1,13 +1,8 @@
 #![cfg(feature = "ssr")]
 use crate::business::post_term_service::{PostTermInfo, PostTermInfoRepository};
-use crate::common::error::CoreError;
-use crate::common::filter::Filter;
-use crate::common::repository::ViewRepository;
-use crate::common::sort::SortCriterion;
 use crate::define_readonly_orm_with_common_fields;
-use crate::infras::sqlx_repository::SqlxViewRepository;
+use crate::infras::sqlx_repository::{SqlxViewMeta, SqlxViewRepository};
 use sqlx::PgPool;
-use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct PostTermInfoSqlxRepository {
@@ -63,7 +58,7 @@ impl PostTermInfoSqlxRepository {
     }
 }
 
-impl ViewRepository<PostTermInfo> for PostTermInfoSqlxRepository {
+impl SqlxViewMeta for PostTermInfoSqlxRepository {
     fn get_table_name(&self) -> &str {
         "post_terms_info"
     }
@@ -72,31 +67,6 @@ impl ViewRepository<PostTermInfo> for PostTermInfoSqlxRepository {
     }
     fn get_searchable_columns(&self) -> Vec<&str> {
         PostTermInfoOrm::searchable_columns()
-    }
-
-    async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
-        SqlxViewRepository::count(self, filters).await
-    }
-    async fn find_many(
-        &self,
-        sort_criteria: Vec<SortCriterion>,
-        first_result: Option<i32>,
-        max_results: Option<i32>,
-        filters: Vec<Filter>,
-    ) -> Result<Vec<PostTermInfo>, CoreError> {
-        SqlxViewRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
-    }
-    async fn find_by_id(&self, id: i32) -> Result<Option<PostTermInfo>, CoreError> {
-        SqlxViewRepository::find_by_id(self, id).await
-    }
-    async fn find_by_uid(&self, uid: String) -> Result<Option<PostTermInfo>, CoreError> {
-        SqlxViewRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
-    }
-    async fn get_column_type_map(
-        &self,
-    ) -> Result<std::collections::HashMap<String, crate::common::filter::ScalarValue>, CoreError>
-    {
-        SqlxViewRepository::get_column_type_map(self).await
     }
 }
 

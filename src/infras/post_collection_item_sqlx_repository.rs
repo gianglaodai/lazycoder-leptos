@@ -1,24 +1,20 @@
 #![cfg(feature = "ssr")]
 
-use std::collections::HashMap;
 use crate::business::post_collection_item_service::{
-    PostCollectionItem, PostCollectionItemRepository,
+    PostCollectionItem, PostCollectionItemCreate, PostCollectionItemRepository,
 };
-use crate::common::repository::ViewRepository;
-use crate::define_readonly_orm_with_common_fields;
-use crate::infras::sqlx_repository::SqlxViewRepository;
+use crate::define_orm_with_common_fields;
+use crate::infras::sqlx_repository::{
+    SqlxEntityMapper, SqlxRepository, SqlxViewMeta, SqlxViewRepository,
+};
 use sqlx::PgPool;
-use uuid::Uuid;
-use crate::common::error::CoreError;
-use crate::common::filter::{Filter, ScalarValue};
-use crate::common::sort::SortCriterion;
 
 #[derive(Clone)]
 pub struct PostCollectionItemSqlxRepository {
     pool: PgPool,
 }
 
-define_readonly_orm_with_common_fields!(PostCollectionItem {
+define_orm_with_common_fields!(PostCollectionItem {
     pub post_collection_id: i32,
     pub post_id: i32,
     pub position: i32,
@@ -48,42 +44,71 @@ impl From<PostCollectionItemOrm> for PostCollectionItem {
 }
 
 impl PostCollectionItemSqlxRepository {
-    pub fn new(pool: PgPool) -> Self { Self { pool } }
+    pub fn new(pool: PgPool) -> Self {
+        Self { pool }
+    }
 }
 
-impl ViewRepository<PostCollectionItem> for PostCollectionItemSqlxRepository {
-    fn get_table_name(&self) -> &str { "post_collection_items" }
-    fn get_columns(&self) -> Vec<&str> { PostCollectionItemOrm::columns() }
-    fn get_searchable_columns(&self) -> Vec<&str> { PostCollectionItemOrm::searchable_columns() }
-
-    async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
-        SqlxViewRepository::count(self, filters).await
+impl SqlxViewMeta for PostCollectionItemSqlxRepository {
+    fn get_table_name(&self) -> &str {
+        "post_collection_items"
     }
-    async fn find_many(
-        &self,
-        sort_criteria: Vec<SortCriterion>,
-        first_result: Option<i32>,
-        max_results: Option<i32>,
-        filters: Vec<Filter>,
-    ) -> Result<Vec<PostCollectionItem>, CoreError> {
-        SqlxViewRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
+    fn get_columns(&self) -> Vec<&str> {
+        PostCollectionItemOrm::columns()
     }
-    async fn find_by_id(&self, id: i32) -> Result<Option<PostCollectionItem>, CoreError> {
-        SqlxViewRepository::find_by_id(self, id).await
-    }
-    async fn find_by_uid(&self, uid: String) -> Result<Option<PostCollectionItem>, CoreError> {
-        SqlxViewRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
-    }
-    async fn get_column_type_map(&self,) -> Result<HashMap<String, ScalarValue>, CoreError> {
-        SqlxViewRepository::get_column_type_map(self).await
+    fn get_searchable_columns(&self) -> Vec<&str> {
+        PostCollectionItemOrm::searchable_columns()
     }
 }
 
 impl SqlxViewRepository for PostCollectionItemSqlxRepository {
     type Entity = PostCollectionItem;
     type Orm = PostCollectionItemOrm;
-    fn get_pool(&self) -> &PgPool { &self.pool }
-    fn from_orm(orm: Self::Orm) -> Self::Entity { PostCollectionItem::from(orm) }
+    fn get_pool(&self) -> &PgPool {
+        &self.pool
+    }
+    fn from_orm(orm: Self::Orm) -> Self::Entity {
+        PostCollectionItem::from(orm)
+    }
+}
+
+impl SqlxEntityMapper for PostCollectionItemSqlxRepository {
+    type Entity = PostCollectionItem;
+    type EntityCreate = PostCollectionItemCreate;
+    type Orm = PostCollectionItemOrm;
+
+    fn to_orm_from_create(&self, create: &Self::EntityCreate) -> Self::Orm {
+        let now = time::OffsetDateTime::now_utc();
+        PostCollectionItemOrm {
+            id: 0,
+            uid: uuid::Uuid::now_v7(),
+            version: 0,
+            created_at: now,
+            updated_at: now,
+            post_collection_id: create.post_collection_id,
+            post_id: create.post_id,
+            position: create.position,
+            headline: None,
+        }
+    }
+
+    fn to_orm_from_entity(&self, entity: &Self::Entity) -> Self::Orm {
+        PostCollectionItemOrm {
+            id: entity.id,
+            uid: uuid::Uuid::parse_str(&entity.uid).unwrap_or_else(|_| uuid::Uuid::nil()),
+            version: entity.version,
+            created_at: entity.created_at,
+            updated_at: entity.updated_at,
+            post_collection_id: entity.post_collection_id,
+            post_id: entity.post_id,
+            position: entity.position,
+            headline: entity.headline.clone(),
+        }
+    }
+}
+
+impl SqlxRepository for PostCollectionItemSqlxRepository {
+    type EntityCreate = PostCollectionItemCreate;
 }
 
 impl PostCollectionItemRepository for PostCollectionItemSqlxRepository {}

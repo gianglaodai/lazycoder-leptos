@@ -1,8 +1,6 @@
 use crate::common::error::CoreError;
-use crate::common::filter::Filter;
 use crate::common::repository::{Repository, ViewRepository};
 use crate::common::service::{Service, ViewService};
-use crate::common::sort::SortCriterion;
 use crate::{define_readonly_struct_with_common_fields, define_struct_with_common_fields};
 use std::future::Future;
 use std::str::FromStr;
@@ -62,13 +60,17 @@ impl FromStr for PostStatus {
 }
 
 define_struct_with_common_fields!(Post {
-    pub slug: String,
-    pub title: String,
-    pub summary: String,
-    pub content: String,
-    pub status: PostStatus,
-    pub user_id: i32,
-    pub type_id: i32,
+    req {
+        pub title: String,
+        pub type_id: i32,
+    }
+    opt {
+        pub slug: String,
+        pub summary: String,
+        pub content: String,
+        pub status: PostStatus,
+        pub user_id: i32,
+    }
 });
 
 define_readonly_struct_with_common_fields!(PostInfo {
@@ -96,44 +98,6 @@ impl<R: PostRepository> PostService<R> {
         Self { repository }
     }
 
-    pub async fn get_all(&self, filters: Vec<Filter>) -> Result<Vec<Post>, CoreError> {
-        self.repository.find_all(filters).await
-    }
-    pub async fn get_many(
-        &self,
-        sort_criteria: Vec<SortCriterion>,
-        first_result: Option<i32>,
-        max_results: Option<i32>,
-        filters: Vec<Filter>,
-    ) -> Result<Vec<Post>, CoreError> {
-        self.repository
-            .find_many(sort_criteria, first_result, max_results, filters)
-            .await
-    }
-    pub async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
-        self.repository.count(filters).await
-    }
-    pub async fn get_by_id(&self, id: i32) -> Result<Option<Post>, CoreError> {
-        self.repository.find_by_id(id).await
-    }
-    pub async fn get_by_uid(&self, uid: String) -> Result<Option<Post>, CoreError> {
-        self.repository.find_by_uid(uid).await
-    }
-    pub async fn create(&self, post_create: &PostCreate) -> Result<Post, CoreError> {
-        self.repository.create(post_create).await
-    }
-    pub async fn update(&self, post: &Post) -> Result<Post, CoreError> {
-        self.repository.update(post).await
-    }
-    pub async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
-        self.repository.delete_by_id(id).await
-    }
-    pub async fn delete_by_ids(&self, ids: Vec<i32>) -> Result<u64, CoreError> {
-        self.repository.delete_by_ids(ids).await
-    }
-    pub async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
-        self.repository.delete_by_uid(uid).await
-    }
     pub async fn get_by_slug(&self, slug: &str) -> Result<Option<Post>, CoreError> {
         self.repository.find_by_slug(slug).await
     }
@@ -164,34 +128,6 @@ impl<R: PostInfoRepository> PostInfoService<R> {
         Self {
             post_info_repository,
         }
-    }
-
-    pub async fn get_all(&self, filters: Vec<Filter>) -> Result<Vec<PostInfo>, CoreError> {
-        self.post_info_repository.find_all(filters).await
-    }
-
-    pub async fn get_many(
-        &self,
-        sort_criteria: Vec<SortCriterion>,
-        first_result: Option<i32>,
-        max_results: Option<i32>,
-        filters: Vec<Filter>,
-    ) -> Result<Vec<PostInfo>, CoreError> {
-        self.post_info_repository
-            .find_many(sort_criteria, first_result, max_results, filters)
-            .await
-    }
-
-    pub async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
-        self.post_info_repository.count(filters).await
-    }
-
-    pub async fn get_by_id(&self, id: i32) -> Result<Option<PostInfo>, CoreError> {
-        self.post_info_repository.find_by_id(id).await
-    }
-
-    pub async fn get_by_uid(&self, uid: String) -> Result<Option<PostInfo>, CoreError> {
-        self.post_info_repository.find_by_uid(uid).await
     }
 }
 

@@ -3,15 +3,11 @@
 use crate::business::attribute_value_service::{
     AttributeValue, AttributeValueCreate, AttributeValueRepository,
 };
-use crate::common::error::CoreError;
-use crate::common::filter::{Filter, ScalarValue};
-use crate::common::repository::{Repository, ViewRepository};
-use crate::common::sort::SortCriterion;
 use crate::define_orm_with_common_fields;
-use crate::infras::sqlx_repository::{SqlxRepository, SqlxViewRepository};
-use sqlx::{PgPool, Postgres, QueryBuilder};
-use std::collections::HashMap;
-use std::future::Future;
+use crate::infras::sqlx_repository::{
+    SqlxEntityMapper, SqlxRepository, SqlxViewMeta, SqlxViewRepository,
+};
+use sqlx::PgPool;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -19,8 +15,10 @@ pub struct AttributeValueSqlxRepository {
     pool: PgPool,
 }
 
-// ORM for table attribute_values
 define_orm_with_common_fields!(AttributeValue {
+    pub attribute_id: i32,
+    pub entity_id: i32,
+    pub entity_type: String,
     pub int_value: Option<i32>,
     pub double_value: Option<f64>,
     pub string_value: Option<String>,
@@ -28,9 +26,6 @@ define_orm_with_common_fields!(AttributeValue {
     pub date_value: Option<time::Date>,
     pub datetime_value: Option<time::OffsetDateTime>,
     pub time_value: Option<time::Time>,
-    pub attribute_id: i32,
-    pub entity_id: i32,
-    pub entity_type: String,
 });
 
 impl AttributeValueOrm {
@@ -67,7 +62,7 @@ impl AttributeValueSqlxRepository {
     }
 }
 
-impl ViewRepository<AttributeValue> for AttributeValueSqlxRepository {
+impl SqlxViewMeta for AttributeValueSqlxRepository {
     fn get_table_name(&self) -> &str {
         "attribute_values"
     }
@@ -76,28 +71,6 @@ impl ViewRepository<AttributeValue> for AttributeValueSqlxRepository {
     }
     fn get_searchable_columns(&self) -> Vec<&str> {
         AttributeValueOrm::searchable_columns()
-    }
-
-    async fn count(&self, filters: Vec<Filter>) -> Result<i64, CoreError> {
-        SqlxViewRepository::count(self, filters).await
-    }
-    async fn find_many(
-        &self,
-        sort_criteria: Vec<SortCriterion>,
-        first_result: Option<i32>,
-        max_results: Option<i32>,
-        filters: Vec<Filter>,
-    ) -> Result<Vec<AttributeValue>, CoreError> {
-        SqlxViewRepository::find_many(self, sort_criteria, first_result, max_results, filters).await
-    }
-    async fn find_by_id(&self, id: i32) -> Result<Option<AttributeValue>, CoreError> {
-        SqlxViewRepository::find_by_id(self, id).await
-    }
-    async fn find_by_uid(&self, uid: String) -> Result<Option<AttributeValue>, CoreError> {
-        SqlxViewRepository::find_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
-    }
-    async fn get_column_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
-        SqlxViewRepository::get_column_type_map(self).await
     }
 }
 
@@ -112,104 +85,55 @@ impl SqlxViewRepository for AttributeValueSqlxRepository {
     }
 }
 
-impl SqlxRepository for AttributeValueSqlxRepository {
+impl SqlxEntityMapper for AttributeValueSqlxRepository {
+    type Entity = AttributeValue;
     type EntityCreate = AttributeValueCreate;
+    type Orm = AttributeValueOrm;
+
+    fn to_orm_from_create(&self, create: &Self::EntityCreate) -> Self::Orm {
+        let now = time::OffsetDateTime::now_utc();
+        AttributeValueOrm {
+            id: 0,
+            uid: Uuid::now_v7(),
+            version: 0,
+            created_at: now,
+            updated_at: now,
+            int_value: None,
+            double_value: None,
+            string_value: None,
+            boolean_value: None,
+            date_value: None,
+            datetime_value: None,
+            time_value: None,
+            attribute_id: create.attribute_id,
+            entity_id: create.entity_id,
+            entity_type: create.entity_type.clone(),
+        }
+    }
+
+    fn to_orm_from_entity(&self, entity: &Self::Entity) -> Self::Orm {
+        AttributeValueOrm {
+            id: entity.id,
+            uid: Uuid::parse_str(&entity.uid).unwrap_or_else(|_| Uuid::nil()),
+            version: entity.version,
+            created_at: entity.created_at,
+            updated_at: entity.updated_at,
+            int_value: entity.int_value,
+            double_value: entity.double_value,
+            string_value: entity.string_value.clone(),
+            boolean_value: entity.boolean_value,
+            date_value: entity.date_value,
+            datetime_value: entity.datetime_value,
+            time_value: entity.time_value,
+            attribute_id: entity.attribute_id,
+            entity_id: entity.entity_id,
+            entity_type: entity.entity_type.clone(),
+        }
+    }
 }
 
-impl Repository<AttributeValue, AttributeValueCreate> for AttributeValueSqlxRepository {
-    async fn delete_by_id(&self, id: i32) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_id(self, id).await
-    }
-    async fn delete_by_ids(&self, ids: Vec<i32>) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_ids(self, ids).await
-    }
-    async fn delete_by_uid(&self, uid: String) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_uid(self, Uuid::parse_str(&uid).unwrap()).await
-    }
-
-    async fn delete_by_uids(&self, uids: Vec<String>) -> Result<u64, CoreError> {
-        SqlxRepository::delete_by_uids(self, uids.iter().map(Uuid::parse_str).collect()).await
-    }
-
-    async fn create(&self, create: &AttributeValueCreate) -> Result<AttributeValue, CoreError> {
-        let pool = self.pool.clone();
-        let create = create.clone();
-        async move {
-            let mut qb: QueryBuilder<Postgres> = QueryBuilder::new(
-                "INSERT INTO attribute_values (uid, version, int_value, double_value, string_value, boolean_value, date_value, datetime_value, time_value, attribute_id, entity_id, entity_type) ",
-            );
-            qb.push("VALUES (")
-                .push_bind(Uuid::new_v4())
-                .push(", ")
-                .push_bind(0i32)
-                .push(", ")
-                .push_bind(create.int_value)
-                .push(", ")
-                .push_bind(create.double_value)
-                .push(", ")
-                .push_bind(create.string_value)
-                .push(", ")
-                .push_bind(create.boolean_value)
-                .push(", ")
-                .push_bind(create.date_value)
-                .push(", ")
-                .push_bind(create.datetime_value)
-                .push(", ")
-                .push_bind(create.time_value)
-                .push(", ")
-                .push_bind(create.attribute_id)
-                .push(", ")
-                .push_bind(create.entity_id)
-                .push(", ")
-                .push_bind(create.entity_type)
-                .push(") RETURNING *");
-
-            let row = qb.build().fetch_one(&pool).await?;
-            let orm: AttributeValueOrm = sqlx::FromRow::from_row(&row)?;
-            Ok(AttributeValue::from(orm))
-        }
-    }
-
-    async fn update(&self, entity: &AttributeValue) -> Result<AttributeValue, CoreError> {
-        let pool = self.pool.clone();
-        let e = entity.clone();
-        async move {
-            let mut qb: QueryBuilder<Postgres> =
-                QueryBuilder::new("UPDATE attribute_values SET version = ");
-            qb.push_bind(e.version + 1)
-                .push(", int_value = ")
-                .push_bind(e.int_value)
-                .push(", double_value = ")
-                .push_bind(e.double_value)
-                .push(", string_value = ")
-                .push_bind(e.string_value)
-                .push(", boolean_value = ")
-                .push_bind(e.boolean_value)
-                .push(", date_value = ")
-                .push_bind(e.date_value)
-                .push(", datetime_value = ")
-                .push_bind(e.datetime_value)
-                .push(", time_value = ")
-                .push_bind(e.time_value)
-                .push(", attribute_id = ")
-                .push_bind(e.attribute_id)
-                .push(", entity_id = ")
-                .push_bind(e.entity_id)
-                .push(", entity_type = ")
-                .push_bind(e.entity_type)
-                .push(" WHERE id = ")
-                .push_bind(e.id)
-                .push(" RETURNING *");
-
-            let row = qb.build().fetch_one(&pool).await?;
-            let orm: AttributeValueOrm = sqlx::FromRow::from_row(&row)?;
-            Ok(AttributeValue::from(orm))
-        }
-    }
-
-    async fn get_attribute_type_map(&self) -> Result<HashMap<String, ScalarValue>, CoreError> {
-        SqlxRepository::get_attribute_type_map(self).await
-    }
+impl SqlxRepository for AttributeValueSqlxRepository {
+    type EntityCreate = AttributeValueCreate;
 }
 
 impl AttributeValueRepository for AttributeValueSqlxRepository {}

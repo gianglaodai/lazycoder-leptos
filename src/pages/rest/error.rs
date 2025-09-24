@@ -1,7 +1,7 @@
+use crate::common::error::CoreError;
 use serde::Serialize;
 use serde_json::to_string;
 use std::collections::HashMap;
-use crate::common::error::CoreError;
 
 #[derive(Serialize)]
 struct CoreErrorDto<'a> {
