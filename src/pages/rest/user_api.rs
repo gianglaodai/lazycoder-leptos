@@ -129,8 +129,8 @@ pub async fn count_users(
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetUserById, prefix="/load", endpoint="/users/get")]
-pub async fn get_user_by_id(id: i32) -> Result<UserTO, ServerFnError> {
+#[server(name=LoadUserById, prefix="/load", endpoint="/users/get")]
+pub async fn load_user_by_id(id: i32) -> Result<UserTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
@@ -144,8 +144,8 @@ pub async fn get_user_by_id(id: i32) -> Result<UserTO, ServerFnError> {
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetUserByUid, prefix="/load", endpoint="/users/get-uid")]
-pub async fn get_user_by_uid(uid: String) -> Result<UserTO, ServerFnError> {
+#[server(name=LoadUserByUid, prefix="/load", endpoint="/users/get-uid")]
+pub async fn load_user_by_uid(uid: String) -> Result<UserTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
@@ -284,8 +284,8 @@ pub async fn count_user_infos(
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetUserInfoById, prefix="/load", endpoint="/users/id/info")]
-pub async fn get_user_info_by_id(id: i32) -> Result<UserInfoTO, ServerFnError> {
+#[server(name=LoadUserInfoById, prefix="/load", endpoint="/users/id/info")]
+pub async fn load_user_info_by_id(id: i32) -> Result<UserInfoTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
@@ -299,8 +299,8 @@ pub async fn get_user_info_by_id(id: i32) -> Result<UserInfoTO, ServerFnError> {
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetUserInfoByUid, prefix="/load", endpoint="/users/uid/info")]
-pub async fn get_user_info_by_uid(uid: String) -> Result<UserInfoTO, ServerFnError> {
+#[server(name=LoadUserInfoByUid, prefix="/load", endpoint="/users/uid/info")]
+pub async fn load_user_info_by_uid(uid: String) -> Result<UserInfoTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;

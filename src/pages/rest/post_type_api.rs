@@ -96,8 +96,8 @@ pub async fn count_post_types(
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTypeById, prefix="/load", endpoint="/post_types/get")]
-pub async fn get_post_type_by_id(id: i32) -> Result<PostTypeTO, ServerFnError> {
+#[server(name=LoadPostTypeById, prefix="/load", endpoint="/post_types/get")]
+pub async fn load_post_type_by_id(id: i32) -> Result<PostTypeTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
@@ -111,8 +111,8 @@ pub async fn get_post_type_by_id(id: i32) -> Result<PostTypeTO, ServerFnError> {
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTypeByUid, prefix="/load", endpoint="/post_types/get-uid")]
-pub async fn get_post_type_by_uid(uid: String) -> Result<PostTypeTO, ServerFnError> {
+#[server(name=LoadPostTypeByUid, prefix="/load", endpoint="/post_types/get-uid")]
+pub async fn load_post_type_by_uid(uid: String) -> Result<PostTypeTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
@@ -250,8 +250,8 @@ pub async fn count_post_type_infos(
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTypeInfoById, prefix="/load", endpoint="/post_types/id/info")]
-pub async fn get_post_type_info_by_id(id: i32) -> Result<PostTypeInfoTO, ServerFnError> {
+#[server(name=LoadPostTypeInfoById, prefix="/load", endpoint="/post_types/id/info")]
+pub async fn load_post_type_info_by_id(id: i32) -> Result<PostTypeInfoTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
@@ -265,8 +265,8 @@ pub async fn get_post_type_info_by_id(id: i32) -> Result<PostTypeInfoTO, ServerF
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTypeInfoByUid, prefix="/load", endpoint="/post_types/uid/info")]
-pub async fn get_post_type_info_by_uid(uid: String) -> Result<PostTypeInfoTO, ServerFnError> {
+#[server(name=LoadPostTypeInfoByUid, prefix="/load", endpoint="/post_types/uid/info")]
+pub async fn load_post_type_info_by_uid(uid: String) -> Result<PostTypeInfoTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;

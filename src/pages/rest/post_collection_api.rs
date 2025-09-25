@@ -128,8 +128,8 @@ pub async fn count_post_collections(
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostCollectionById, prefix="/load", endpoint="/post_collections/get")]
-pub async fn get_post_collection_by_id(id: i32) -> Result<PostCollectionTO, ServerFnError> {
+#[server(name=LoadPostCollectionById, prefix="/load", endpoint="/post_collections/get")]
+pub async fn load_post_collection_by_id(id: i32) -> Result<PostCollectionTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
@@ -143,8 +143,8 @@ pub async fn get_post_collection_by_id(id: i32) -> Result<PostCollectionTO, Serv
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostCollectionByUid, prefix="/load", endpoint="/post_collections/get-uid")]
-pub async fn get_post_collection_by_uid(uid: String) -> Result<PostCollectionTO, ServerFnError> {
+#[server(name=LoadPostCollectionByUid, prefix="/load", endpoint="/post_collections/get-uid")]
+pub async fn load_post_collection_by_uid(uid: String) -> Result<PostCollectionTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
@@ -284,8 +284,8 @@ pub async fn count_post_collection_infos(
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostCollectionInfoById, prefix="/load", endpoint="/post_collections/id/info")]
-pub async fn get_post_collection_info_by_id(
+#[server(name=LoadPostCollectionInfoById, prefix="/load", endpoint="/post_collections/id/info")]
+pub async fn load_post_collection_info_by_id(
     id: i32,
 ) -> Result<PostCollectionInfoTO, ServerFnError> {
     use crate::state::AppState;
@@ -301,8 +301,8 @@ pub async fn get_post_collection_info_by_id(
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostCollectionInfoByUid, prefix="/load", endpoint="/post_collections/uid/info")]
-pub async fn get_post_collection_info_by_uid(
+#[server(name=LoadPostCollectionInfoByUid, prefix="/load", endpoint="/post_collections/uid/info")]
+pub async fn load_post_collection_info_by_uid(
     uid: String,
 ) -> Result<PostCollectionInfoTO, ServerFnError> {
     use crate::state::AppState;

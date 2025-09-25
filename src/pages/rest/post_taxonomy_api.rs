@@ -96,8 +96,8 @@ pub async fn count_post_taxonomies(
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTaxonomyById, prefix="/load", endpoint="/post_taxonomies/get")]
-pub async fn get_post_taxonomy_by_id(id: i32) -> Result<PostTaxonomyTO, ServerFnError> {
+#[server(name=LoadPostTaxonomyById, prefix="/load", endpoint="/post_taxonomies/get")]
+pub async fn load_post_taxonomy_by_id(id: i32) -> Result<PostTaxonomyTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
@@ -111,8 +111,8 @@ pub async fn get_post_taxonomy_by_id(id: i32) -> Result<PostTaxonomyTO, ServerFn
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTaxonomyByUid, prefix="/load", endpoint="/post_taxonomies/get-uid")]
-pub async fn get_post_taxonomy_by_uid(uid: String) -> Result<PostTaxonomyTO, ServerFnError> {
+#[server(name=LoadPostTaxonomyByUid, prefix="/load", endpoint="/post_taxonomies/get-uid")]
+pub async fn load_post_taxonomy_by_uid(uid: String) -> Result<PostTaxonomyTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
@@ -253,8 +253,8 @@ pub async fn count_post_taxonomy_infos(
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTaxonomyInfoById, prefix="/load", endpoint="/post_taxonomies/id/info")]
-pub async fn get_post_taxonomy_info_by_id(id: i32) -> Result<PostTaxonomyInfoTO, ServerFnError> {
+#[server(name=LoadPostTaxonomyInfoById, prefix="/load", endpoint="/post_taxonomies/id/info")]
+pub async fn load_post_taxonomy_info_by_id(id: i32) -> Result<PostTaxonomyInfoTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
@@ -268,8 +268,8 @@ pub async fn get_post_taxonomy_info_by_id(id: i32) -> Result<PostTaxonomyInfoTO,
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetPostTaxonomyInfoByUid, prefix="/load", endpoint="/post_taxonomies/uid/info")]
-pub async fn get_post_taxonomy_info_by_uid(
+#[server(name=LoadPostTaxonomyInfoByUid, prefix="/load", endpoint="/post_taxonomies/uid/info")]
+pub async fn load_post_taxonomy_info_by_uid(
     uid: String,
 ) -> Result<PostTaxonomyInfoTO, ServerFnError> {
     use crate::state::AppState;

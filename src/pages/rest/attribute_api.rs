@@ -112,8 +112,8 @@ pub async fn count_attributes(
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetAttributeById, prefix="/load", endpoint="/attributes/get")]
-pub async fn get_attribute_by_id(id: i32) -> Result<AttributeTO, ServerFnError> {
+#[server(name=LoadAttributeById, prefix="/load", endpoint="/attributes/get")]
+pub async fn load_attribute_by_id(id: i32) -> Result<AttributeTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
@@ -127,8 +127,8 @@ pub async fn get_attribute_by_id(id: i32) -> Result<AttributeTO, ServerFnError> 
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetAttributeByUid, prefix="/load", endpoint="/attributes/get-uid")]
-pub async fn get_attribute_by_uid(uid: String) -> Result<AttributeTO, ServerFnError> {
+#[server(name=LoadAttributeByUid, prefix="/load", endpoint="/attributes/get-uid")]
+pub async fn load_attribute_by_uid(uid: String) -> Result<AttributeTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
@@ -266,8 +266,8 @@ pub async fn count_attribute_infos(
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetAttributeInfoById, prefix="/load", endpoint="/attributes/id/info")]
-pub async fn get_attribute_info_by_id(id: i32) -> Result<AttributeInfoTO, ServerFnError> {
+#[server(name=LoadAttributeInfoById, prefix="/load", endpoint="/attributes/id/info")]
+pub async fn load_attribute_info_by_id(id: i32) -> Result<AttributeInfoTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
@@ -281,8 +281,8 @@ pub async fn get_attribute_info_by_id(id: i32) -> Result<AttributeInfoTO, Server
         .map_err(|e| ServerFnError::ServerError(e.to_json()))
 }
 
-#[server(name=GetAttributeInfoByUid, prefix="/load", endpoint="/attributes/uid/info")]
-pub async fn get_attribute_info_by_uid(uid: String) -> Result<AttributeInfoTO, ServerFnError> {
+#[server(name=LoadAttributeInfoByUid, prefix="/load", endpoint="/attributes/uid/info")]
+pub async fn load_attribute_info_by_uid(uid: String) -> Result<AttributeInfoTO, ServerFnError> {
     use crate::state::AppState;
     use actix_web::web::Data;
     use leptos_actix::extract;
