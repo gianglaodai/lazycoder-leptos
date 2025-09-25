@@ -1,10 +1,5 @@
 pub mod guard;
 pub mod home;
 pub mod layout;
-pub mod post_collections;
-pub mod post_form;
-pub mod post_types;
-pub mod posts;
-pub mod taxonomies;
-pub mod terms;
-pub mod users;
+pub mod post_edit;
+pub mod post_dashboard;

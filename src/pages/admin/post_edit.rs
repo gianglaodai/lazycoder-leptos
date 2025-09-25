@@ -20,8 +20,9 @@ pub struct PostFormValues {
     pub status: String,
 }
 
+/// Form used on the AdminPostEditPage to edit an existing post
 #[component]
-pub fn AdminPostForm(
+pub fn AdminPostEditForm(
     heading: String,
     show_slug: bool,
     initial_slug: String,
@@ -155,7 +156,7 @@ pub fn AdminPostEditPage() -> impl IntoView {
                             post.updated_at.format(&format).unwrap_or_default()
                         );
                         view!{
-                            <AdminPostForm
+                            <AdminPostEditForm
                                 heading="Edit Post".to_string()
                                 show_slug=false
                                 initial_slug=post.slug.clone()

@@ -1,9 +1,9 @@
 use crate::pages::about::AboutMePage;
 use crate::pages::admin::home::AdminHomePage;
 use crate::pages::admin::post_collections::AdminPostCollectionsPage;
-use crate::pages::admin::post_form::AdminPostEditPage;
+use crate::pages::admin::post_edit::AdminPostEditPage;
 use crate::pages::admin::post_types::AdminPostTypesPage;
-use crate::pages::admin::posts::AdminPostsPage;
+use crate::pages::admin::post_dashboard::AdminPostsPage;
 use crate::pages::admin::taxonomies::AdminTaxonomiesPage;
 use crate::pages::admin::terms::AdminTermsPage;
 use crate::pages::admin::users::AdminUsersPage;
@@ -73,11 +73,6 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/admin/home") view=AdminHomePage/>
                     <Route path=path!("/admin/posts") view=AdminPostsPage/>
                     <Route path=path!("/admin/posts/:id") view=AdminPostEditPage/>
-                    <Route path=path!("/admin/post-types") view=AdminPostTypesPage/>
-                    <Route path=path!("/admin/post-collections") view=AdminPostCollectionsPage/>
-                    <Route path=path!("/admin/taxonomies") view=AdminTaxonomiesPage/>
-                    <Route path=path!("/admin/terms") view=AdminTermsPage/>
-                    <Route path=path!("/admin/users") view=AdminUsersPage/>
                     <Route path=WildcardSegment("any") view=NotFoundPage/>
                 </Routes>
             </main>
