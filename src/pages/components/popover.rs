@@ -2,6 +2,7 @@ use leptos::html::Div;
 use leptos::prelude::*;
 use leptos::web_sys;
 use wasm_bindgen::JsCast;
+use std::sync::{Arc, atomic::{AtomicBool, Ordering}};
 
 #[derive(Clone)]
 pub struct PopoverContext {
@@ -98,10 +99,21 @@ pub fn PopoverContent(
 ) -> impl IntoView {
     let ctx = expect_context::<PopoverContext>();
 
+    // Track whether this component is still mounted to avoid accessing disposed signals
+    let alive = Arc::new(AtomicBool::new(true));
+    let alive_on_cleanup = alive.clone();
+    on_cleanup(move || {
+        alive_on_cleanup.store(false, Ordering::Relaxed);
+    });
+
     // Close on Escape
     let _key_listener = {
         let ctx = ctx.clone();
+        let alive = alive.clone();
         window_event_listener(leptos::ev::keydown, move |ev| {
+            if !alive.load(Ordering::Relaxed) {
+                return;
+            }
             if ev.key() == "Escape" && ctx.open.get_untracked() {
                 ctx.set_open.run(false);
             }
@@ -111,7 +123,11 @@ pub fn PopoverContent(
     // Close when clicking outside of the popover container (which wraps trigger + content)
     let _click_listener = {
         let ctx = ctx.clone();
+        let alive = alive.clone();
         window_event_listener(leptos::ev::mousedown, move |ev: leptos::ev::MouseEvent| {
+            if !alive.load(Ordering::Relaxed) {
+                return;
+            }
             if !ctx.open.get_untracked() {
                 return;
             }

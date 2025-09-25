@@ -1,12 +1,7 @@
 use crate::pages::about::AboutMePage;
 use crate::pages::admin::home::AdminHomePage;
-use crate::pages::admin::post_collections::AdminPostCollectionsPage;
 use crate::pages::admin::post_edit::AdminPostEditPage;
-use crate::pages::admin::post_types::AdminPostTypesPage;
-use crate::pages::admin::post_dashboard::AdminPostsPage;
-use crate::pages::admin::taxonomies::AdminTaxonomiesPage;
-use crate::pages::admin::terms::AdminTermsPage;
-use crate::pages::admin::users::AdminUsersPage;
+use crate::pages::admin::post_dashboard::AdminPostsDashboardPage;
 use crate::pages::articles::ArticlesPage;
 use crate::pages::components::{Footer, Navigation};
 use crate::pages::home::HomePage;
@@ -22,6 +17,16 @@ use leptos_router::{
     components::{Route, Router, Routes},
     path, SsrMode, StaticSegment, WildcardSegment,
 };
+use crate::pages::admin::post_collection_dashboard::AdminPostCollectionsDashboardPage;
+use crate::pages::admin::post_collection_edit::AdminPostCollectionEditPage;
+use crate::pages::admin::post_taxonomy_dashboard::AdminPostTaxonomiesDashboardPage;
+use crate::pages::admin::post_taxonomy_edit::AdminPostTaxonomyEditPage;
+use crate::pages::admin::post_type_dashboard::AdminPostTypesDashboardPage;
+use crate::pages::admin::post_type_edit::AdminPostTypeEditPage;
+use crate::pages::admin::term_dashboard::AdminTermsDashboardPage;
+use crate::pages::admin::term_edit::AdminTermEditPage;
+use crate::pages::admin::user_dashboard::AdminUsersDashboardPage;
+use crate::pages::admin::user_edit::AdminUserEditPage;
 
 #[component]
 pub fn App() -> impl IntoView {
@@ -70,9 +75,20 @@ pub fn App() -> impl IntoView {
                     <Route path=path!("/about") view=AboutMePage/>
                     <Route path=path!("/articles") view=ArticlesPage ssr=SsrMode::OutOfOrder/>
                     <Route path=path!("/newsletter") view=NewsletterPage/>
+                    <Route path=path!("/admin") view=AdminHomePage/>
                     <Route path=path!("/admin/home") view=AdminHomePage/>
-                    <Route path=path!("/admin/posts") view=AdminPostsPage/>
+                    <Route path=path!("/admin/posts") view=AdminPostsDashboardPage/>
                     <Route path=path!("/admin/posts/:id") view=AdminPostEditPage/>
+                    <Route path=path!("/admin/post-types") view=AdminPostTypesDashboardPage/>
+                    <Route path=path!("/admin/post-types/:id") view=AdminPostTypeEditPage/>
+                    <Route path=path!("/admin/post-collections") view=AdminPostCollectionsDashboardPage/>
+                    <Route path=path!("/admin/post-collections/:id") view=AdminPostCollectionEditPage/>
+                    <Route path=path!("/admin/taxonomies") view=AdminPostTaxonomiesDashboardPage/>
+                    <Route path=path!("/admin/taxonomies/:id") view=AdminPostTaxonomyEditPage/>
+                    <Route path=path!("/admin/terms") view=AdminTermsDashboardPage/>
+                    <Route path=path!("/admin/terms/:id") view=AdminTermEditPage/>
+                    <Route path=path!("/admin/users") view=AdminUsersDashboardPage/>
+                    <Route path=path!("/admin/users/:id") view=AdminUserEditPage/>
                     <Route path=WildcardSegment("any") view=NotFoundPage/>
                 </Routes>
             </main>

@@ -181,7 +181,7 @@ pub fn AdminPostEditPage() -> impl IntoView {
                     Some(Err(e)) => view!{<div class="text-red-600">Error: {e.to_string()}</div>}.into_any(),
                     None => view!{<div/>}.into_any()
                 }}
-            </Suspense>
+                        </Suspense>
                     </main>
                 </div>
             </SidebarProvider>

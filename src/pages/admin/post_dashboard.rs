@@ -250,7 +250,7 @@ fn NewPostDialog() -> impl IntoView {
 }
 
 #[component]
-pub fn AdminPostsPage() -> impl IntoView {
+pub fn AdminPostsDashboardPage() -> impl IntoView {
     let query = use_query_map();
     let first_result = move || {
         query.with_untracked(|q| {
