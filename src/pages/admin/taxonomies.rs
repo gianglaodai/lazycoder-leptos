@@ -5,6 +5,7 @@ use crate::pages::components::datatable::core::render_value::Value;
 use crate::pages::components::datatable::core::row::RowNode;
 use crate::pages::components::datatable::core::state::TableState;
 use crate::pages::components::sidebar::SidebarProvider;
+use crate::pages::rest::post_taxonomy_api::PostTaxonomyInfoTO;
 use leptos::prelude::*;
 use leptos::{component, view, IntoView};
 use leptos_router::hooks::{use_navigate, use_query_map};
@@ -13,8 +14,7 @@ use std::sync::Arc;
 #[component]
 fn DataTableCtx() -> impl IntoView {
     use crate::pages::components::datatable::DataTable;
-    let ts: Arc<TableState<crate::pages::rest::post_taxonomy_info_api::PostTaxonomyInfoTO>> =
-        expect_context();
+    let ts: Arc<TableState<PostTaxonomyInfoTO>> = expect_context();
     view! { <DataTable state=ts height="600px".to_string() row_height=36 /> }
 }
 
@@ -22,9 +22,7 @@ fn DataTableCtx() -> impl IntoView {
 pub fn AdminTaxonomiesPage() -> impl IntoView {
     let query = use_query_map();
 
-    let table_state: Arc<
-        TableState<crate::pages::rest::post_taxonomy_info_api::PostTaxonomyInfoTO>,
-    > = Arc::new(TableState::new());
+    let table_state: Arc<TableState<PostTaxonomyInfoTO>> = Arc::new(TableState::new());
     provide_context(table_state.clone());
 
     table_state.client_side_sorting.set(false);
@@ -34,11 +32,9 @@ pub fn AdminTaxonomiesPage() -> impl IntoView {
         ColumnDef {
             id: "id",
             header_name: "ID",
-            value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_taxonomy_info_api::PostTaxonomyInfoTO| {
-                    Value::Number(p.id as f64)
-                },
-            )),
+            value_getter: Some(Arc::new(|p: &PostTaxonomyInfoTO| {
+                Value::Number(p.id as f64)
+            })),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -59,11 +55,9 @@ pub fn AdminTaxonomiesPage() -> impl IntoView {
         ColumnDef {
             id: "code",
             header_name: "Code",
-            value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_taxonomy_info_api::PostTaxonomyInfoTO| {
-                    Value::Text(p.code.clone())
-                },
-            )),
+            value_getter: Some(Arc::new(|p: &PostTaxonomyInfoTO| {
+                Value::Text(p.code.clone())
+            })),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -84,11 +78,9 @@ pub fn AdminTaxonomiesPage() -> impl IntoView {
         ColumnDef {
             id: "name",
             header_name: "Name",
-            value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_taxonomy_info_api::PostTaxonomyInfoTO| {
-                    Value::Text(p.name.clone())
-                },
-            )),
+            value_getter: Some(Arc::new(|p: &PostTaxonomyInfoTO| {
+                Value::Text(p.name.clone())
+            })),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -109,11 +101,9 @@ pub fn AdminTaxonomiesPage() -> impl IntoView {
         ColumnDef {
             id: "updated_at",
             header_name: "Updated",
-            value_getter: Some(Arc::new(
-                |p: &crate::pages::rest::post_taxonomy_info_api::PostTaxonomyInfoTO| {
-                    Value::Text(p.updated_at.to_string())
-                },
-            )),
+            value_getter: Some(Arc::new(|p: &PostTaxonomyInfoTO| {
+                Value::Text(p.updated_at.to_string())
+            })),
             value_formatter: None,
             cell_renderer: None,
             cell_editor: None,
@@ -149,19 +139,18 @@ pub fn AdminTaxonomiesPage() -> impl IntoView {
             }
         },
         |(first_result_i32, max_results_i32, sort, search)| async move {
-            use crate::pages::rest::post_taxonomy_info_api::{
+            use crate::pages::rest::post_taxonomy_api::{
                 count_post_taxonomy_infos, load_post_taxonomy_infos,
             };
             let (a, b) = futures::join!(
                 load_post_taxonomy_infos(
-                    first_result_i32 as i64,
-                    max_results_i32,
+                    Some(first_result_i32),
+                    Some(max_results_i32),
                     sort.clone(),
                     search.clone(),
                     None,
-                    None
                 ),
-                count_post_taxonomy_infos(search.clone(), None, None)
+                count_post_taxonomy_infos(search.clone(), None)
             );
             match (a, b) {
                 (Ok(items), Ok(total)) => Ok((items, total)),
